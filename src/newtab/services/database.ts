@@ -82,7 +82,6 @@ export interface Folder {
   id: string;
   type: 'folder';
   name: string;
-  children: string[]; // Icon IDs (kept for compatibility, will be removed in P0-4)
   position: { x: number; y: number }; // Grid position
   createdAt: number;
   updatedAt: number;
@@ -407,6 +406,34 @@ class OpenInfinityDB extends Dexie {
           // P0-1: Ensure valid position
           folder.position = ensurePosition(folder.position, cols, icons.length + i);
 
+          await trans.table('folders').put(folder);
+        }
+      });
+
+    // Version 7: Remove folder.children field (P2-1)
+    this.version(7)
+      .stores({
+        icons: '++id, type, url, folderId, createdAt',
+        folders: '++id, name, createdAt',
+        wallpapers: '++id, type, createdAt',
+        todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+        notes: '++id, *tags, createdAt, updatedAt',
+        settings: 'key',
+        emailAccounts: '++id, provider, email, enabled, lastChecked',
+        todoIntegrations: '++id, provider, enabled, lastSynced',
+        rssSubscriptions: '++id, url, category, enabled, lastFetched',
+        rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+        notificationLogs: '++id, type, source, isRead, createdAt',
+        presetWebsites: '++id, category, region, popularity, *tags',
+        userFavorites: '++id, websiteId, addedAt',
+        weatherCache: 'id, fetchedAt, expiresAt',
+      })
+      .upgrade(async (trans) => {
+        // Remove children field from all folders
+        const folders = await trans.table('folders').toArray();
+        for (const folder of folders) {
+          const oldFolder = folder as any;
+          delete oldFolder.children;
           await trans.table('folders').put(folder);
         }
       });

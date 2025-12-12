@@ -247,7 +247,6 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       id: generateId(),
       type: 'folder',
       name,
-      children: [], // Will be removed in future version, kept for migration compatibility
       position: finalPosition,
       createdAt: now,
       updatedAt: now,

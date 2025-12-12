@@ -5,23 +5,19 @@
 
 import type { Icon, Folder } from '../services/database';
 
-// Sync message types
-export type SyncMessageType =
-  | 'ICON_ADDED'
-  | 'ICON_UPDATED'
-  | 'ICON_DELETED'
-  | 'FOLDER_ADDED'
-  | 'FOLDER_UPDATED'
-  | 'FOLDER_DELETED'
-  | 'SETTINGS_UPDATED'
-  | 'WALLPAPER_CHANGED';
+// P2-3: Type-safe sync messages using discriminated union
+export type SyncMessage =
+  | { type: 'ICON_ADDED'; payload: Icon; timestamp: number; tabId: string }
+  | { type: 'ICON_UPDATED'; payload: Partial<Icon> & { id: string }; timestamp: number; tabId: string }
+  | { type: 'ICON_DELETED'; payload: { id: string }; timestamp: number; tabId: string }
+  | { type: 'FOLDER_ADDED'; payload: Folder; timestamp: number; tabId: string }
+  | { type: 'FOLDER_UPDATED'; payload: Partial<Folder> & { id: string }; timestamp: number; tabId: string }
+  | { type: 'FOLDER_DELETED'; payload: { id: string }; timestamp: number; tabId: string }
+  | { type: 'SETTINGS_UPDATED'; payload: Record<string, any>; timestamp: number; tabId: string }
+  | { type: 'WALLPAPER_CHANGED'; payload: { wallpaperId: string }; timestamp: number; tabId: string };
 
-export interface SyncMessage {
-  type: SyncMessageType;
-  payload: any;
-  timestamp: number;
-  tabId: string; // To prevent echo
-}
+// Sync message types
+export type SyncMessageType = SyncMessage['type'];
 
 // Generate unique tab ID
 const TAB_ID = crypto.randomUUID();
@@ -31,14 +27,18 @@ const channel = new BroadcastChannel('openinfinity-sync');
 
 /**
  * Broadcast a sync message to all other tabs
+ * P2-3: Type-safe message construction
  */
-export function broadcastSync(type: SyncMessageType, payload: any): void {
-  const message: SyncMessage = {
+function broadcastSync<T extends SyncMessage['type']>(
+  type: T,
+  payload: Extract<SyncMessage, { type: T }>['payload']
+): void {
+  const message = {
     type,
     payload,
     timestamp: Date.now(),
     tabId: TAB_ID,
-  };
+  } as SyncMessage;
 
   channel.postMessage(message);
 }
