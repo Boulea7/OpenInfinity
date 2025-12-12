@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Settings,
   Image,
@@ -953,42 +953,130 @@ function MarketplaceSettings() {
   );
 }
 
-// Backup Settings Section (placeholder)
+// Backup Settings Section
 function BackupSettings() {
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle export
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const { exportAllData } = await import('../../utils/backup');
+      const json = await exportAllData();
+
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `openinfinity-backup-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+
+      console.info('Backup exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('导出失败：' + (error instanceof Error ? error.message : '未知错误'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Handle import
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+
+      // Validate before importing
+      const { validateBackupFile, importAllData } = await import('../../utils/backup');
+      validateBackupFile(text);
+
+      // Confirm with user
+      if (!confirm('This will replace all existing data. Continue?')) {
+        setIsImporting(false);
+        return;
+      }
+
+      await importAllData(text);
+      // Page will reload automatically
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('导入失败：' + (error instanceof Error ? error.message : '未知错误'));
+      setIsImporting(false);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Data Backup</h3>
 
       <div className="space-y-4">
         <button
+          onClick={handleExport}
+          disabled={isExporting}
           className={cn(
             'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg',
             'bg-primary-600 text-white',
             'hover:bg-primary-700',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
             'transition-colors duration-200'
           )}
         >
           <Download className="w-5 h-5" />
-          Export Settings
+          {isExporting ? 'Exporting...' : 'Export All Data'}
         </button>
 
-        <button
-          className={cn(
-            'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg',
-            'bg-gray-100 dark:bg-gray-700',
-            'text-gray-700 dark:text-gray-300',
-            'hover:bg-gray-200 dark:hover:bg-gray-600',
-            'transition-colors duration-200'
-          )}
-        >
-          <Download className="w-5 h-5 rotate-180" />
-          Import Settings
-        </button>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            className="hidden"
+            id="backup-file-input"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className={cn(
+              'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg',
+              'bg-gray-100 dark:bg-gray-700',
+              'text-gray-700 dark:text-gray-300',
+              'hover:bg-gray-200 dark:hover:bg-gray-600',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'transition-colors duration-200'
+            )}
+          >
+            <Download className="w-5 h-5 rotate-180" />
+            {isImporting ? 'Importing...' : 'Import All Data'}
+          </button>
+        </div>
       </div>
 
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Export your settings, icons, and preferences to a JSON file. You can import this file later to restore your configuration.
+        Export all your data (settings, icons, folders, todos, notes, wallpapers) to a JSON file.
+        You can import this file later to restore your complete configuration.
       </p>
+
+      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+          <strong>Warning:</strong> Importing will replace all existing data. Make sure to export your current data first.
+        </p>
+      </div>
     </div>
   );
 }
