@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Cloud, RefreshCw, Droplets, Wind, Thermometer, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
 import { useWeather } from '../../hooks';
@@ -14,6 +14,16 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
   const { weatherSettings, setWeatherSettings } = useSettingsStore();
   const { weather, isLoading, error, refetch } = useWeather();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle manual refresh
   const handleRefresh = useCallback(async (e: React.MouseEvent) => {
@@ -22,7 +32,12 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
     try {
       await refetch();
     } finally {
-      setTimeout(() => setIsRefreshing(false), 500);
+      // Clear any existing timeout
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      // Set new timeout
+      refreshTimeoutRef.current = setTimeout(() => setIsRefreshing(false), 500);
     }
   }, [refetch]);
 
@@ -47,9 +62,17 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
   return (
     <div className={cn('bg-white/5 rounded-lg overflow-hidden border border-white/10', className)}>
       {/* Header */}
-      <button
+      <div
+        role="button"
         onClick={onToggleExpand}
-        className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggleExpand();
+          }
+        }}
+        tabIndex={0}
+        className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2">
           <Cloud className="w-5 h-5 text-white/80" />
@@ -78,7 +101,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
             <ChevronRight className="w-4 h-4 text-white/60" />
           )}
         </div>
-      </button>
+      </div>
 
       {/* Content */}
       {isExpanded && (
@@ -91,7 +114,14 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
             </div>
           )}
 
-          {/* Error State */}
+          {/* Error State - show even with cached data */}
+          {error && weather && (
+            <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-xs text-red-400 text-center">刷新失败，显示缓存数据</p>
+            </div>
+          )}
+
+          {/* Error State - no cached data */}
           {error && !weather && (
             <div className="flex flex-col items-center justify-center py-6">
               <AlertCircle className="w-8 h-8 text-red-400 mb-2" />

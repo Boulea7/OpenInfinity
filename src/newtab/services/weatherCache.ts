@@ -14,14 +14,15 @@ import { fetchWeather } from './weather';
 const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
 
 /**
- * Generate cache key from location coordinates
+ * Generate cache key from location coordinates and temperature unit
+ * Includes unit to prevent cache mismatches when switching between celsius/fahrenheit
  */
-function getCacheKey(latitude: number, longitude: number): string {
+function getCacheKey(latitude: number, longitude: number, unit: 'celsius' | 'fahrenheit'): string {
   // Round coordinates to 2 decimal places for cache key
   // This groups nearby locations together
   const lat = latitude.toFixed(2);
   const lon = longitude.toFixed(2);
-  return `${lat}_${lon}`;
+  return `${lat}_${lon}_${unit}`;
 }
 
 /**
@@ -36,28 +37,27 @@ function isCacheExpired(cache: WeatherCache): boolean {
  * Returns null if no valid cache exists
  *
  * @param location - Location to get weather for
+ * @param unit - Temperature unit
  * @returns Cached weather data or null
  */
 export async function getCachedWeather(
-  location: LocationData
+  location: LocationData,
+  unit: 'celsius' | 'fahrenheit'
 ): Promise<WeatherCache | null> {
   try {
-    const cacheKey = getCacheKey(location.latitude, location.longitude);
+    const cacheKey = getCacheKey(location.latitude, location.longitude, unit);
     const cached = await db.weatherCache.get(cacheKey);
 
     if (!cached) {
-      console.log('No cache found for location');
       return null;
     }
 
     if (isCacheExpired(cached)) {
-      console.log('Cache expired, will fetch fresh data');
       // Delete expired cache
       await db.weatherCache.delete(cacheKey);
       return null;
     }
 
-    console.log('Using cached weather data');
     return cached;
   } catch (error) {
     console.error('Failed to get cached weather:', error);
@@ -77,8 +77,6 @@ export async function fetchAndCacheWeather(
   unit: 'celsius' | 'fahrenheit' = 'celsius'
 ): Promise<WeatherCache> {
   try {
-    console.log('Fetching fresh weather data...');
-
     // Fetch weather from API
     const weatherData = await fetchWeather(location.latitude, location.longitude, unit);
 
@@ -87,7 +85,7 @@ export async function fetchAndCacheWeather(
 
     // Create cache entry
     const now = Date.now();
-    const cacheKey = getCacheKey(location.latitude, location.longitude);
+    const cacheKey = getCacheKey(location.latitude, location.longitude, unit);
 
     const cacheEntry: WeatherCache = {
       id: cacheKey,
@@ -99,7 +97,6 @@ export async function fetchAndCacheWeather(
     // Save to database
     await db.weatherCache.put(cacheEntry);
 
-    console.log('Weather data cached successfully');
     return cacheEntry;
   } catch (error) {
     console.error('Failed to fetch and cache weather:', error);
@@ -120,7 +117,7 @@ export async function getWeatherWithCache(
   unit: 'celsius' | 'fahrenheit' = 'celsius'
 ): Promise<WeatherCache> {
   // Try to get cached data first
-  const cached = await getCachedWeather(location);
+  const cached = await getCachedWeather(location, unit);
 
   if (cached) {
     return cached;
@@ -145,7 +142,6 @@ export async function clearExpiredCaches(): Promise<void> {
 
     if (expiredKeys.length > 0) {
       await db.weatherCache.bulkDelete(expiredKeys);
-      console.log(`Cleared ${expiredKeys.length} expired weather caches`);
     }
   } catch (error) {
     console.error('Failed to clear expired caches:', error);
@@ -159,7 +155,6 @@ export async function clearExpiredCaches(): Promise<void> {
 export async function clearAllCaches(): Promise<void> {
   try {
     await db.weatherCache.clear();
-    console.log('All weather caches cleared');
   } catch (error) {
     console.error('Failed to clear all caches:', error);
     throw error;

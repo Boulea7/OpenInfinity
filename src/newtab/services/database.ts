@@ -264,6 +264,24 @@ class OpenInfinityDB extends Dexie {
       userFavorites: '++id, websiteId, addedAt',
       weatherCache: '++id, fetchedAt',
     });
+
+    // Version 4: Fix weatherCache schema - use string primary key
+    this.version(4).stores({
+      icons: '++id, type, url, folderId, position, createdAt',
+      folders: '++id, name, position, createdAt',
+      wallpapers: '++id, type, createdAt',
+      todos: '++id, done, parentId, dueDate, *tags, createdAt',
+      notes: '++id, *tags, createdAt',
+      settings: 'key',
+      emailAccounts: '++id, provider, email, enabled, lastChecked',
+      todoIntegrations: '++id, provider, enabled, lastSynced',
+      rssSubscriptions: '++id, url, category, enabled, lastFetched',
+      rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+      notificationLogs: '++id, type, source, isRead, createdAt',
+      presetWebsites: '++id, category, region, popularity, *tags',
+      userFavorites: '++id, websiteId, addedAt',
+      weatherCache: 'id, fetchedAt, expiresAt',
+    });
   }
 }
 

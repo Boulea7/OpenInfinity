@@ -9,6 +9,7 @@ import { db, type WeatherCache } from '../services/database';
 import { useSettingsStore } from '../stores';
 import { getLocation } from '../services/location';
 import { getWeatherWithCache, clearAllCaches, fetchAndCacheWeather } from '../services/weatherCache';
+import type { LocationData } from '../types';
 
 /**
  * Weather hook return interface
@@ -31,6 +32,7 @@ export function useWeather(): UseWeatherReturn {
   const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
   const updateIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const prevUnitRef = useRef<'celsius' | 'fahrenheit'>(weatherSettings.unit);
 
   // Real-time query for weather cache
   // This will automatically update when cache changes
@@ -51,7 +53,6 @@ export function useWeather(): UseWeatherReturn {
   const fetchWeatherData = useCallback(async () => {
     // Prevent concurrent fetches
     if (isFetchingRef.current) {
-      console.log('Weather fetch already in progress, skipping...');
       return;
     }
 
@@ -61,11 +62,12 @@ export function useWeather(): UseWeatherReturn {
 
     try {
       // Get location (manual or auto)
-      let location;
+      let location: LocationData;
 
+      // Use != null to allow 0 values for equator/prime meridian
       if (weatherSettings.location.type === 'manual' &&
-          weatherSettings.location.latitude &&
-          weatherSettings.location.longitude) {
+          weatherSettings.location.latitude != null &&
+          weatherSettings.location.longitude != null) {
         // Use manual location from settings
         location = {
           type: 'manual' as const,
@@ -73,17 +75,13 @@ export function useWeather(): UseWeatherReturn {
           latitude: weatherSettings.location.latitude,
           longitude: weatherSettings.location.longitude,
         };
-        console.log('Using manual location:', location.name);
       } else {
         // Auto-detect location
-        console.log('Auto-detecting location...');
         location = await getLocation();
       }
 
       // Fetch weather with caching
       await getWeatherWithCache(location, weatherSettings.unit);
-
-      console.log('Weather data fetched successfully');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch weather data';
       console.error('Weather fetch error:', err);
@@ -98,7 +96,6 @@ export function useWeather(): UseWeatherReturn {
    * Manual refetch
    */
   const refetch = useCallback(async () => {
-    console.log('Manual weather refetch requested');
     await fetchWeatherData();
   }, [fetchWeatherData]);
 
@@ -129,11 +126,12 @@ export function useWeather(): UseWeatherReturn {
 
     try {
       // Get location
-      let location;
+      let location: LocationData;
 
+      // Use != null to allow 0 values for equator/prime meridian
       if (weatherSettings.location.type === 'manual' &&
-          weatherSettings.location.latitude &&
-          weatherSettings.location.longitude) {
+          weatherSettings.location.latitude != null &&
+          weatherSettings.location.longitude != null) {
         location = {
           type: 'manual' as const,
           name: weatherSettings.location.name,
@@ -146,8 +144,6 @@ export function useWeather(): UseWeatherReturn {
 
       // Force fetch (bypass cache)
       await fetchAndCacheWeather(location, weatherSettings.unit);
-
-      console.log('Weather data force refreshed');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to refresh weather data';
       setError(message);
@@ -165,13 +161,16 @@ export function useWeather(): UseWeatherReturn {
     if (!weather && !isLoading && !error) {
       fetchWeatherData();
     }
+  }, [weather, isLoading, error, fetchWeatherData]);
 
-    // Setup periodic updates based on updateInterval
+  /**
+   * Setup periodic updates
+   */
+  useEffect(() => {
     const intervalMs = weatherSettings.updateInterval * 60 * 1000; // Convert minutes to ms
 
     if (intervalMs > 0) {
       updateIntervalRef.current = setInterval(() => {
-        console.log('Periodic weather update triggered');
         fetchWeatherData();
       }, intervalMs);
     }
@@ -182,27 +181,41 @@ export function useWeather(): UseWeatherReturn {
         clearInterval(updateIntervalRef.current);
       }
     };
-  }, [weatherSettings.updateInterval, weather, isLoading, error, fetchWeatherData]);
+  }, [weatherSettings.updateInterval, fetchWeatherData]);
 
   /**
-   * Re-fetch when location or unit settings change
+   * Re-fetch when location settings change
    */
   useEffect(() => {
-    if (weather) {
-      // Check if location or unit changed
-      const locationChanged =
-        weatherSettings.location.type === 'manual' &&
-        weatherSettings.location.latitude &&
-        weatherSettings.location.longitude &&
-        (weatherSettings.location.latitude !== weather.location.latitude ||
-         weatherSettings.location.longitude !== weather.location.longitude);
+    if (!weather) return;
 
-      if (locationChanged) {
-        console.log('Location changed, fetching new weather data');
-        forceRefresh();
-      }
+    // Check if location changed
+    const hasManualCoords =
+      weatherSettings.location.latitude != null &&
+      weatherSettings.location.longitude != null;
+
+    const locationChanged =
+      weatherSettings.location.type === 'manual' &&
+      hasManualCoords &&
+      (weatherSettings.location.latitude !== weather.location.latitude ||
+       weatherSettings.location.longitude !== weather.location.longitude);
+
+    if (locationChanged) {
+      forceRefresh();
     }
-  }, [weatherSettings.location, weatherSettings.unit, weather, forceRefresh]);
+  }, [weatherSettings.location, weather, forceRefresh]);
+
+  /**
+   * Re-fetch when temperature unit changes
+   */
+  useEffect(() => {
+    if (!weather) return;
+
+    if (prevUnitRef.current !== weatherSettings.unit) {
+      prevUnitRef.current = weatherSettings.unit;
+      forceRefresh();
+    }
+  }, [weatherSettings.unit, weather, forceRefresh]);
 
   return {
     weather: weather || null,

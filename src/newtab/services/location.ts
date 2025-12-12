@@ -6,6 +6,24 @@
 import type { LocationData } from '../types';
 
 /**
+ * Validate coordinates are within valid ranges
+ * Latitude: -90 to 90, Longitude: -180 to 180
+ */
+function validateCoordinates(latitude: number, longitude: number): void {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error('Invalid coordinates: not finite numbers');
+  }
+
+  if (latitude < -90 || latitude > 90) {
+    throw new Error(`Invalid latitude: ${latitude} (must be between -90 and 90)`);
+  }
+
+  if (longitude < -180 || longitude > 180) {
+    throw new Error(`Invalid longitude: ${longitude} (must be between -180 and 180)`);
+  }
+}
+
+/**
  * IP-based location API response interface
  */
 interface IPLocationResponse {
@@ -34,11 +52,17 @@ async function getGeolocation(): Promise<LocationData> {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        // Validate coordinates
+        validateCoordinates(lat, lon);
+
         resolve({
           type: 'auto',
           name: 'Current Location',
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: lat,
+          longitude: lon,
         });
       },
       (error) => {
@@ -88,9 +112,13 @@ async function getLocationByIP(): Promise<LocationData> {
       throw new Error(data.reason || 'IP location service error');
     }
 
-    if (!data.latitude || !data.longitude) {
+    // Validate coordinates (use != null to allow 0 values for equator/prime meridian)
+    if (data.latitude == null || data.longitude == null) {
       throw new Error('Invalid location data from IP service');
     }
+
+    // Validate coordinate ranges
+    validateCoordinates(data.latitude, data.longitude);
 
     // Build location name from available data
     const nameParts = [data.city, data.region, data.country_name].filter(Boolean);
@@ -118,9 +146,7 @@ async function getLocationByIP(): Promise<LocationData> {
 export async function getLocation(): Promise<LocationData> {
   try {
     // Try Geolocation API first (more accurate)
-    console.log('Attempting to get location via Geolocation API...');
     const location = await getGeolocation();
-    console.log('Location obtained via Geolocation API');
     return location;
   } catch (geoError) {
     console.warn('Geolocation API failed, falling back to IP location:', geoError);
@@ -128,7 +154,6 @@ export async function getLocation(): Promise<LocationData> {
     try {
       // Fall back to IP-based location
       const location = await getLocationByIP();
-      console.log('Location obtained via IP location service');
       return location;
     } catch (ipError) {
       console.error('Both location methods failed');

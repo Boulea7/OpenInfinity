@@ -94,10 +94,12 @@ interface OpenMeteoResponse {
 
 /**
  * Get day of week from date string
+ * Uses local midnight to avoid timezone offset issues
  */
 function getDayOfWeek(dateString: string): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const date = new Date(dateString);
+  // Use local midnight to avoid timezone offset
+  const date = new Date(`${dateString}T00:00:00`);
   return days[date.getDay()];
 }
 
@@ -128,13 +130,23 @@ export async function fetchWeather(
 
     const url = `https://api.open-meteo.com/v1/forecast?${params}`;
 
-    const response = await fetch(url);
+    // Add timeout control and privacy headers
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
+      referrerPolicy: 'no-referrer',
+      credentials: 'omit',
+    });
 
     if (!response.ok) {
       throw new Error(`Open-Meteo API error: ${response.status} ${response.statusText}`);
     }
 
     const data: OpenMeteoResponse = await response.json();
+
+    // Validate response data
+    if (!data.current || !data.daily || !data.daily.time || data.daily.time.length === 0) {
+      throw new Error('Invalid weather data format');
+    }
 
     // Parse current weather
     const current = {

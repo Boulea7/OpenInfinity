@@ -22,7 +22,7 @@ const SIDEBAR_CONFIG = {
  * Provides a collapsible sidebar for hosting various widgets
  */
 export function WidgetContainer() {
-  const { viewSettings } = useSettingsStore();
+  const { viewSettings, setViewSettings } = useSettingsStore();
   const [width, setWidth] = useState<number>(SIDEBAR_CONFIG.defaultWidth);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedWidgets, setExpandedWidgets] = useState<Set<string>>(new Set());
@@ -73,8 +73,9 @@ export function WidgetContainer() {
 
   // Toggle sidebar collapse state
   const handleToggleCollapsed = () => {
-    // This will be implemented when we add the settings panel
-    console.log('Toggle sidebar collapsed state');
+    setViewSettings({
+      widgetSidebarCollapsed: !widgetSidebarCollapsed,
+    });
   };
 
   // Toggle widget expansion
