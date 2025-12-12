@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "OpenInfinity",
+  "version": "1.0.0",
+  "description": "A secure, transparent, and high-performance new tab browser extension. Open source and privacy-first.",
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "chrome_url_overrides": {
+    "newtab": "src/newtab/index.html"
+  },
+
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+
+  "optional_permissions": [
+    "bookmarks",
+    "history",
+    "geolocation"
+  ],
+
+  "host_permissions": [],
+
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

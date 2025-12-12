@@ -44,3 +44,11 @@ build/
 # Logs
 *.log
 logs/
+
+# Project documentation (generated, not tracked)
+docs/
+*.md
+!README.md
+!CONTRIBUTING.md
+!LICENSE.md
+!CHANGELOG.md
