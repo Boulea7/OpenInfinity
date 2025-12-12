@@ -10,9 +10,12 @@ export interface Icon {
   type: 'icon';
   url: string;
   title: string;
-  icon: string; // Base64, SVG, or URL
-  color?: string;
-  position: number;
+  icon: {
+    type: 'system' | 'custom' | 'text' | 'favicon';
+    value: string; // Base64, SVG, URL, or single letter
+    color?: string; // Background color for text/flat icons
+  };
+  position: { x: number; y: number }; // Grid position
   folderId?: string;
   createdAt: number;
   updatedAt: number;
@@ -23,8 +26,8 @@ export interface Folder {
   id: string;
   type: 'folder';
   name: string;
-  children: string[];
-  position: number;
+  children: string[]; // Icon IDs (kept for compatibility, will be removed in P0-4)
+  position: { x: number; y: number }; // Grid position
   createdAt: number;
   updatedAt: number;
 }
@@ -282,6 +285,104 @@ class OpenInfinityDB extends Dexie {
       userFavorites: '++id, websiteId, addedAt',
       weatherCache: 'id, fetchedAt, expiresAt',
     });
+
+    // Version 5: Add updatedAt index for todos and notes
+    this.version(5).stores({
+      icons: '++id, type, url, folderId, position, createdAt',
+      folders: '++id, name, position, createdAt',
+      wallpapers: '++id, type, createdAt',
+      todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+      notes: '++id, *tags, createdAt, updatedAt',
+      settings: 'key',
+      emailAccounts: '++id, provider, email, enabled, lastChecked',
+      todoIntegrations: '++id, provider, enabled, lastSynced',
+      rssSubscriptions: '++id, url, category, enabled, lastFetched',
+      rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+      notificationLogs: '++id, type, source, isRead, createdAt',
+      presetWebsites: '++id, category, region, popularity, *tags',
+      userFavorites: '++id, websiteId, addedAt',
+      weatherCache: 'id, fetchedAt, expiresAt',
+    });
+
+    // Version 6: Migrate to structured icon and position data
+    this.version(6)
+      .stores({
+        icons: '++id, type, url, folderId, createdAt',
+        folders: '++id, name, createdAt',
+        wallpapers: '++id, type, createdAt',
+        todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+        notes: '++id, *tags, createdAt, updatedAt',
+        settings: 'key',
+        emailAccounts: '++id, provider, email, enabled, lastChecked',
+        todoIntegrations: '++id, provider, enabled, lastSynced',
+        rssSubscriptions: '++id, url, category, enabled, lastFetched',
+        rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+        notificationLogs: '++id, type, source, isRead, createdAt',
+        presetWebsites: '++id, category, region, popularity, *tags',
+        userFavorites: '++id, websiteId, addedAt',
+        weatherCache: 'id, fetchedAt, expiresAt',
+      })
+      .upgrade(async (trans) => {
+        // Migrate icons: position number -> {x, y}, icon string -> {type, value}
+        const icons = await trans.table('icons').toArray();
+        const cols = 6; // Default grid columns
+
+        for (const icon of icons) {
+          const oldIcon = icon as any;
+
+          // Migrate position: number to { x, y }
+          if (typeof oldIcon.position === 'number') {
+            const pos = oldIcon.position;
+            icon.position = {
+              x: pos % cols,
+              y: Math.floor(pos / cols),
+            };
+          }
+
+          // Migrate icon: string to { type, value, color? }
+          if (typeof oldIcon.icon === 'string') {
+            const iconValue = oldIcon.icon;
+
+            // Detect icon type
+            if (iconValue.startsWith('data:image') || iconValue.startsWith('blob:')) {
+              icon.icon = { type: 'custom', value: iconValue };
+            } else if (iconValue.startsWith('http')) {
+              icon.icon = { type: 'favicon', value: iconValue };
+            } else if (iconValue.length === 1) {
+              icon.icon = {
+                type: 'text',
+                value: iconValue.toUpperCase(),
+                color: oldIcon.color || '#3b82f6',
+              };
+            } else {
+              // Default to favicon
+              icon.icon = { type: 'favicon', value: iconValue };
+            }
+
+            // Remove old color field
+            delete oldIcon.color;
+          }
+
+          await trans.table('icons').put(icon);
+        }
+
+        // Migrate folders: position number -> {x, y}
+        const folders = await trans.table('folders').toArray();
+
+        for (const folder of folders) {
+          const oldFolder = folder as any;
+
+          if (typeof oldFolder.position === 'number') {
+            const pos = oldFolder.position;
+            folder.position = {
+              x: pos % cols,
+              y: Math.floor(pos / cols),
+            };
+          }
+
+          await trans.table('folders').put(folder);
+        }
+      });
   }
 }
 

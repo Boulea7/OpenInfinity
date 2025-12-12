@@ -41,7 +41,7 @@ export function FolderModal({
   onEditIcon,
   onAddIcon,
 }: FolderModalProps) {
-  const { icons, updateFolder, removeFromFolder, reorderItems, deleteIcon } = useIconStore();
+  const { icons, updateFolder, removeFromFolder, reorderFolderIcons, deleteIcon } = useIconStore();
 
   // Edit mode for folder name
   const [isEditingName, setIsEditingName] = useState(false);
@@ -67,7 +67,13 @@ export function FolderModal({
     if (!folder) return [];
     return icons
       .filter((icon) => icon.folderId === folder.id)
-      .sort((a, b) => a.position - b.position);
+      .sort((a, b) => {
+        // Sort by position (row-major order)
+        if (a.position.y !== b.position.y) {
+          return a.position.y - b.position.y;
+        }
+        return a.position.x - b.position.x;
+      });
   }, [icons, folder]);
 
   // Sortable IDs
@@ -91,12 +97,12 @@ export function FolderModal({
       const { active, over } = event;
       setActiveIcon(null);
 
-      if (!over || active.id === over.id) return;
+      if (!over || active.id === over.id || !folder) return;
 
-      // Reorder icons within folder
-      await reorderItems(active.id as string, over.id as string);
+      // Reorder icons within folder (P0-5 fix)
+      await reorderFolderIcons(folder.id, active.id as string, over.id as string);
     },
-    [reorderItems]
+    [reorderFolderIcons, folder]
   );
 
   // Handle folder name edit

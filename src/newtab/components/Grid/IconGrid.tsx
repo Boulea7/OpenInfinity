@@ -85,7 +85,13 @@ export function IconGrid({
   const rootItems = useMemo(() => {
     const rootIcons = icons.filter((icon) => !icon.folderId);
     const allItems: GridItem[] = [...rootIcons, ...folders];
-    return allItems.sort((a, b) => a.position - b.position);
+    // Sort by position (row-major order: y first, then x)
+    return allItems.sort((a, b) => {
+      if (a.position.y !== b.position.y) {
+        return a.position.y - b.position.y;
+      }
+      return a.position.x - b.position.x;
+    });
   }, [icons, folders]);
 
   // Get items for current page

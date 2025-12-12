@@ -55,11 +55,14 @@ export function IconItem({
     [transform, transition, isOverlay]
   );
 
-  // Get icon source URL
+  // Get icon source URL (adapt to new icon structure)
   const iconSrc = useMemo(() => {
-    if (icon.icon) {
-      // Use provided icon (base64, svg, or URL)
-      return icon.icon;
+    if (icon.icon.type === 'custom' || icon.icon.type === 'favicon') {
+      // Use provided icon value (base64, svg, or URL)
+      return icon.icon.value;
+    } else if (icon.icon.type === 'text') {
+      // Text icons rendered separately
+      return null;
     }
     // Fallback to favicon service
     return getGoogleFaviconUrl(icon.url, 64);
@@ -140,31 +143,42 @@ export function IconItem({
           opacity: iconStyle.opacity / 100,
         }}
       >
-        {/* Icon image */}
-        <img
-          src={iconSrc}
-          alt={icon.title}
-          className="w-8 h-8 object-contain"
-          loading="lazy"
-          onError={(e) => {
-            // Fallback to DuckDuckGo favicon service
-            const target = e.target as HTMLImageElement;
-            if (!target.src.includes('duckduckgo')) {
-              target.src = getFaviconUrl(icon.url);
-            } else {
-              // Final fallback: first letter
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent) {
-                const fallback = document.createElement('span');
-                fallback.className =
-                  'text-2xl font-bold text-white/80';
-                fallback.textContent = icon.title.charAt(0).toUpperCase();
-                parent.appendChild(fallback);
+        {/* Icon image or text */}
+        {icon.icon.type === 'text' ? (
+          // Text icon
+          <div
+            className="w-8 h-8 flex items-center justify-center text-2xl font-bold text-white rounded"
+            style={{ backgroundColor: icon.icon.color || '#3b82f6' }}
+          >
+            {icon.icon.value}
+          </div>
+        ) : (
+          // Image icon
+          <img
+            src={iconSrc || ''}
+            alt={icon.title}
+            className="w-8 h-8 object-contain"
+            loading="lazy"
+            onError={(e) => {
+              // Fallback to DuckDuckGo favicon service
+              const target = e.target as HTMLImageElement;
+              if (!target.src.includes('duckduckgo')) {
+                target.src = getFaviconUrl(icon.url);
+              } else {
+                // Final fallback: first letter
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const fallback = document.createElement('span');
+                  fallback.className =
+                    'text-2xl font-bold text-white/80';
+                  fallback.textContent = icon.title.charAt(0).toUpperCase();
+                  parent.appendChild(fallback);
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+        )}
       </div>
 
       {/* Title */}

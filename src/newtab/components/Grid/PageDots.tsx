@@ -10,7 +10,10 @@ interface PageDotsProps {
  * Renders pagination dots for the icon grid
  */
 export function PageDots({ className }: PageDotsProps) {
-  const { currentPage, totalPages, setCurrentPage } = useIconStore();
+  const currentPage = useIconStore(state => state.currentPage);
+  const setCurrentPage = useIconStore(state => state.setCurrentPage);
+  const getTotalPages = useIconStore(state => state.getTotalPages);
+  const totalPages = getTotalPages();
 
   if (totalPages <= 1) return null;
 

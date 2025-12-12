@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { Folder } from '../../services/database';
 import { useIconStore, useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
+import { safeParseUrl, getFaviconUrl } from '../../utils/urlHelpers';
 
 interface FolderItemProps {
   folder: Folder;
@@ -41,8 +42,13 @@ export function FolderItem({
   // Get icons inside this folder (max 4 for preview)
   const folderIcons = useMemo(() => {
     return icons
-      .filter((icon) => icon.folderId === folder.id)
+      .filter(icon => icon.folderId === folder.id)
       .slice(0, 4);
+  }, [icons, folder.id]);
+
+  // Calculate icon count (P0-4: use filtered icons instead of folder.children)
+  const iconCount = useMemo(() => {
+    return icons.filter(icon => icon.folderId === folder.id).length;
   }, [icons, folder.id]);
 
   // Handle click
@@ -110,18 +116,53 @@ export function FolderItem({
       >
         {/* 2x2 Icon preview grid */}
         <div className="grid grid-cols-2 gap-0.5 p-1.5 w-full h-full">
-          {folderIcons.map((icon) => (
-            <div
-              key={icon.id}
-              className="w-full h-full flex items-center justify-center bg-white/30 dark:bg-gray-600/30 rounded"
-            >
-              <img
-                src={icon.icon || `https://www.google.com/s2/favicons?domain=${new URL(icon.url).hostname}&sz=32`}
-                alt=""
-                className="w-4 h-4 object-contain"
-              />
-            </div>
-          ))}
+          {folderIcons.map((icon) => {
+            // P0-2: Safe URL handling + adapt to new icon structure
+            const validUrl = safeParseUrl(icon.url);
+            const iconSrc = icon.icon.type === 'favicon'
+              ? icon.icon.value
+              : icon.icon.type === 'custom'
+                ? icon.icon.value
+                : validUrl
+                  ? getFaviconUrl(validUrl)
+                  : '';
+
+            return (
+              <div
+                key={icon.id}
+                className="w-full h-full flex items-center justify-center bg-white/30 dark:bg-gray-600/30 rounded"
+              >
+                {icon.icon.type === 'text' ? (
+                  // Text icon
+                  <div
+                    className="w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white rounded"
+                    style={{ backgroundColor: icon.icon.color || '#3b82f6' }}
+                  >
+                    {icon.icon.value}
+                  </div>
+                ) : (
+                  // Image icon
+                  <img
+                    src={iconSrc}
+                    alt=""
+                    className="w-4 h-4 object-contain"
+                    onError={(e) => {
+                      // Fallback to letter on error
+                      const target = e.currentTarget;
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `
+                          <div class="w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-gray-400 text-white rounded">
+                            ${icon.title[0]?.toUpperCase() || '?'}
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
           {/* Empty slots */}
           {Array.from({ length: Math.max(0, 4 - folderIcons.length) }).map(
             (_, i) => (
@@ -174,10 +215,10 @@ export function FolderItem({
           'px-1.5 py-0.5 text-[10px] font-semibold',
           'bg-primary-500 text-white rounded-full',
           'min-w-[18px] text-center',
-          folder.children.length === 0 && 'hidden'
+          iconCount === 0 && 'hidden'
         )}
       >
-        {folder.children.length}
+        {iconCount}
       </span>
     </div>
   );

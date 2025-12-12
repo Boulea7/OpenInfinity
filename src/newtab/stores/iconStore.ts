@@ -9,9 +9,14 @@ interface IconState {
   icons: Icon[];
   folders: Folder[];
 
+  // View settings (from settingsStore, cached here for performance)
+  viewSettings: {
+    columns: number;
+    rows: number;
+  };
+
   // UI State
   currentPage: number;
-  totalPages: number;
   selectedItems: string[];
   draggedItem: GridItem | null;
   editingItem: GridItem | null;
@@ -34,7 +39,7 @@ interface IconActions {
   deleteIcon: (id: string) => Promise<void>;
 
   // Folder CRUD
-  addFolder: (name: string) => Promise<string>;
+  addFolder: (name: string, position?: { x: number; y: number }) => Promise<string>;
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
   addToFolder: (iconId: string, folderId: string) => Promise<void>;
@@ -47,6 +52,8 @@ interface IconActions {
   // Drag and drop
   setDraggedItem: (item: GridItem | null) => void;
   reorderItems: (activeId: string, overId: string) => Promise<void>;
+  reorderFolderIcons: (folderId: string, activeId: string, overId: string) => Promise<void>;
+  createFolderWithIcons: (name: string, iconIds: string[], position?: { x: number; y: number }) => Promise<string>;
 
   // Selection
   selectItem: (id: string, multi?: boolean) => void;
@@ -54,23 +61,53 @@ interface IconActions {
 
   // Pagination
   setCurrentPage: (page: number) => void;
+  getTotalPages: () => number;
 
   // Edit mode
   setEditingItem: (item: GridItem | null) => void;
+
+  // View settings update
+  updateViewSettings: (settings: Partial<IconState['viewSettings']>) => void;
 }
 
 /**
- * Calculate total pages based on items and view settings
+ * Helper: Get next available position in grid
  */
-function calculateTotalPages(
+function getNextPosition(
   icons: Icon[],
   folders: Folder[],
-  itemsPerPage: number
-): number {
-  // Only count root level items (icons without folderId + folders)
-  const rootIcons = icons.filter((icon) => !icon.folderId);
-  const totalItems = rootIcons.length + folders.length;
-  return Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  columns: number
+): { x: number; y: number } {
+  const rootIcons = icons.filter(i => !i.folderId);
+  const allItems = [...rootIcons, ...folders];
+
+  if (allItems.length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  // Find max y, then find max x in that row
+  const maxY = Math.max(...allItems.map(item => item.position.y));
+  const itemsInLastRow = allItems.filter(item => item.position.y === maxY);
+  const maxX = Math.max(...itemsInLastRow.map(item => item.position.x));
+
+  // If last row is full, start new row
+  if (maxX >= columns - 1) {
+    return { x: 0, y: maxY + 1 };
+  }
+
+  return { x: maxX + 1, y: maxY };
+}
+
+/**
+ * Helper: Sort items by position (row-major order)
+ */
+function sortByPosition(items: GridItem[]): GridItem[] {
+  return [...items].sort((a, b) => {
+    if (a.position.y !== b.position.y) {
+      return a.position.y - b.position.y;
+    }
+    return a.position.x - b.position.x;
+  });
 }
 
 /**
@@ -80,8 +117,11 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   // Initial state
   icons: [],
   folders: [],
+  viewSettings: {
+    columns: 6,
+    rows: 4,
+  },
   currentPage: 0,
-  totalPages: 1,
   selectedItems: [],
   draggedItem: null,
   editingItem: null,
@@ -92,18 +132,28 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const [icons, folders] = await Promise.all([
-        db.icons.orderBy('position').toArray(),
-        db.folders.orderBy('position').toArray(),
+        db.icons.toArray(),
+        db.folders.toArray(),
       ]);
 
-      // Default items per page (6 columns x 4 rows)
-      const itemsPerPage = 24;
-      const totalPages = calculateTotalPages(icons, folders, itemsPerPage);
+      // Sort by position (keeping separate types)
+      const sortedIcons = [...icons].sort((a, b) => {
+        if (a.position.y !== b.position.y) {
+          return a.position.y - b.position.y;
+        }
+        return a.position.x - b.position.x;
+      });
+
+      const sortedFolders = [...folders].sort((a, b) => {
+        if (a.position.y !== b.position.y) {
+          return a.position.y - b.position.y;
+        }
+        return a.position.x - b.position.x;
+      });
 
       set({
-        icons,
-        folders,
-        totalPages,
+        icons: sortedIcons,
+        folders: sortedFolders,
         isLoading: false,
       });
     } catch (error) {
@@ -115,25 +165,22 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   addIcon: async (iconData) => {
-    const { icons, folders } = get();
+    const { icons, folders, viewSettings } = get();
     const now = Date.now();
-    const maxPosition = Math.max(
-      0,
-      ...icons.map((i) => i.position),
-      ...folders.map((f) => f.position)
-    );
+    const position = getNextPosition(icons, folders, viewSettings.columns);
 
     const newIcon: Icon = {
       ...iconData,
       id: generateId(),
       type: 'icon',
-      position: maxPosition + 1,
+      position,
       createdAt: now,
       updatedAt: now,
     };
 
     await db.icons.add(newIcon);
-    set({ icons: [...icons, newIcon] });
+
+    set(state => ({ icons: [...state.icons, newIcon] }));
 
     return newIcon.id;
   },
@@ -142,8 +189,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const updatedData = { ...updates, updatedAt: Date.now() };
     await db.icons.update(id, updatedData);
 
-    set((state) => ({
-      icons: state.icons.map((icon) =>
+    set(state => ({
+      icons: state.icons.map(icon =>
         icon.id === id ? { ...icon, ...updatedData } : icon
       ),
     }));
@@ -151,33 +198,31 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
   deleteIcon: async (id) => {
     await db.icons.delete(id);
-    set((state) => ({
-      icons: state.icons.filter((icon) => icon.id !== id),
-      selectedItems: state.selectedItems.filter((itemId) => itemId !== id),
+
+    set(state => ({
+      icons: state.icons.filter(icon => icon.id !== id),
+      selectedItems: state.selectedItems.filter(itemId => itemId !== id),
     }));
   },
 
-  addFolder: async (name) => {
-    const { icons, folders } = get();
+  addFolder: async (name, position) => {
+    const { icons, folders, viewSettings } = get();
     const now = Date.now();
-    const maxPosition = Math.max(
-      0,
-      ...icons.map((i) => i.position),
-      ...folders.map((f) => f.position)
-    );
+    const finalPosition = position || getNextPosition(icons, folders, viewSettings.columns);
 
     const newFolder: Folder = {
       id: generateId(),
       type: 'folder',
       name,
-      children: [],
-      position: maxPosition + 1,
+      children: [], // Will be removed in future version, kept for migration compatibility
+      position: finalPosition,
       createdAt: now,
       updatedAt: now,
     };
 
     await db.folders.add(newFolder);
-    set({ folders: [...folders, newFolder] });
+
+    set(state => ({ folders: [...state.folders, newFolder] }));
 
     return newFolder.id;
   },
@@ -186,8 +231,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const updatedData = { ...updates, updatedAt: Date.now() };
     await db.folders.update(id, updatedData);
 
-    set((state) => ({
-      folders: state.folders.map((folder) =>
+    set(state => ({
+      folders: state.folders.map(folder =>
         folder.id === id ? { ...folder, ...updatedData } : folder
       ),
     }));
@@ -195,95 +240,61 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
   deleteFolder: async (id) => {
     const { folders, icons } = get();
-    const folder = folders.find((f) => f.id === id);
+    const folder = folders.find(f => f.id === id);
 
     if (folder) {
       // Move all children icons back to root
-      const childIcons = icons.filter((icon) => icon.folderId === id);
+      const childIcons = icons.filter(icon => icon.folderId === id);
       await Promise.all(
-        childIcons.map((icon) =>
-          db.icons.update(icon.id, { folderId: undefined })
+        childIcons.map(icon =>
+          db.icons.update(icon.id, { folderId: undefined, updatedAt: Date.now() })
         )
       );
 
       // Delete the folder
       await db.folders.delete(id);
 
-      set((state) => ({
-        folders: state.folders.filter((f) => f.id !== id),
-        icons: state.icons.map((icon) =>
+      set(state => ({
+        folders: state.folders.filter(f => f.id !== id),
+        icons: state.icons.map(icon =>
           icon.folderId === id ? { ...icon, folderId: undefined } : icon
         ),
-        selectedItems: state.selectedItems.filter((itemId) => itemId !== id),
+        selectedItems: state.selectedItems.filter(itemId => itemId !== id),
       }));
     }
   },
 
   addToFolder: async (iconId, folderId) => {
-    const { icons, folders } = get();
-    const folder = folders.find((f) => f.id === folderId);
+    // NOTE: Not updating folder.children anymore (P0-4 fix)
+    // Using icon.folderId as single source of truth
+    await db.icons.update(iconId, { folderId, updatedAt: Date.now() });
 
-    if (folder) {
-      // Update icon's folderId
-      await db.icons.update(iconId, { folderId });
-
-      // Update folder's children
-      const newChildren = [...folder.children, iconId];
-      await db.folders.update(folderId, { children: newChildren });
-
-      set({
-        icons: icons.map((icon) =>
-          icon.id === iconId ? { ...icon, folderId } : icon
-        ),
-        folders: folders.map((f) =>
-          f.id === folderId ? { ...f, children: newChildren } : f
-        ),
-      });
-    }
+    set(state => ({
+      icons: state.icons.map(icon =>
+        icon.id === iconId ? { ...icon, folderId } : icon
+      ),
+    }));
   },
 
   removeFromFolder: async (iconId) => {
-    const { icons, folders } = get();
-    const icon = icons.find((i) => i.id === iconId);
+    await db.icons.update(iconId, { folderId: undefined, updatedAt: Date.now() });
 
-    if (icon?.folderId) {
-      const folder = folders.find((f) => f.id === icon.folderId);
-
-      // Update icon
-      await db.icons.update(iconId, { folderId: undefined });
-
-      // Update folder's children if folder exists
-      if (folder) {
-        const newChildren = folder.children.filter((id) => id !== iconId);
-        await db.folders.update(folder.id, { children: newChildren });
-
-        set({
-          icons: icons.map((i) =>
-            i.id === iconId ? { ...i, folderId: undefined } : i
-          ),
-          folders: folders.map((f) =>
-            f.id === folder.id ? { ...f, children: newChildren } : f
-          ),
-        });
-      } else {
-        set({
-          icons: icons.map((i) =>
-            i.id === iconId ? { ...i, folderId: undefined } : i
-          ),
-        });
-      }
-    }
+    set(state => ({
+      icons: state.icons.map(icon =>
+        icon.id === iconId ? { ...icon, folderId: undefined } : icon
+      ),
+    }));
   },
 
   deleteSelected: async () => {
     const { selectedItems, icons, folders } = get();
 
     // Separate icons and folders
-    const iconIds = selectedItems.filter((id) =>
-      icons.some((icon) => icon.id === id)
+    const iconIds = selectedItems.filter(id =>
+      icons.some(icon => icon.id === id)
     );
-    const folderIds = selectedItems.filter((id) =>
-      folders.some((folder) => folder.id === id)
+    const folderIds = selectedItems.filter(id =>
+      folders.some(folder => folder.id === id)
     );
 
     // Delete icons
@@ -291,121 +302,179 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     // Delete folders (and move their children to root)
     for (const folderId of folderIds) {
-      const folder = folders.find((f) => f.id === folderId);
-      if (folder) {
-        await Promise.all(
-          folder.children.map((childId) =>
-            db.icons.update(childId, { folderId: undefined })
-          )
-        );
-      }
+      const childIcons = icons.filter(icon => icon.folderId === folderId);
+      await Promise.all(
+        childIcons.map(icon =>
+          db.icons.update(icon.id, { folderId: undefined, updatedAt: Date.now() })
+        )
+      );
     }
     await db.folders.bulkDelete(folderIds);
 
-    set((state) => ({
+    set(state => ({
       icons: state.icons
-        .filter((icon) => !iconIds.includes(icon.id))
-        .map((icon) =>
+        .filter(icon => !iconIds.includes(icon.id))
+        .map(icon =>
           folderIds.includes(icon.folderId || '')
             ? { ...icon, folderId: undefined }
             : icon
         ),
-      folders: state.folders.filter((folder) => !folderIds.includes(folder.id)),
+      folders: state.folders.filter(folder => !folderIds.includes(folder.id)),
       selectedItems: [],
     }));
   },
 
   moveToFolder: async (itemIds, folderId) => {
     const { icons, folders } = get();
-    const folder = folders.find((f) => f.id === folderId);
+    const folder = folders.find(f => f.id === folderId);
 
     if (!folder) return;
 
     // Only move icons, not folders
     const iconsToMove = icons.filter(
-      (icon) => itemIds.includes(icon.id) && icon.type === 'icon'
+      icon => itemIds.includes(icon.id) && icon.type === 'icon'
     );
 
     await Promise.all(
-      iconsToMove.map((icon) => db.icons.update(icon.id, { folderId }))
+      iconsToMove.map(icon => db.icons.update(icon.id, { folderId, updatedAt: Date.now() }))
     );
 
-    const newChildren = [...folder.children, ...iconsToMove.map((i) => i.id)];
-    await db.folders.update(folderId, { children: newChildren });
-
-    set({
-      icons: icons.map((icon) =>
+    set(state => ({
+      icons: state.icons.map(icon =>
         itemIds.includes(icon.id) ? { ...icon, folderId } : icon
       ),
-      folders: folders.map((f) =>
-        f.id === folderId ? { ...f, children: newChildren } : f
-      ),
       selectedItems: [],
-    });
+    }));
   },
 
-  setDraggedItem: (item) => {
+  setDraggedItem: item => {
     set({ draggedItem: item });
   },
 
   reorderItems: async (activeId, overId) => {
     const { icons, folders } = get();
 
-    // Find items
-    const allItems: GridItem[] = [
-      ...icons.filter((i) => !i.folderId),
+    // Find root items only
+    const allItems: GridItem[] = sortByPosition([
+      ...icons.filter(i => !i.folderId),
       ...folders,
-    ].sort((a, b) => a.position - b.position);
+    ]);
 
-    const activeIndex = allItems.findIndex((item) => item.id === activeId);
-    const overIndex = allItems.findIndex((item) => item.id === overId);
+    const activeIndex = allItems.findIndex(item => item.id === activeId);
+    const overIndex = allItems.findIndex(item => item.id === overId);
 
     if (activeIndex === -1 || overIndex === -1) return;
 
-    // Reorder
+    // Reorder array
     const reordered = [...allItems];
     const [moved] = reordered.splice(activeIndex, 1);
     reordered.splice(overIndex, 0, moved);
 
-    // Update positions
+    // Recalculate positions based on new order
+    const { columns } = get().viewSettings;
     const updates = reordered.map((item, index) => ({
       ...item,
-      position: index,
+      position: {
+        x: index % columns,
+        y: Math.floor(index / columns),
+      },
     }));
 
     // Persist to database
-    const iconUpdates = updates.filter((item) => item.type === 'icon') as Icon[];
-    const folderUpdates = updates.filter((item) => item.type === 'folder') as Folder[];
+    const iconUpdates = updates.filter(item => item.type === 'icon') as Icon[];
+    const folderUpdates = updates.filter(item => item.type === 'folder') as Folder[];
 
     await Promise.all([
-      ...iconUpdates.map((icon) =>
-        db.icons.update(icon.id, { position: icon.position })
+      ...iconUpdates.map(icon =>
+        db.icons.update(icon.id, { position: icon.position, updatedAt: Date.now() })
       ),
-      ...folderUpdates.map((folder) =>
-        db.folders.update(folder.id, { position: folder.position })
+      ...folderUpdates.map(folder =>
+        db.folders.update(folder.id, { position: folder.position, updatedAt: Date.now() })
       ),
     ]);
 
-    set({
-      icons: icons.map((icon) => {
-        const updated = iconUpdates.find((u) => u.id === icon.id);
+    set(state => ({
+      icons: state.icons.map(icon => {
+        const updated = iconUpdates.find(u => u.id === icon.id);
         return updated ? { ...icon, position: updated.position } : icon;
       }),
-      folders: folders.map((folder) => {
-        const updated = folderUpdates.find((u) => u.id === folder.id);
+      folders: state.folders.map(folder => {
+        const updated = folderUpdates.find(u => u.id === folder.id);
         return updated ? { ...folder, position: updated.position } : folder;
       }),
+    }));
+  },
+
+  // P0-5: New method for reordering icons inside a folder
+  reorderFolderIcons: async (folderId, activeId, overId) => {
+    const { icons } = get();
+
+    // Get icons in this folder only
+    const folderIcons = sortByPosition(icons.filter(i => i.folderId === folderId));
+
+    const activeIndex = folderIcons.findIndex(i => i.id === activeId);
+    const overIndex = folderIcons.findIndex(i => i.id === overId);
+
+    if (activeIndex === -1 || overIndex === -1) return;
+
+    // Reorder
+    const reordered = [...folderIcons];
+    const [moved] = reordered.splice(activeIndex, 1);
+    reordered.splice(overIndex, 0, moved);
+
+    // Recalculate positions within folder (simple linear order)
+    const updates = reordered.map((icon, index) => ({
+      ...icon,
+      position: {
+        x: index % 6, // Default 6 columns in folder
+        y: Math.floor(index / 6),
+      },
+    }));
+
+    // Persist to database
+    await db.transaction('rw', db.icons, async () => {
+      for (const icon of updates) {
+        await db.icons.update(icon.id, { position: icon.position, updatedAt: Date.now() });
+      }
     });
+
+    set(state => ({
+      icons: state.icons.map(icon => {
+        const updated = updates.find(u => u.id === icon.id);
+        return updated ? { ...icon, position: updated.position } : icon;
+      }),
+    }));
+  },
+
+  // P1-1: Create folder with icons (for 500ms hover merge)
+  createFolderWithIcons: async (name, iconIds, position) => {
+    // Create folder
+    const folderId = await get().addFolder(name, position);
+
+    // Move icons to folder
+    await Promise.all(
+      iconIds.map(iconId =>
+        db.icons.update(iconId, { folderId, updatedAt: Date.now() })
+      )
+    );
+
+    set(state => ({
+      icons: state.icons.map(icon =>
+        iconIds.includes(icon.id) ? { ...icon, folderId } : icon
+      ),
+    }));
+
+    return folderId;
   },
 
   selectItem: (id, multi = false) => {
-    set((state) => {
+    set(state => {
       if (multi) {
         // Toggle selection
         const isSelected = state.selectedItems.includes(id);
         return {
           selectedItems: isSelected
-            ? state.selectedItems.filter((itemId) => itemId !== id)
+            ? state.selectedItems.filter(itemId => itemId !== id)
             : [...state.selectedItems, id],
         };
       }
@@ -418,12 +487,30 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     set({ selectedItems: [] });
   },
 
-  setCurrentPage: (page) => {
-    const { totalPages } = get();
+  setCurrentPage: page => {
+    const totalPages = get().getTotalPages();
     set({ currentPage: Math.max(0, Math.min(page, totalPages - 1)) });
   },
 
-  setEditingItem: (item) => {
+  // P0-6: Dynamic total pages calculation
+  getTotalPages: () => {
+    const { icons, folders, viewSettings } = get();
+    const itemsPerPage = viewSettings.columns * viewSettings.rows;
+
+    // Only count root level items
+    const rootIcons = icons.filter(icon => !icon.folderId);
+    const totalItems = rootIcons.length + folders.length;
+
+    return Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  },
+
+  setEditingItem: item => {
     set({ editingItem: item });
+  },
+
+  updateViewSettings: settings => {
+    set(state => ({
+      viewSettings: { ...state.viewSettings, ...settings },
+    }));
   },
 }));

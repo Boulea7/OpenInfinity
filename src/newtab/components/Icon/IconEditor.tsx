@@ -30,7 +30,8 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
       if (editingIcon) {
         setTitle(editingIcon.title);
         setUrl(editingIcon.url);
-        setIconUrl(editingIcon.icon || '');
+        // Extract icon value from structured icon object
+        setIconUrl(editingIcon.icon.value || '');
       } else {
         setTitle('');
         setUrl('');
@@ -116,19 +117,25 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
       // Generate default icon URL if not provided
       const finalIconUrl = iconUrl || `https://www.google.com/s2/favicons?domain=${new URL(normalizedUrl).hostname}&sz=128`;
 
+      // Construct icon object (new data structure)
+      const iconData = {
+        type: finalIconUrl.startsWith('data:') ? 'custom' as const : 'favicon' as const,
+        value: finalIconUrl,
+      };
+
       if (editingIcon) {
         // Update existing icon
         await updateIcon(editingIcon.id, {
           title: title.trim(),
           url: normalizedUrl,
-          icon: finalIconUrl,
+          icon: iconData,
         });
       } else {
         // Add new icon
         await addIcon({
           title: title.trim(),
           url: normalizedUrl,
-          icon: finalIconUrl,
+          icon: iconData,
         });
       }
 
