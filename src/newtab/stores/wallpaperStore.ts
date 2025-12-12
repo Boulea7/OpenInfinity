@@ -9,6 +9,7 @@ import { wallpaperManager } from '../services/wallpaper';
  */
 export type WallpaperSource =
   | 'local'
+  | 'preset'
   | 'unsplash'
   | 'pexels'
   | 'bing'

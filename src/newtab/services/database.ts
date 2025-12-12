@@ -93,7 +93,7 @@ export type GridItem = Icon | Folder;
 // Wallpaper type definition
 export interface Wallpaper {
   id: string;
-  type: 'url' | 'blob' | 'unsplash' | 'pexels' | 'pixabay' | 'bing' | 'solid' | 'gradient';
+  type: 'url' | 'blob' | 'preset' | 'unsplash' | 'pexels' | 'pixabay' | 'bing' | 'solid' | 'gradient';
   source: string;
   blob?: Blob;
   metadata: {

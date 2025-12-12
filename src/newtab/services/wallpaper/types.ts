@@ -71,10 +71,11 @@ export interface WallpaperProvider {
 }
 
 /**
- * Wallpaper source type (matching database schema)
+ * Wallpaper source type (matching database schema and store)
  */
 export type WallpaperSource =
   | 'local'
+  | 'preset'
   | 'unsplash'
   | 'pexels'
   | 'pixabay'

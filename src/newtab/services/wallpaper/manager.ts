@@ -6,6 +6,7 @@
 import { UnsplashProvider } from './unsplash';
 import { PexelsProvider } from './pexels';
 import { BingProvider } from './bing';
+import { PresetWallpaperProvider } from './preset';
 import type { WallpaperProvider, WallpaperResult, WallpaperFetchOptions, WallpaperSource } from './types';
 
 /**
@@ -14,10 +15,14 @@ import type { WallpaperProvider, WallpaperResult, WallpaperFetchOptions, Wallpap
  */
 export class WallpaperManager {
   private providers: Map<WallpaperSource, WallpaperProvider>;
-  private fallbackOrder: WallpaperSource[] = ['unsplash', 'pexels', 'bing'];
+  private fallbackOrder: WallpaperSource[] = ['preset', 'unsplash', 'pexels', 'bing'];
+  private presetProvider: PresetWallpaperProvider;
 
   constructor() {
+    this.presetProvider = new PresetWallpaperProvider();
+
     this.providers = new Map<WallpaperSource, WallpaperProvider>([
+      ['preset' as WallpaperSource, this.presetProvider],
       ['unsplash' as WallpaperSource, new UnsplashProvider()],
       ['pexels' as WallpaperSource, new PexelsProvider()],
       ['bing' as WallpaperSource, new BingProvider()],

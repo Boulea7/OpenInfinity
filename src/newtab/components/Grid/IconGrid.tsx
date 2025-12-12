@@ -22,6 +22,7 @@ import type { GridItem, Icon, Folder } from '../../services/database';
 import { useIconStore, useSettingsStore } from '../../stores';
 import { IconItem } from '../Icon/IconItem';
 import { FolderItem } from '../Icon/FolderItem';
+import { FolderNameModal } from '../Icon/FolderNameModal';
 import { ContextMenu, type ContextMenuItem } from '../ui/ContextMenu';
 import { cn } from '../../utils';
 import { openWebsite, isSafeUrl } from '../../utils/navigation';
@@ -65,6 +66,12 @@ export function IconGrid({
   // P1-1: Hover merge state (500ms timer)
   const [hoverTimer, setHoverTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [hoverTarget, setHoverTarget] = useState<string | null>(null);
+  const [pendingMerge, setPendingMerge] = useState<{
+    icon1Id: string;
+    icon2Id: string;
+    position: { x: number; y: number };
+  } | null>(null);
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -157,11 +164,13 @@ export function IconGrid({
 
         // Start new timer
         const timer = setTimeout(() => {
-          console.log('Creating folder with icons:', active.id, over.id);
-          // Get position from one of the icons
-          const position = overItem.position;
-          createFolderWithIcons('New Folder', [active.id as string, over.id as string], position)
-            .catch(err => console.error('Failed to create folder:', err));
+          console.info('Hover merge triggered after 500ms');
+          // Set pending merge instead of creating immediately
+          setPendingMerge({
+            icon1Id: active.id as string,
+            icon2Id: over.id as string,
+            position: overItem.position,
+          });
         }, 500);
 
         setHoverTimer(timer);
@@ -191,6 +200,14 @@ export function IconGrid({
         setHoverTarget(null);
       }
 
+      // P1-2: Check if pending merge (hover 500ms completed)
+      if (pendingMerge) {
+        // Show naming modal
+        setShowMergeModal(true);
+        setPendingMerge(null);
+        return;
+      }
+
       if (!over || active.id === over.id) return;
 
       // Check if dropping onto a folder
@@ -203,7 +220,7 @@ export function IconGrid({
         await reorderItems(active.id as string, over.id as string);
       }
     },
-    [pageItems, activeItem, addToFolder, reorderItems, hoverTimer]
+    [pageItems, activeItem, addToFolder, reorderItems, hoverTimer, pendingMerge]
   );
 
   // Handle context menu
@@ -300,6 +317,28 @@ export function IconGrid({
       closeContextMenu();
     }
   }, [clearSelection, closeContextMenu]);
+
+  // Handle folder merge confirmation
+  const handleMergeConfirm = useCallback(async (folderName: string) => {
+    if (!pendingMerge) return;
+
+    const { icon1Id, icon2Id, position } = pendingMerge;
+
+    try {
+      await createFolderWithIcons(folderName, [icon1Id, icon2Id], position);
+      console.info('Folder created via hover merge:', folderName);
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+    } finally {
+      setPendingMerge(null);
+      setShowMergeModal(false);
+    }
+  }, [pendingMerge, createFolderWithIcons]);
+
+  // Get preview icons for merge modal
+  const mergePreviewIcons = pendingMerge
+    ? icons.filter(icon => [pendingMerge.icon1Id, pendingMerge.icon2Id].includes(icon.id))
+    : [];
 
   // Render drag overlay
   const renderOverlay = () => {
@@ -439,6 +478,17 @@ export function IconGrid({
           </button>
         </div>
       )}
+
+      {/* Folder Name Modal for hover merge */}
+      <FolderNameModal
+        isOpen={showMergeModal}
+        onClose={() => {
+          setShowMergeModal(false);
+          setPendingMerge(null);
+        }}
+        onConfirm={handleMergeConfirm}
+        previewIcons={mergePreviewIcons}
+      />
     </div>
   );
 }

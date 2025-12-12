@@ -8,11 +8,14 @@ interface PageDotsProps {
 /**
  * PageDots Component
  * Renders pagination dots for the icon grid
+ * Optimized with shallow selector to prevent unnecessary rerenders
  */
 export function PageDots({ className }: PageDotsProps) {
+  // P2-4: Use fine-grained selectors for performance
   const currentPage = useIconStore(state => state.currentPage);
-  const setCurrentPage = useIconStore(state => state.setCurrentPage);
   const getTotalPages = useIconStore(state => state.getTotalPages);
+  const setCurrentPage = useIconStore(state => state.setCurrentPage);
+
   const totalPages = getTotalPages();
 
   if (totalPages <= 1) return null;
