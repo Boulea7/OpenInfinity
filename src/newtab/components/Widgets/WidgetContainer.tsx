@@ -23,16 +23,31 @@ const SIDEBAR_CONFIG = {
  * Widget sidebar container component
  * Provides a collapsible sidebar for hosting various widgets
  */
-export function WidgetContainer() {
+interface WidgetContainerProps {
+  position?: 'left' | 'right';
+  initialWidth?: number;
+  onWidthChange?: (width: number) => void;
+}
+
+export function WidgetContainer({
+  position: propPosition,
+  initialWidth = SIDEBAR_CONFIG.defaultWidth,
+  onWidthChange,
+}: WidgetContainerProps = {}) {
   const { viewSettings, setViewSettings } = useSettingsStore();
-  const [width, setWidth] = useState<number>(SIDEBAR_CONFIG.defaultWidth);
+  const [width, setWidth] = useState<number>(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedWidgets, setExpandedWidgets] = useState<Set<string>>(new Set());
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { widgetSidebarPosition, widgetSidebarCollapsed } = viewSettings;
-  const isLeft = widgetSidebarPosition === 'left';
+  const isLeft = (propPosition || widgetSidebarPosition) === 'left';
+
+  // Sync width changes to parent (P0-9)
+  useEffect(() => {
+    onWidthChange?.(width);
+  }, [width, onWidthChange]);
 
   // Handle resize functionality
   useEffect(() => {

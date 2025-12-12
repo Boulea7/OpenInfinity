@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Settings } from 'lucide-react';
 import { useSettingsStore, useIconStore } from './stores';
-import { cn } from './utils';
 import type { Icon, Folder } from './services/database';
 import {
   WallpaperBackground,
@@ -21,8 +20,12 @@ import {
  */
 function App() {
   const { theme, initializeSettings, viewSettings } = useSettingsStore();
-  const { loadIcons } = useIconStore();
+  const { loadIcons, isLoading } = useIconStore();
   const [showSettings, setShowSettings] = useState(false);
+
+  // P0-9: Sidebar width state (lifted up for proper layout coordination)
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(320);
 
   // Modal states
   const [showIconEditor, setShowIconEditor] = useState(false);
@@ -30,7 +33,7 @@ function App() {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [openedFolder, setOpenedFolder] = useState<Folder | null>(null);
 
-  // Initialize settings and load icons on mount
+  // P1-9: Initialize settings and load icons on mount
   useEffect(() => {
     initializeSettings();
     loadIcons();
@@ -93,26 +96,52 @@ function App() {
       <WallpaperBackground />
 
       {/* Widget Sidebar - Conditional Render */}
-      {viewSettings.showWidgetSidebar && <WidgetContainer />}
+      {viewSettings.showWidgetSidebar && (
+        <WidgetContainer
+          position={viewSettings.widgetSidebarPosition}
+          initialWidth={
+            viewSettings.widgetSidebarPosition === 'left'
+              ? leftSidebarWidth
+              : rightSidebarWidth
+          }
+          onWidthChange={
+            viewSettings.widgetSidebarPosition === 'left'
+              ? setLeftSidebarWidth
+              : setRightSidebarWidth
+          }
+        />
+      )}
 
       {/* Main Content Layer */}
       <div
-        className={cn(
-          "relative z-10 min-h-screen flex flex-col transition-all duration-300",
-          viewSettings.showWidgetSidebar && !viewSettings.widgetSidebarCollapsed && {
-            [viewSettings.widgetSidebarPosition === 'left' ? 'ml-80' : 'mr-80']: true,
-          }
-        )}
+        className="relative z-10 min-h-screen flex flex-col transition-all duration-300"
+        style={{
+          // P0-9: Dynamic margin based on actual sidebar width
+          marginLeft:
+            viewSettings.showWidgetSidebar &&
+            !viewSettings.widgetSidebarCollapsed &&
+            viewSettings.widgetSidebarPosition === 'left'
+              ? `${leftSidebarWidth}px`
+              : 0,
+          marginRight:
+            viewSettings.showWidgetSidebar &&
+            !viewSettings.widgetSidebarCollapsed &&
+            viewSettings.widgetSidebarPosition === 'right'
+              ? `${rightSidebarWidth}px`
+              : 0,
+        }}
       >
         {/* Top Bar */}
         <header className="flex items-center justify-between p-4">
-          {/* Left: Clock widget */}
-          <div className="flex items-center gap-4">
-            <ClockWidget showDate />
-          </div>
+          {/* Left: Clock widget (P1-8: conditional render) */}
+          {viewSettings.showClock && (
+            <div className="flex items-center gap-4">
+              <ClockWidget showDate />
+            </div>
+          )}
 
           {/* Right: Settings and notification icons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             {/* Notification bell - TODO */}
 
             {/* Settings button */}
@@ -131,20 +160,28 @@ function App() {
           <SearchBar />
         </div>
 
-        {/* Icon Grid */}
+        {/* Icon Grid (P1-9: Loading state) */}
         <main className="flex-1 flex items-center justify-center px-4 pb-20">
-          <IconGrid
-            className="max-w-4xl w-full"
-            onAddIcon={handleAddIcon}
-            onEditIcon={handleEditIcon}
-            onOpenFolder={handleOpenFolder}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white/80" />
+            </div>
+          ) : (
+            <IconGrid
+              className="max-w-4xl w-full"
+              onAddIcon={handleAddIcon}
+              onEditIcon={handleEditIcon}
+              onOpenFolder={handleOpenFolder}
+            />
+          )}
         </main>
 
-        {/* Bottom Dock / Pagination */}
-        <footer className="absolute bottom-4 left-1/2 -translate-x-1/2">
-          <PageDots />
-        </footer>
+        {/* Bottom Dock / Pagination (P1-8: conditional render) */}
+        {viewSettings.showPagination && (
+          <footer className="absolute bottom-4 left-1/2 -translate-x-1/2">
+            <PageDots />
+          </footer>
+        )}
       </div>
 
       {/* Overlay Layer for modals, context menus, etc. */}
