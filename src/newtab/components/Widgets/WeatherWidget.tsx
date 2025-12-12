@@ -12,7 +12,7 @@ import type { BaseWidgetProps } from '../../types';
  */
 export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
   const { weatherSettings, setWeatherSettings } = useSettingsStore();
-  const { weather, isLoading, error, refetch } = useWeather();
+  const { weather, isLoading, error, forceRefresh } = useWeather(); // P0-7: Use forceRefresh instead of refetch
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -25,12 +25,12 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
     };
   }, []);
 
-  // Handle manual refresh
+  // Handle manual refresh (P0-7: Force refresh bypassing cache)
   const handleRefresh = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsRefreshing(true);
     try {
-      await refetch();
+      await forceRefresh(); // Force refresh bypasses cache
     } finally {
       // Clear any existing timeout
       if (refreshTimeoutRef.current) {
@@ -39,7 +39,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
       // Set new timeout
       refreshTimeoutRef.current = setTimeout(() => setIsRefreshing(false), 500);
     }
-  }, [refetch]);
+  }, [forceRefresh]);
 
   // Toggle temperature unit
   const toggleUnit = useCallback((e: React.MouseEvent) => {
@@ -129,7 +129,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  refetch();
+                  forceRefresh();
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >

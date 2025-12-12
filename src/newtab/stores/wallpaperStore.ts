@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db, generateId, type Wallpaper } from '../services/database';
+import { compressImage, validateImageFile } from '../utils/imageCompression';
 
 /**
  * Wallpaper source types
@@ -174,6 +175,12 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
           const wallpapers = await db.wallpapers.orderBy('createdAt').reverse().first();
 
           if (wallpapers) {
+            // P1-12: Release old ObjectURL before creating new one
+            const oldUrl = get().currentUrl;
+            if (oldUrl && oldUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(oldUrl);
+            }
+
             let url: string | null = null;
 
             if (wallpapers.type === 'blob' && wallpapers.blob) {
@@ -203,6 +210,12 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       setWallpaperFromUrl: async (url, metadata = {}) => {
         set({ isLoading: true, error: null });
         try {
+          // P1-12: Release old ObjectURL
+          const oldUrl = get().currentUrl;
+          if (oldUrl && oldUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(oldUrl);
+          }
+
           const wallpaper: Wallpaper = {
             id: generateId(),
             type: 'url',
@@ -231,25 +244,37 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       setWallpaperFromFile: async (file) => {
         set({ isLoading: true, error: null });
         try {
-          // Create blob URL for preview
-          const blobUrl = URL.createObjectURL(file);
+          // P0-11: Validate image file
+          const validation = validateImageFile(file);
+          if (!validation.valid) {
+            throw new Error(validation.error);
+          }
 
-          // Get image dimensions
-          const img = new Image();
-          await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = reject;
-            img.src = blobUrl;
+          // P0-11: Compress image to reduce storage size
+          const { blob: compressedBlob, width, height } = await compressImage(file, {
+            maxWidth: 1920,
+            maxHeight: 1080,
+            quality: 0.85,
+            format: 'jpeg',
           });
+
+          // Create blob URL for preview
+          const blobUrl = URL.createObjectURL(compressedBlob);
+
+          // P1-12: Release old ObjectURL before creating new one
+          const oldUrl = get().currentUrl;
+          if (oldUrl && oldUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(oldUrl);
+          }
 
           const wallpaper: Wallpaper = {
             id: generateId(),
             type: 'blob',
             source: file.name,
-            blob: file,
+            blob: compressedBlob, // Use compressed blob
             metadata: {
-              width: img.naturalWidth,
-              height: img.naturalHeight,
+              width,
+              height,
             },
             effects: get().effects,
             createdAt: Date.now(),

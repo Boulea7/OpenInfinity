@@ -19,6 +19,7 @@ export interface UseWeatherReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  forceRefresh: () => Promise<void>; // P0-7: Force refresh bypassing cache
   clearCache: () => Promise<void>;
 }
 
@@ -222,6 +223,7 @@ export function useWeather(): UseWeatherReturn {
     isLoading,
     error,
     refetch,
+    forceRefresh, // P0-7: Export force refresh
     clearCache,
   };
 }

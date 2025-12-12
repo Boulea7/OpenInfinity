@@ -138,12 +138,38 @@ async function getLocationByIP(): Promise<LocationData> {
 
 /**
  * Get user's current location
- * Tries Geolocation API first, falls back to IP-based location
+ * P0-8: Only uses Geolocation API, respects user privacy when denied
  *
  * @returns LocationData with coordinates and name
- * @throws Error if both methods fail
+ * @throws Error if permission denied or geolocation fails
  */
 export async function getLocation(): Promise<LocationData> {
+  try {
+    // Try Geolocation API
+    const location = await getGeolocation();
+    return location;
+  } catch (geoError) {
+    const message = geoError instanceof Error ? geoError.message : 'Unknown error';
+
+    // P0-8: If user explicitly denies permission, do NOT fall back to IP
+    // This respects user privacy - if they deny location, we shouldn't use IP to approximate it
+    if (message.includes('denied')) {
+      console.info('Location permission denied by user - respecting privacy choice');
+      throw new Error('Location permission required. Please enable location access in your browser settings to use weather features.');
+    }
+
+    // For other errors (timeout, unavailable), we could theoretically fall back
+    // But for maximum privacy, we also throw here
+    console.error('Geolocation failed:', geoError);
+    throw new Error('Unable to get location. Please check your device location settings.');
+  }
+}
+
+/**
+ * Get location with IP fallback option (for settings/manual override)
+ * Only use this when user explicitly opts in to IP-based location
+ */
+export async function getLocationWithIPFallback(): Promise<LocationData> {
   try {
     // Try Geolocation API first (more accurate)
     const location = await getGeolocation();
