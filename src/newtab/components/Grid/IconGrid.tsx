@@ -24,6 +24,7 @@ import { IconItem } from '../Icon/IconItem';
 import { FolderItem } from '../Icon/FolderItem';
 import { ContextMenu, type ContextMenuItem } from '../ui/ContextMenu';
 import { cn } from '../../utils';
+import { openWebsite } from '../../utils/navigation';
 
 interface IconGridProps {
   className?: string;
@@ -56,7 +57,7 @@ export function IconGrid({
     createFolderWithIcons,
   } = useIconStore();
 
-  const { viewSettings } = useSettingsStore();
+  const { viewSettings, openBehavior } = useSettingsStore();
 
   // Drag state
   const [activeItem, setActiveItem] = useState<GridItem | null>(null);
@@ -226,23 +227,29 @@ export function IconGrid({
   const getContextMenuItems = useCallback(
     (item: GridItem): ContextMenuItem[] => {
       if (item.type === 'icon') {
+        const icon = item as Icon;
         return [
           {
             id: 'open',
             label: 'Open',
-            onClick: () => window.open((item as Icon).url, '_blank'),
+            onClick: () => openWebsite(icon.url, openBehavior), // P1-11: Unified open behavior
           },
           {
             id: 'edit',
             label: 'Edit',
-            onClick: () => onEditIcon?.(item as Icon),
+            onClick: () => onEditIcon?.(icon),
           },
           { id: 'divider1', label: '', divider: true },
           {
             id: 'delete',
             label: 'Delete',
             danger: true,
-            onClick: () => deleteIcon(item.id),
+            onClick: () => {
+              // P1-10: Promise error handling
+              void deleteIcon(item.id).catch(err => {
+                console.error('Failed to delete icon:', err);
+              });
+            },
           },
         ];
       }
@@ -266,11 +273,16 @@ export function IconGrid({
           id: 'delete',
           label: 'Delete Folder',
           danger: true,
-          onClick: () => deleteFolder(item.id),
+          onClick: () => {
+            // P1-10: Promise error handling
+            void deleteFolder(item.id).catch(err => {
+              console.error('Failed to delete folder:', err);
+            });
+          },
         },
       ];
     },
-    [onEditIcon, onOpenFolder, deleteIcon, deleteFolder]
+    [onEditIcon, onOpenFolder, deleteIcon, deleteFolder, openBehavior]
   );
 
   // Handle background click (P0-3: only deselect when clicking background itself)

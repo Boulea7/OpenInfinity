@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Icon } from '../../services/database';
 import { useSettingsStore } from '../../stores';
 import { cn, getFaviconUrl, getGoogleFaviconUrl } from '../../utils';
+import { openWebsite, isSafeUrl } from '../../utils/navigation';
 
 interface IconItemProps {
   icon: Icon;
@@ -77,9 +78,12 @@ export function IconItem({
     if (onClick) {
       onClick(icon);
     } else {
-      // Default: open URL
-      const target = openBehavior.websites === 'new_tab' ? '_blank' : '_self';
-      window.open(icon.url, target);
+      // P1-11: Use unified openUrl with safe URL check
+      if (isSafeUrl(icon.url)) {
+        openWebsite(icon.url, openBehavior);
+      } else {
+        console.error('Blocked unsafe URL:', icon.url);
+      }
     }
   };
 
