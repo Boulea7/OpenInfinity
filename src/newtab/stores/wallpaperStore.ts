@@ -186,7 +186,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
 
             if (wallpapers.type === 'blob' && wallpapers.blob) {
               url = URL.createObjectURL(wallpapers.blob);
-            } else if (wallpapers.type === 'url' || wallpapers.type === 'unsplash' || wallpapers.type === 'bing') {
+            } else if (['url', 'unsplash', 'pexels', 'pixabay', 'bing'].includes(wallpapers.type)) {
               url = wallpapers.source;
             }
 

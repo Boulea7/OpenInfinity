@@ -71,8 +71,11 @@ export class UnsplashProvider implements WallpaperProvider {
     }
 
     try {
+      // Map orientation: 'square' -> 'squarish' for Unsplash API
+      const orientation = options?.orientation === 'square' ? 'squarish' : (options?.orientation || 'landscape');
+
       const params = new URLSearchParams({
-        orientation: options?.orientation || 'landscape',
+        orientation,
         ...(options?.query && { query: options.query }),
         content_filter: options?.safeMode ? 'high' : 'low',
       });
@@ -96,10 +99,8 @@ export class UnsplashProvider implements WallpaperProvider {
 
       const data: UnsplashPhoto = await response.json();
 
-      // Track download (required by Unsplash API terms)
-      if (data.links.download_location) {
-        void this.trackDownload(data.links.download_location).catch(console.warn);
-      }
+      // Note: Download tracking is handled by wallpaperStore, not here
+      // This avoids duplicate tracking
 
       return {
         url: data.urls.regular, // 1080px width, good balance
