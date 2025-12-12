@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db, generateId, type Icon, type Folder, type GridItem, isValidPosition, ensurePosition, isValidIcon, ensureIcon } from '../services/database';
 import { syncIcon, syncFolder, listenForSync, type SyncMessage } from '../utils/sync';
+import { useSettingsStore } from './settingsStore';
 
 /**
  * Icon store state
@@ -9,12 +10,6 @@ interface IconState {
   // Data
   icons: Icon[];
   folders: Folder[];
-
-  // View settings (from settingsStore, cached here for performance)
-  viewSettings: {
-    columns: number;
-    rows: number;
-  };
 
   // UI State
   currentPage: number;
@@ -66,19 +61,17 @@ interface IconActions {
 
   // Edit mode
   setEditingItem: (item: GridItem | null) => void;
-
-  // View settings update
-  updateViewSettings: (settings: Partial<IconState['viewSettings']>) => void;
 }
 
 /**
  * Helper: Get next available position in grid
+ * P1-1: Reads columns from settingsStore
  */
 function getNextPosition(
   icons: Icon[],
-  folders: Folder[],
-  columns: number
+  folders: Folder[]
 ): { x: number; y: number } {
+  const columns = useSettingsStore.getState().viewSettings.columns || 6;
   const rootIcons = icons.filter(i => !i.folderId);
   const allItems = [...rootIcons, ...folders];
 
@@ -118,10 +111,6 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   // Initial state
   icons: [],
   folders: [],
-  viewSettings: {
-    columns: 6,
-    rows: 4,
-  },
   currentPage: 0,
   selectedItems: [],
   draggedItem: null,
@@ -200,9 +189,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   addIcon: async (iconData) => {
-    const { icons, folders, viewSettings } = get();
+    const { icons, folders } = get(); // P1-1: Removed viewSettings
     const now = Date.now();
-    const position = getNextPosition(icons, folders, viewSettings.columns);
+    const position = getNextPosition(icons, folders); // P1-1: No longer needs columns param
 
     const newIcon: Icon = {
       ...iconData,
@@ -250,9 +239,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   addFolder: async (name, position) => {
-    const { icons, folders, viewSettings } = get();
+    const { icons, folders } = get(); // P1-1: Removed viewSettings
     const now = Date.now();
-    const finalPosition = position || getNextPosition(icons, folders, viewSettings.columns);
+    const finalPosition = position || getNextPosition(icons, folders); // P1-1: No longer needs columns param
 
     const newFolder: Folder = {
       id: generateId(),
@@ -327,6 +316,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         icon.id === iconId ? { ...icon, folderId } : icon
       ),
     }));
+
+    // P1-3: Broadcast to other tabs
+    syncIcon.updated({ id: iconId, folderId });
   },
 
   removeFromFolder: async (iconId) => {
@@ -337,6 +329,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         icon.id === iconId ? { ...icon, folderId: undefined } : icon
       ),
     }));
+
+    // P1-3: Broadcast to other tabs
+    syncIcon.updated({ id: iconId, folderId: undefined });
   },
 
   deleteSelected: async () => {
@@ -398,6 +393,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       ),
       selectedItems: [],
     }));
+
+    // P1-3: Broadcast to other tabs
+    iconsToMove.forEach(icon => syncIcon.updated({ id: icon.id, folderId }));
   },
 
   setDraggedItem: item => {
@@ -423,8 +421,10 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const [moved] = reordered.splice(activeIndex, 1);
     reordered.splice(overIndex, 0, moved);
 
+    // P1-1: Read columns from settingsStore
+    const columns = useSettingsStore.getState().viewSettings.columns || 6;
+
     // Recalculate positions based on new order
-    const { columns } = get().viewSettings;
     const updates = reordered.map((item, index) => ({
       ...item,
       position: {
@@ -456,6 +456,10 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         return updated ? { ...folder, position: updated.position } : folder;
       }),
     }));
+
+    // P1-3: Broadcast reorder to other tabs
+    iconUpdates.forEach(icon => syncIcon.updated({ id: icon.id, position: icon.position }));
+    folderUpdates.forEach(folder => syncFolder.updated({ id: folder.id, position: folder.position }));
   },
 
   // P0-5: New method for reordering icons inside a folder
@@ -497,6 +501,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         return updated ? { ...icon, position: updated.position } : icon;
       }),
     }));
+
+    // P1-3: Broadcast to other tabs
+    updates.forEach(icon => syncIcon.updated({ id: icon.id, position: icon.position }));
   },
 
   // P1-1: Create folder with icons (for 500ms hover merge)
@@ -546,9 +553,12 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   // P0-6: Dynamic total pages calculation
+  // P1-1: Read viewSettings from settingsStore
   getTotalPages: () => {
-    const { icons, folders, viewSettings } = get();
-    const itemsPerPage = viewSettings.columns * viewSettings.rows;
+    const { icons, folders } = get();
+    const settingsStore = useSettingsStore.getState();
+    const { columns, rows } = settingsStore.viewSettings;
+    const itemsPerPage = columns * rows;
 
     // Only count root level items
     const rootIcons = icons.filter(icon => !icon.folderId);
@@ -559,12 +569,6 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
   setEditingItem: item => {
     set({ editingItem: item });
-  },
-
-  updateViewSettings: settings => {
-    set(state => ({
-      viewSettings: { ...state.viewSettings, ...settings },
-    }));
   },
 }));
 

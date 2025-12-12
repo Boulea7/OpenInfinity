@@ -149,7 +149,10 @@ export function FolderModal({
                 value={editedName}
                 onChange={(e) => setEditedName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveNameEdit();
+                  if (e.key === 'Enter') {
+                    // P1-4: Promise error handling
+                    void saveNameEdit().catch(err => console.error('Failed to save folder name:', err));
+                  }
                   if (e.key === 'Escape') cancelNameEdit();
                 }}
                 className={cn(
@@ -241,7 +244,10 @@ export function FolderModal({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRemoveFromFolder(icon.id);
+                        // P1-4: Promise error handling
+                        void handleRemoveFromFolder(icon.id).catch(err =>
+                          console.error('Failed to remove from folder:', err)
+                        );
                       }}
                       className="w-5 h-5 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs"
                       title="Remove from folder"
@@ -253,7 +259,10 @@ export function FolderModal({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteIcon(icon.id);
+                        // P1-4: Promise error handling
+                        void handleDeleteIcon(icon.id).catch(err =>
+                          console.error('Failed to delete icon:', err)
+                        );
                       }}
                       className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
                       title="Delete"

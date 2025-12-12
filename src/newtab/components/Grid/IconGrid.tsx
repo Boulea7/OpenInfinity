@@ -24,7 +24,7 @@ import { IconItem } from '../Icon/IconItem';
 import { FolderItem } from '../Icon/FolderItem';
 import { ContextMenu, type ContextMenuItem } from '../ui/ContextMenu';
 import { cn } from '../../utils';
-import { openWebsite } from '../../utils/navigation';
+import { openWebsite, isSafeUrl } from '../../utils/navigation';
 
 interface IconGridProps {
   className?: string;
@@ -232,7 +232,14 @@ export function IconGrid({
           {
             id: 'open',
             label: 'Open',
-            onClick: () => openWebsite(icon.url, openBehavior), // P1-11: Unified open behavior
+            onClick: () => {
+              // P1-5: Safe URL check before opening
+              if (isSafeUrl(icon.url)) {
+                openWebsite(icon.url, openBehavior);
+              } else {
+                console.error('Blocked unsafe URL:', icon.url);
+              }
+            },
           },
           {
             id: 'edit',
