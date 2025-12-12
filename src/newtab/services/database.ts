@@ -4,6 +4,62 @@
  */
 import Dexie, { type Table } from 'dexie';
 
+/**
+ * Data normalization helpers for migration safety
+ * Ensures all data has valid structure even if corrupted
+ */
+function isValidPosition(p: any): p is { x: number; y: number } {
+  return p && typeof p === 'object' && Number.isFinite(p.x) && Number.isFinite(p.y);
+}
+
+function ensurePosition(pos: any, cols: number, fallbackIndex: number): { x: number; y: number } {
+  if (isValidPosition(pos)) return pos;
+  if (typeof pos === 'number' && Number.isFinite(pos)) {
+    return { x: pos % cols, y: Math.floor(pos / cols) };
+  }
+  // Fallback: use fallbackIndex as position
+  return { x: fallbackIndex % cols, y: Math.floor(fallbackIndex / cols) };
+}
+
+function isValidIcon(raw: any): raw is { type: string; value: string; color?: string } {
+  return (
+    raw &&
+    typeof raw === 'object' &&
+    typeof raw.type === 'string' &&
+    typeof raw.value === 'string'
+  );
+}
+
+function ensureIcon(raw: any, title: string): Icon['icon'] {
+  if (isValidIcon(raw)) {
+    // Validate type is one of the allowed values
+    const validTypes = ['system', 'custom', 'text', 'favicon'];
+    if (validTypes.includes(raw.type)) {
+      return raw as Icon['icon'];
+    }
+  }
+
+  if (typeof raw === 'string') {
+    // Legacy format - try to infer type
+    if (raw.startsWith('data:image') || raw.startsWith('blob:')) {
+      return { type: 'custom', value: raw };
+    } else if (raw.startsWith('http')) {
+      return { type: 'favicon', value: raw };
+    } else if (raw.length === 1) {
+      return { type: 'text', value: raw.toUpperCase(), color: '#3b82f6' };
+    }
+    // Default to favicon for other strings
+    return { type: 'favicon', value: raw };
+  }
+
+  // Final fallback: text icon from title
+  return {
+    type: 'text',
+    value: (title?.[0] || '?').toUpperCase(),
+    color: '#3b82f6',
+  };
+}
+
 // Icon type definition
 export interface Icon {
   id: string;
@@ -323,45 +379,21 @@ class OpenInfinityDB extends Dexie {
         weatherCache: 'id, fetchedAt, expiresAt',
       })
       .upgrade(async (trans) => {
-        // Migrate icons: position number -> {x, y}, icon string -> {type, value}
+        // P0-1: Migrate with defensive normalization
         const icons = await trans.table('icons').toArray();
         const cols = 6; // Default grid columns
 
-        for (const icon of icons) {
-          const oldIcon = icon as any;
+        for (let i = 0; i < icons.length; i++) {
+          const icon = icons[i] as any;
 
-          // Migrate position: number to { x, y }
-          if (typeof oldIcon.position === 'number') {
-            const pos = oldIcon.position;
-            icon.position = {
-              x: pos % cols,
-              y: Math.floor(pos / cols),
-            };
-          }
+          // P0-1: Ensure valid position (handles null/undefined/invalid)
+          icon.position = ensurePosition(icon.position, cols, i);
 
-          // Migrate icon: string to { type, value, color? }
-          if (typeof oldIcon.icon === 'string') {
-            const iconValue = oldIcon.icon;
+          // P0-1: Ensure valid icon structure (handles null/undefined/invalid)
+          icon.icon = ensureIcon(icon.icon, icon.title || '');
 
-            // Detect icon type
-            if (iconValue.startsWith('data:image') || iconValue.startsWith('blob:')) {
-              icon.icon = { type: 'custom', value: iconValue };
-            } else if (iconValue.startsWith('http')) {
-              icon.icon = { type: 'favicon', value: iconValue };
-            } else if (iconValue.length === 1) {
-              icon.icon = {
-                type: 'text',
-                value: iconValue.toUpperCase(),
-                color: oldIcon.color || '#3b82f6',
-              };
-            } else {
-              // Default to favicon
-              icon.icon = { type: 'favicon', value: iconValue };
-            }
-
-            // Remove old color field
-            delete oldIcon.color;
-          }
+          // Remove old color field if exists
+          delete icon.color;
 
           await trans.table('icons').put(icon);
         }
@@ -369,16 +401,11 @@ class OpenInfinityDB extends Dexie {
         // Migrate folders: position number -> {x, y}
         const folders = await trans.table('folders').toArray();
 
-        for (const folder of folders) {
-          const oldFolder = folder as any;
+        for (let i = 0; i < folders.length; i++) {
+          const folder = folders[i] as any;
 
-          if (typeof oldFolder.position === 'number') {
-            const pos = oldFolder.position;
-            folder.position = {
-              x: pos % cols,
-              y: Math.floor(pos / cols),
-            };
-          }
+          // P0-1: Ensure valid position
+          folder.position = ensurePosition(folder.position, cols, icons.length + i);
 
           await trans.table('folders').put(folder);
         }
@@ -393,3 +420,6 @@ export const db = new OpenInfinityDB();
 export function generateId(): string {
   return crypto.randomUUID();
 }
+
+// Export normalization helpers for defensive use in stores
+export { isValidPosition, ensurePosition, isValidIcon, ensureIcon };

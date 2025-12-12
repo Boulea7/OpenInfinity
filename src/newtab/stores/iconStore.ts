@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { db, generateId, type Icon, type Folder, type GridItem } from '../services/database';
+import { db, generateId, type Icon, type Folder, type GridItem, isValidPosition, ensurePosition, isValidIcon, ensureIcon } from '../services/database';
 import { syncIcon, syncFolder, listenForSync, type SyncMessage } from '../utils/sync';
 
 /**
@@ -132,10 +132,44 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   loadIcons: async () => {
     set({ isLoading: true, error: null });
     try {
-      const [icons, folders] = await Promise.all([
+      const [rawIcons, rawFolders] = await Promise.all([
         db.icons.toArray(),
         db.folders.toArray(),
       ]);
+
+      // P0-1: Defensive normalization (protect against corrupted/migrated data)
+      const icons = rawIcons.map((icon, index) => {
+        // Validate and fix position if needed
+        if (!isValidPosition(icon.position)) {
+          console.warn(`Fixing invalid position for icon ${icon.id}:`, icon.position);
+          return {
+            ...icon,
+            position: ensurePosition(icon.position, 6, index),
+          };
+        }
+
+        // Validate and fix icon structure if needed
+        if (!isValidIcon(icon.icon)) {
+          console.warn(`Fixing invalid icon structure for ${icon.id}:`, icon.icon);
+          return {
+            ...icon,
+            icon: ensureIcon(icon.icon, icon.title),
+          };
+        }
+
+        return icon;
+      });
+
+      const folders = rawFolders.map((folder, index) => {
+        if (!isValidPosition(folder.position)) {
+          console.warn(`Fixing invalid position for folder ${folder.id}:`, folder.position);
+          return {
+            ...folder,
+            position: ensurePosition(folder.position, 6, icons.length + index),
+          };
+        }
+        return folder;
+      });
 
       // Sort by position (keeping separate types)
       const sortedIcons = [...icons].sort((a, b) => {
