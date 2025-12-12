@@ -645,6 +645,165 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
         </button>
       </div>
 
+      {/* Show Pagination */}
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Show Pagination
+        </label>
+        <button
+          onClick={() => setViewSettings({ showPagination: !viewSettings.showPagination })}
+          className={cn(
+            'w-11 h-6 rounded-full transition-colors duration-200',
+            viewSettings.showPagination ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+          )}
+        >
+          <span
+            className={cn(
+              'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+              viewSettings.showPagination ? 'translate-x-5' : 'translate-x-0.5'
+            )}
+          />
+        </button>
+      </div>
+
+      {/* Widget Sidebar Section */}
+      <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          Widget Sidebar
+        </h4>
+
+        {/* Show Widget Sidebar */}
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Show Widget Sidebar
+          </label>
+          <button
+            onClick={() => setViewSettings({ showWidgetSidebar: !viewSettings.showWidgetSidebar })}
+            className={cn(
+              'w-11 h-6 rounded-full transition-colors duration-200',
+              viewSettings.showWidgetSidebar ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                viewSettings.showWidgetSidebar ? 'translate-x-5' : 'translate-x-0.5'
+              )}
+            />
+          </button>
+        </div>
+
+        {/* Individual Widget Toggles (only shown when sidebar is enabled) */}
+        {viewSettings.showWidgetSidebar && (
+          <div className="ml-4 space-y-2">
+            {/* Todo Widget */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                Todo List
+              </label>
+              <button
+                onClick={() => setViewSettings({ showTodoWidget: !viewSettings.showTodoWidget })}
+                className={cn(
+                  'w-11 h-6 rounded-full transition-colors duration-200',
+                  viewSettings.showTodoWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                )}
+              >
+                <span
+                  className={cn(
+                    'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                    viewSettings.showTodoWidget ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* Notes Widget */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                Notes
+              </label>
+              <button
+                onClick={() => setViewSettings({ showNotesWidget: !viewSettings.showNotesWidget })}
+                className={cn(
+                  'w-11 h-6 rounded-full transition-colors duration-200',
+                  viewSettings.showNotesWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                )}
+              >
+                <span
+                  className={cn(
+                    'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                    viewSettings.showNotesWidget ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* Weather Widget */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                Weather
+              </label>
+              <button
+                onClick={() => setViewSettings({ showWeather: !viewSettings.showWeather })}
+                className={cn(
+                  'w-11 h-6 rounded-full transition-colors duration-200',
+                  viewSettings.showWeather ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                )}
+              >
+                <span
+                  className={cn(
+                    'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                    viewSettings.showWeather ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* Bookmarks Widget */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                Bookmarks
+              </label>
+              <button
+                onClick={() => setViewSettings({ showBookmarksWidget: !viewSettings.showBookmarksWidget })}
+                className={cn(
+                  'w-11 h-6 rounded-full transition-colors duration-200',
+                  viewSettings.showBookmarksWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                )}
+              >
+                <span
+                  className={cn(
+                    'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                    viewSettings.showBookmarksWidget ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* History Widget */}
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                History
+              </label>
+              <button
+                onClick={() => setViewSettings({ showHistoryWidget: !viewSettings.showHistoryWidget })}
+                className={cn(
+                  'w-11 h-6 rounded-full transition-colors duration-200',
+                  viewSettings.showHistoryWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                )}
+              >
+                <span
+                  className={cn(
+                    'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                    viewSettings.showHistoryWidget ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Zoom */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
