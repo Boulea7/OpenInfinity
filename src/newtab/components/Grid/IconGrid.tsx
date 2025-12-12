@@ -5,6 +5,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
@@ -70,11 +71,17 @@ export function IconGrid({
     item: GridItem;
   } | null>(null);
 
-  // dnd-kit sensors
+  // dnd-kit sensors (P1-3: Added TouchSensor for mobile support)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // Minimum drag distance to activate
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // Long press 200ms to activate drag
+        tolerance: 5, // Movement tolerance during delay
       },
     }),
     useSensor(KeyboardSensor, {

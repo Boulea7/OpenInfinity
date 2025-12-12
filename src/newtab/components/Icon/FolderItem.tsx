@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { Folder } from '../../services/database';
 import { useIconStore, useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
@@ -29,8 +30,16 @@ export function FolderItem({
   const { iconStyle } = useSettingsStore();
   const [isHovered, setIsHovered] = useState(false);
 
-  // dnd-kit droppable hook
-  const { isOver, setNodeRef } = useDroppable({
+  // P1-2: Use useSortable (includes droppable functionality)
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({
     id: folder.id,
     data: {
       type: 'folder',
@@ -38,6 +47,15 @@ export function FolderItem({
       accepts: ['icon'],
     },
   });
+
+  // Apply drag transform
+  const style = useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition: isOverlay ? undefined : transition,
+    }),
+    [transform, transition, isOverlay]
+  );
 
   // Get icons inside this folder (max 4 for preview)
   const folderIcons = useMemo(() => {
@@ -81,15 +99,20 @@ export function FolderItem({
   return (
     <div
       ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
         'flex flex-col items-center justify-center group',
         containerSize,
         'rounded-xl cursor-pointer select-none',
         'transition-all duration-200',
         // Hover effect
-        iconStyle.animation === 'scale' && 'hover:scale-105',
+        iconStyle.animation === 'scale' && !isDragging && 'hover:scale-105',
         // Drop target highlight
-        isOver && 'ring-2 ring-primary-500 scale-105',
+        isOver && !isDragging && 'ring-2 ring-primary-500 scale-105',
+        // Dragging state
+        isDragging && 'opacity-50 scale-95',
         // Overlay style
         isOverlay && 'shadow-2xl',
         // Selected state
