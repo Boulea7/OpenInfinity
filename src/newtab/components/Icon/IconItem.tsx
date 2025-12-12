@@ -68,8 +68,10 @@ export function IconItem({
     return getGoogleFaviconUrl(icon.url, 64);
   }, [icon.icon, icon.url]);
 
-  // Handle click
-  const handleClick = () => {
+  // Handle click (P0-3: stop propagation to prevent background click)
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
     if (isDragging) return;
 
     if (onClick) {

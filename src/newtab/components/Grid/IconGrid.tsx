@@ -52,13 +52,17 @@ export function IconGrid({
     clearSelection,
     deleteIcon,
     deleteFolder,
+    createFolderWithIcons,
   } = useIconStore();
 
   const { viewSettings } = useSettingsStore();
 
   // Drag state
   const [activeItem, setActiveItem] = useState<GridItem | null>(null);
-  const [_overId, setOverId] = useState<string | null>(null);
+
+  // P1-1: Hover merge state (500ms timer)
+  const [hoverTimer, setHoverTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [hoverTarget, setHoverTarget] = useState<string | null>(null);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -115,11 +119,55 @@ export function IconGrid({
     }
   }, [pageItems]);
 
-  // Handle drag over
+  // Handle drag over (P1-1: 500ms hover merge)
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over } = event;
-    setOverId(over?.id as string || null);
-  }, []);
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      // Clear timer when not over any item or over itself
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+        setHoverTimer(null);
+        setHoverTarget(null);
+      }
+      return;
+    }
+
+    const overItem = pageItems.find(item => item.id === over.id);
+    const activeItemData = pageItems.find(item => item.id === active.id);
+
+    // P1-1: If dragging icon over another icon (not folder), start merge timer
+    if (
+      activeItemData?.type === 'icon' &&
+      overItem?.type === 'icon' &&
+      !activeItemData.folderId && // Only for root-level icons
+      !overItem.folderId
+    ) {
+      if (hoverTarget !== over.id) {
+        // Clear previous timer
+        if (hoverTimer) clearTimeout(hoverTimer);
+
+        // Start new timer
+        const timer = setTimeout(() => {
+          console.log('Creating folder with icons:', active.id, over.id);
+          // Get position from one of the icons
+          const position = overItem.position;
+          createFolderWithIcons('New Folder', [active.id as string, over.id as string], position)
+            .catch(err => console.error('Failed to create folder:', err));
+        }, 500);
+
+        setHoverTimer(timer);
+        setHoverTarget(over.id as string);
+      }
+    } else {
+      // Not icon-over-icon case, clear timer
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+        setHoverTimer(null);
+        setHoverTarget(null);
+      }
+    }
+  }, [pageItems, hoverTimer, hoverTarget, createFolderWithIcons]);
 
   // Handle drag end
   const handleDragEnd = useCallback(
@@ -127,7 +175,13 @@ export function IconGrid({
       const { active, over } = event;
 
       setActiveItem(null);
-      setOverId(null);
+
+      // P1-1: Clear hover timer
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+        setHoverTimer(null);
+        setHoverTarget(null);
+      }
 
       if (!over || active.id === over.id) return;
 
@@ -141,7 +195,7 @@ export function IconGrid({
         await reorderItems(active.id as string, over.id as string);
       }
     },
-    [pageItems, activeItem, addToFolder, reorderItems]
+    [pageItems, activeItem, addToFolder, reorderItems, hoverTimer]
   );
 
   // Handle context menu
@@ -212,10 +266,13 @@ export function IconGrid({
     [onEditIcon, onOpenFolder, deleteIcon, deleteFolder]
   );
 
-  // Handle background click (deselect)
-  const handleBackgroundClick = useCallback(() => {
-    clearSelection();
-    closeContextMenu();
+  // Handle background click (P0-3: only deselect when clicking background itself)
+  const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
+    // Only clear selection if clicking the background itself, not bubbled events
+    if (e.target === e.currentTarget) {
+      clearSelection();
+      closeContextMenu();
+    }
   }, [clearSelection, closeContextMenu]);
 
   // Render drag overlay
@@ -268,6 +325,7 @@ export function IconGrid({
                     isSelected={selectedItems.includes(item.id)}
                     onContextMenu={(e) => handleContextMenu(e, item)}
                     onClick={(folder) => {
+                      // P0-3: Stop propagation to prevent background click handler
                       selectItem(folder.id);
                       onOpenFolder?.(folder);
                     }}
@@ -282,7 +340,10 @@ export function IconGrid({
                   isSelected={selectedItems.includes(item.id)}
                   isDragging={activeItem?.id === item.id}
                   onContextMenu={(e) => handleContextMenu(e, item)}
-                  onClick={(icon) => selectItem(icon.id)}
+                  onClick={(icon) => {
+                    // P0-3: Select item (propagation already stopped in IconItem)
+                    selectItem(icon.id);
+                  }}
                 />
               );
             })}

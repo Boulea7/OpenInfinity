@@ -51,8 +51,9 @@ export function FolderItem({
     return icons.filter(icon => icon.folderId === folder.id).length;
   }, [icons, folder.id]);
 
-  // Handle click
-  const handleClick = () => {
+  // Handle click (P0-3: stop propagation)
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onClick?.(folder);
   };
 
