@@ -5,6 +5,8 @@ import { cn } from '../../utils';
 import { TodoWidget } from './TodoWidget';
 import { NotesWidget } from './NotesWidget';
 import { WeatherWidget } from './WeatherWidget';
+import { BookmarksWidget } from './BookmarksWidget';
+import { HistoryWidget } from './HistoryWidget';
 
 /**
  * Sidebar configuration constants
@@ -242,17 +244,17 @@ export function WidgetContainer() {
                         onToggleExpand={() => {}}
                       />
                     )}
-                    {widget.id !== 'weather' && widget.id !== 'todo' && widget.id !== 'notes' && (
-                      <div className="p-3 text-white/60 text-sm">
-                        <div className="animate-pulse space-y-2">
-                          <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                          <div className="h-4 bg-white/10 rounded w-1/2"></div>
-                          <div className="h-4 bg-white/10 rounded w-5/6"></div>
-                        </div>
-                        <div className="mt-3 text-center text-xs text-white/40">
-                          {widget.title} widget coming soon...
-                        </div>
-                      </div>
+                    {widget.id === 'bookmarks' && (
+                      <BookmarksWidget
+                        isExpanded={true}
+                        onToggleExpand={() => {}}
+                      />
+                    )}
+                    {widget.id === 'history' && (
+                      <HistoryWidget
+                        isExpanded={true}
+                        onToggleExpand={() => {}}
+                      />
                     )}
                   </div>
                 )}

@@ -8,3 +8,5 @@ export { WidgetContainer } from './WidgetContainer';
 export { TodoWidget } from './TodoWidget';
 export { NotesWidget } from './NotesWidget';
 export { WeatherWidget } from './WeatherWidget';
+export { BookmarksWidget } from './BookmarksWidget';
+export { HistoryWidget } from './HistoryWidget';

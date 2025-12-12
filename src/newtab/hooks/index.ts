@@ -4,6 +4,8 @@
 export { useTodos } from './useTodos';
 export { useNotes } from './useNotes';
 export { useWeather } from './useWeather';
+export { useBookmarks } from './useBookmarks';
+export { useHistory } from './useHistory';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
