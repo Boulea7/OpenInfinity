@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db, generateId, type Wallpaper } from '../services/database';
 import { compressImage, validateImageFile } from '../utils/imageCompression';
+import { wallpaperManager } from '../services/wallpaper';
 
 /**
  * Wallpaper source types
@@ -353,45 +354,48 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       },
 
       fetchRandomWallpaper: async (source) => {
-        const activeSource = source || get().activeSource;
+        const preferredSource = source || get().activeSource;
         set({ isLoading: true, error: null });
 
         try {
-          let url: string | null = null;
-          let metadata: Wallpaper['metadata'] = {};
+          // Use WallpaperManager for all API sources
+          const result = await wallpaperManager.getRandomWallpaper(preferredSource, {
+            query: 'nature', // TODO: Make this configurable from settings
+            orientation: 'landscape',
+            safeMode: true,
+          });
 
-          switch (activeSource) {
-            case 'bing': {
-              // Bing daily wallpaper via Peapix API
-              const response = await fetch('https://peapix.com/bing/feed?country=cn');
-              const data = await response.json();
-              if (data?.[0]?.fullUrl) {
-                url = data[0].fullUrl;
-                metadata = {
-                  source: 'Bing Daily',
-                  author: data[0].title,
-                };
-              }
-              break;
-            }
+          const wallpaper: Wallpaper = {
+            id: generateId(),
+            type: result.actualSource as Wallpaper['type'],
+            source: result.url,
+            metadata: result.metadata,
+            effects: get().effects,
+            createdAt: Date.now(),
+          };
 
-            case 'unsplash': {
-              // Note: Requires API key in production
-              // Using demo endpoint for now
-              url = 'https://source.unsplash.com/random/1920x1080';
-              metadata = { source: 'Unsplash' };
-              break;
-            }
+          await db.wallpapers.add(wallpaper);
 
-            default:
-              throw new Error(`Unsupported wallpaper source: ${activeSource}`);
+          // Release old ObjectURL
+          const oldUrl = get().currentUrl;
+          if (oldUrl && oldUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(oldUrl);
           }
 
-          if (url) {
-            await get().setWallpaperFromUrl(url, metadata);
-          }
+          set({
+            currentWallpaper: wallpaper,
+            currentUrl: result.url,
+            activeSource: result.actualSource as WallpaperSource,
+            isLoading: false,
+          });
 
-          set({ isLoading: false });
+          // Track download if needed (Unsplash requirement)
+          if (result.metadata.downloadLocation) {
+            void wallpaperManager.trackDownload(
+              result.actualSource as WallpaperSource,
+              result.metadata.downloadLocation
+            ).catch(console.warn);
+          }
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to fetch wallpaper',
