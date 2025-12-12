@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db, generateId, type Icon, type Folder, type GridItem } from '../services/database';
+import { syncIcon, syncFolder, listenForSync, type SyncMessage } from '../utils/sync';
 
 /**
  * Icon store state
@@ -182,6 +183,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     set(state => ({ icons: [...state.icons, newIcon] }));
 
+    // P2-1: Broadcast to other tabs
+    syncIcon.added(newIcon);
+
     return newIcon.id;
   },
 
@@ -194,6 +198,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         icon.id === id ? { ...icon, ...updatedData } : icon
       ),
     }));
+
+    // P2-1: Broadcast to other tabs
+    syncIcon.updated({ id, ...updatedData });
   },
 
   deleteIcon: async (id) => {
@@ -203,6 +210,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       icons: state.icons.filter(icon => icon.id !== id),
       selectedItems: state.selectedItems.filter(itemId => itemId !== id),
     }));
+
+    // P2-1: Broadcast to other tabs
+    syncIcon.deleted(id);
   },
 
   addFolder: async (name, position) => {
@@ -224,6 +234,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     set(state => ({ folders: [...state.folders, newFolder] }));
 
+    // P2-1: Broadcast to other tabs
+    syncFolder.added(newFolder);
+
     return newFolder.id;
   },
 
@@ -236,6 +249,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         folder.id === id ? { ...folder, ...updatedData } : folder
       ),
     }));
+
+    // P2-1: Broadcast to other tabs
+    syncFolder.updated({ id, ...updatedData });
   },
 
   deleteFolder: async (id) => {
@@ -261,6 +277,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         ),
         selectedItems: state.selectedItems.filter(itemId => itemId !== id),
       }));
+
+      // P2-1: Broadcast to other tabs
+      syncFolder.deleted(id);
     }
   },
 
@@ -514,3 +533,62 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     }));
   },
 }));
+
+// P2-1: Setup BroadcastChannel sync listener
+listenForSync((message: SyncMessage) => {
+  const store = useIconStore.getState();
+
+  switch (message.type) {
+    case 'ICON_ADDED':
+      store.loadIcons(); // Reload to get new icon
+      break;
+
+    case 'ICON_UPDATED':
+      if (message.payload.id) {
+        useIconStore.setState(state => ({
+          icons: state.icons.map(icon =>
+            icon.id === message.payload.id
+              ? { ...icon, ...message.payload }
+              : icon
+          ),
+        }));
+      }
+      break;
+
+    case 'ICON_DELETED':
+      if (message.payload.id) {
+        useIconStore.setState(state => ({
+          icons: state.icons.filter(icon => icon.id !== message.payload.id),
+        }));
+      }
+      break;
+
+    case 'FOLDER_ADDED':
+      store.loadIcons(); // Reload to get new folder
+      break;
+
+    case 'FOLDER_UPDATED':
+      if (message.payload.id) {
+        useIconStore.setState(state => ({
+          folders: state.folders.map(folder =>
+            folder.id === message.payload.id
+              ? { ...folder, ...message.payload }
+              : folder
+          ),
+        }));
+      }
+      break;
+
+    case 'FOLDER_DELETED':
+      if (message.payload.id) {
+        useIconStore.setState(state => ({
+          folders: state.folders.filter(folder => folder.id !== message.payload.id),
+        }));
+      }
+      break;
+
+    default:
+      break;
+  }
+});
+
