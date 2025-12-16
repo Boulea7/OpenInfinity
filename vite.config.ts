@@ -25,6 +25,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         newtab: resolve(__dirname, 'src/newtab/index.html'),
+        popup: resolve(__dirname, 'src/popup/index.html'),
       },
       output: {
         manualChunks: {

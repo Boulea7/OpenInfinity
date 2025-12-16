@@ -25,15 +25,12 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
   } = useHistory();
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
 
-  // Don't render if widget is disabled
-  if (!viewSettings.showHistoryWidget) return null;
-
-  // Handle history item click
+  // Handle history item click - must be defined before early return
   const handleHistoryClick = useCallback((url: string) => {
     openHistoryItem(url, openBehavior.history);
   }, [openBehavior.history]);
 
-  // Handle delete history item
+  // Handle delete history item - must be defined before early return
   const handleDelete = useCallback(async (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
 
@@ -51,7 +48,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
     }
   }, [deleteItem]);
 
-  // Handle request permission
+  // Handle request permission - must be defined before early return
   const handleRequestPermission = useCallback(async () => {
     try {
       await requestPermission();
@@ -60,7 +57,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
     }
   }, [requestPermission]);
 
-  // Handle time range change
+  // Handle time range change - must be defined before early return
   const handleTimeRangeChange = useCallback((e: React.MouseEvent, range: HistoryTimeRange) => {
     e.stopPropagation();
     setTimeRange(range);
@@ -74,6 +71,9 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
       });
     }
   }, [setTimeRange, setWidgetSettings, widgetSettings.historyWidget]);
+
+  // Don't render if widget is disabled
+  if (!viewSettings.showHistoryWidget) return null;
 
   return (
     <div className={cn('bg-white/5 rounded-lg overflow-hidden border border-white/10', className)}>

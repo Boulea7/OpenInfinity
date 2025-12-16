@@ -53,6 +53,7 @@ export interface SearchSettings {
   size: 'small' | 'medium' | 'large';
   borderRadius: number;
   opacity: number;
+  searchType: 'web' | 'images' | 'videos' | 'maps';  // New: search type
 }
 
 /**
@@ -185,22 +186,26 @@ const defaultSearchEngines: SearchEngine[] = [
     id: 'google',
     name: 'Google',
     url: 'https://www.google.com/search?q=',
+    icon: '🔍',
     isDefault: true,
   },
   {
     id: 'bing',
     name: 'Bing',
     url: 'https://www.bing.com/search?q=',
+    icon: '🅱️',
   },
   {
     id: 'duckduckgo',
     name: 'DuckDuckGo',
     url: 'https://duckduckgo.com/?q=',
+    icon: '🦆',
   },
   {
     id: 'baidu',
     name: 'Baidu',
     url: 'https://www.baidu.com/s?wd=',
+    icon: '百',
   },
 ];
 
@@ -234,6 +239,7 @@ const defaultSettings: SettingsState = {
     size: 'medium',
     borderRadius: 50,
     opacity: 80,
+    searchType: 'web',  // New: default to web search
   },
   viewSettings: {
     zoom: 100,

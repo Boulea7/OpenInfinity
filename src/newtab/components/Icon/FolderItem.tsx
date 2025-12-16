@@ -10,8 +10,8 @@ interface FolderItemProps {
   folder: Folder;
   isSelected?: boolean;
   isOverlay?: boolean;
-  onContextMenu?: (e: React.MouseEvent, folder: Folder) => void;
-  onClick?: (folder: Folder) => void;
+  onContextMenu?: (_e: React.MouseEvent, _folder: Folder) => void;
+  onClick?: (_folder: Folder) => void;
 }
 
 /**

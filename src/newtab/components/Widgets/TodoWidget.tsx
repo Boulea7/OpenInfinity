@@ -18,10 +18,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
   const [editingText, setEditingText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Don't render if widget is disabled
-  if (!viewSettings.showTodoWidget) return null;
-
-  // Handle adding new todo
+  // Handle adding new todo - must be defined before early return
   const handleAddTodo = useCallback(async () => {
     if (newTodoText.trim()) {
       try {
@@ -34,7 +31,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
     }
   }, [newTodoText, addTodo]);
 
-  // Handle toggle todo completion
+  // Handle toggle todo completion - must be defined before early return
   const handleToggleTodo = useCallback(async (id: string) => {
     try {
       await toggleTodo(id);
@@ -43,7 +40,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
     }
   }, [toggleTodo]);
 
-  // Handle delete todo
+  // Handle delete todo - must be defined before early return
   const handleDeleteTodo = useCallback(async (id: string) => {
     if (confirm('确定要删除这个待办事项吗？')) {
       try {
@@ -54,7 +51,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
     }
   }, [deleteTodo]);
 
-  // Handle start editing
+  // Handle start editing - must be defined before early return
   const handleStartEditing = useCallback((id: string, text: string) => {
     setEditingId(id);
     setEditingText(text);
@@ -68,7 +65,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
     });
   }, []);
 
-  // Handle save editing
+  // Handle save editing - must be defined before early return
   const handleSaveEditing = useCallback(async (id: string) => {
     if (editingText.trim()) {
       try {
@@ -84,13 +81,13 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
     }
   }, [editingText, updateTodo]);
 
-  // Handle cancel editing
+  // Handle cancel editing - must be defined before early return
   const handleCancelEditing = useCallback(() => {
     setEditingId(null);
     setEditingText('');
   }, []);
 
-  // Handle key events
+  // Handle key events - must be defined before early return
   const handleAddKeydown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -109,6 +106,9 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
       handleCancelEditing();
     }
   }, [handleSaveEditing, handleCancelEditing]);
+
+  // Don't render if widget is disabled
+  if (!viewSettings.showTodoWidget) return null;
 
   // Get priority color
   const getPriorityColor = (priority: string) => {

@@ -11,8 +11,8 @@ interface IconItemProps {
   isDragging?: boolean;
   isSelected?: boolean;
   isOverlay?: boolean;
-  onContextMenu?: (e: React.MouseEvent, icon: Icon) => void;
-  onClick?: (icon: Icon) => void;
+  onContextMenu?: (_e: React.MouseEvent, _icon: Icon) => void;
+  onClick?: (_icon: Icon) => void;
 }
 
 /**

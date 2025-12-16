@@ -4,6 +4,33 @@ import { db, generateId, type Wallpaper } from '../services/database';
 import { compressImage, validateImageFile } from '../utils/imageCompression';
 import { wallpaperManager } from '../services/wallpaper';
 
+// Module-level auto-change timer management
+let autoChangeTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Stop auto-change timer safely
+ */
+function stopAutoChangeTimer(): void {
+  if (autoChangeTimer) {
+    clearInterval(autoChangeTimer);
+    autoChangeTimer = null;
+    console.info('Auto-change timer stopped');
+  }
+}
+
+/**
+ * Get interval milliseconds from AutoChangeInterval type
+ */
+function getIntervalMs(interval: AutoChangeInterval): number {
+  const intervals: Record<AutoChangeInterval, number> = {
+    hourly: 1 * 60 * 60 * 1000,      // 1 hour
+    daily: 24 * 60 * 60 * 1000,      // 24 hours
+    weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
+    never: 0,
+  };
+  return intervals[interval];
+}
+
 /**
  * Wallpaper source types
  */
@@ -84,6 +111,9 @@ interface WallpaperState {
     sources: WallpaperSource[];
   };
 
+  // Search query for API-based wallpapers
+  searchQuery: string;
+
   // Collection
   favorites: Wallpaper[];
 
@@ -117,6 +147,13 @@ interface WallpaperActions {
 
   // Auto-change
   setAutoChange: (config: Partial<WallpaperState['autoChange']>) => void;
+
+  // Auto-change timer management
+  startAutoChange: () => void;
+  stopAutoChange: () => void;
+
+  // Search query configuration
+  setSearchQuery: (query: string) => void;
 
   // Favorites
   addToFavorites: (wallpaper: Wallpaper) => Promise<void>;
@@ -166,6 +203,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         interval: 'daily',
         sources: ['unsplash', 'bing'],
       },
+      searchQuery: 'nature',
       favorites: [],
       isLoading: false,
       error: null,
@@ -338,6 +376,51 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         set((state) => ({
           autoChange: { ...state.autoChange, ...config },
         }));
+
+        // Manage timer based on state changes
+        const newState = get();
+
+        if (config.enabled !== undefined || config.interval !== undefined) {
+          if (newState.autoChange.enabled) {
+            get().startAutoChange();
+          } else {
+            get().stopAutoChange();
+          }
+        }
+      },
+
+      startAutoChange: () => {
+        const state = get();
+
+        // Stop existing timer if any
+        stopAutoChangeTimer();
+
+        if (!state.autoChange.enabled) {
+          console.info('Auto-change is disabled, not starting timer');
+          return;
+        }
+
+        const intervalMs = getIntervalMs(state.autoChange.interval);
+
+        if (intervalMs <= 0) {
+          console.info('Auto-change interval is "never", not starting timer');
+          return;
+        }
+
+        console.info(`Starting auto-change timer: ${state.autoChange.interval} (${intervalMs}ms)`);
+
+        // Set up interval for automatic changes
+        autoChangeTimer = setInterval(() => {
+          void state.fetchRandomWallpaper();
+        }, intervalMs);
+      },
+
+      stopAutoChange: () => {
+        stopAutoChangeTimer();
+      },
+
+      setSearchQuery: (query: string) => {
+        set({ searchQuery: query || 'nature' });
       },
 
       addToFavorites: async (wallpaper) => {
@@ -361,7 +444,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         try {
           // Use WallpaperManager for all API sources
           const result = await wallpaperManager.getRandomWallpaper(preferredSource, {
-            query: 'nature', // TODO: Make this configurable from settings
+            query: get().searchQuery || 'nature',
             orientation: 'landscape',
             safeMode: true,
           });
@@ -425,6 +508,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         gradient: state.gradient,
         effects: state.effects,
         autoChange: state.autoChange,
+        searchQuery: state.searchQuery,
       }),
     }
   )

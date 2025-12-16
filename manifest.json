@@ -3,44 +3,60 @@
   "name": "OpenInfinity",
   "version": "1.0.0",
   "description": "A secure, transparent, and high-performance new tab browser extension. Open source and privacy-first.",
-
   "icons": {
-    "16": "icons/icon-16.png",
-    "32": "icons/icon-32.png",
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png"
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
-
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "添加到 OpenInfinity"
+  },
   "chrome_url_overrides": {
     "newtab": "src/newtab/index.html"
   },
-
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "tabs",
+    "contextMenus",
+    "activeTab"
   ],
-
   "optional_permissions": [
     "bookmarks",
-    "history",
-    "geolocation"
+    "history"
   ],
-
+  "commands": {
+    "add-current-page": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A",
+        "mac": "Command+Shift+A"
+      },
+      "description": "添加当前页面到 OpenInfinity"
+    }
+  },
   "host_permissions": [
     "https://api.unsplash.com/*",
     "https://images.unsplash.com/*",
     "https://api.pexels.com/*",
     "https://images.pexels.com/*",
     "https://peapix.com/*",
-    "https://pixabay.com/*"
+    "https://pixabay.com/*",
+    "https://www.google.com/*",
+    "https://icons.duckduckgo.com/*"
   ],
-
   "background": {
     "service_worker": "src/background/index.ts",
     "type": "module"
   },
-
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self' https://suggestqueries.google.com; object-src 'self'"
   }
 }

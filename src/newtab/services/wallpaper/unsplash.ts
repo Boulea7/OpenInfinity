@@ -51,7 +51,7 @@ export class UnsplashProvider implements WallpaperProvider {
     this.accessKey = accessKey || import.meta.env.VITE_UNSPLASH_ACCESS_KEY || '';
 
     if (!this.accessKey) {
-      console.warn('Unsplash API key not configured. Using demo endpoint (limited to 50/hour).');
+      // console.warn('Unsplash API key not configured. Using demo endpoint (limited to 50/hour).');
     }
   }
 

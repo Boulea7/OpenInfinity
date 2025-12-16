@@ -14,15 +14,12 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
   const { viewSettings, openBehavior } = useSettingsStore();
   const { bookmarks, hasPermission, isLoading, error, requestPermission, refresh } = useBookmarks();
 
-  // Don't render if widget is disabled
-  if (!viewSettings.showBookmarksWidget) return null;
-
-  // Handle bookmark click
+  // Handle bookmark click - must be defined before early return
   const handleBookmarkClick = useCallback((url: string) => {
     openBookmark(url, openBehavior.bookmarks);
   }, [openBehavior.bookmarks]);
 
-  // Handle request permission
+  // Handle request permission - must be defined before early return
   const handleRequestPermission = useCallback(async () => {
     try {
       await requestPermission();
@@ -30,6 +27,9 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
       console.error('Permission request failed:', err);
     }
   }, [requestPermission]);
+
+  // Don't render if widget is disabled
+  if (!viewSettings.showBookmarksWidget) return null;
 
   return (
     <div className={cn('bg-white/5 rounded-lg overflow-hidden border border-white/10', className)}>

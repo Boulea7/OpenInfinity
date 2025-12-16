@@ -1,0 +1,49 @@
+{
+  "searchBar": {
+    "placeholder": "Search or enter URL",
+    "types": {
+      "web": "Web",
+      "images": "Images",
+      "videos": "Videos",
+      "maps": "Maps"
+    }
+  },
+  "popup": {
+    "title": "Add to OpenInfinity",
+    "websiteName": "Website Name",
+    "websiteUrl": "Website URL",
+    "selectIcon": "Select Icon",
+    "iconTypes": {
+      "text": "Text Icon",
+      "favicon": "Favicon",
+      "upload": "Upload"
+    },
+    "displayText": "Display Text",
+    "fontSize": "Font Size",
+    "backgroundColor": "Background Color",
+    "preview": "Preview",
+    "confirm": "Confirm",
+    "adding": "Adding...",
+    "selectFile": "Select Image",
+    "fileHint": "Supports PNG, JPG, SVG formats, max 2MB",
+    "fetchingIcon": "Fetching favicon...",
+    "noIconAvailable": "Unable to fetch favicon, please use text icon or upload"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "wallpaper": "Wallpaper",
+    "icons": "Icons",
+    "search": "Search",
+    "layout": "Layout",
+    "fonts": "Fonts",
+    "marketplace": "Marketplace",
+    "backup": "Backup",
+    "about": "About",
+    "language": "Language",
+    "theme": "Theme",
+    "searchEngine": "Search Engine",
+    "chinese": "中文",
+    "english": "English"
+  }
+}

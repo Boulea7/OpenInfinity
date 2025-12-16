@@ -3,13 +3,21 @@
  * Handles background tasks like alarms, notifications, and data sync
  */
 
+import { setupContextMenus } from './contextMenu';
+import { setupCommands } from './commands';
+import { handleMessage } from './messaging';
+
+// Initialize context menus and keyboard commands
+setupContextMenus();
+setupCommands();
+
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('OpenInfinity installed successfully');
+    console.info('OpenInfinity installed successfully');
     // Initialize default settings or show welcome page
   } else if (details.reason === 'update') {
-    console.log(`OpenInfinity updated to version ${chrome.runtime.getManifest().version}`);
+    console.info(`OpenInfinity updated to version ${chrome.runtime.getManifest().version}`);
   }
 });
 
@@ -26,7 +34,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
       handleNotificationCheck();
       break;
     default:
-      console.log(`Unknown alarm: ${alarm.name}`);
+      console.info(`Unknown alarm: ${alarm.name}`);
   }
 });
 
@@ -35,7 +43,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
  */
 async function handleWallpaperAutoChange(): Promise<void> {
   // This will be implemented to fetch a new random wallpaper
-  console.log('Wallpaper auto-change triggered');
+  console.info('Wallpaper auto-change triggered');
 }
 
 /**
@@ -43,7 +51,7 @@ async function handleWallpaperAutoChange(): Promise<void> {
  */
 async function handleRSSUpdate(): Promise<void> {
   // This will be implemented to fetch and update RSS feeds
-  console.log('RSS update triggered');
+  console.info('RSS update triggered');
 }
 
 /**
@@ -51,7 +59,7 @@ async function handleRSSUpdate(): Promise<void> {
  */
 async function handleNotificationCheck(): Promise<void> {
   // This will be implemented to check for new emails/tasks
-  console.log('Notification check triggered');
+  console.info('Notification check triggered');
 }
 
 // Setup default alarms on startup
@@ -75,7 +83,11 @@ function setupDefaultAlarms(): void {
 }
 
 // Handle messages from content scripts or popup
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Handle Popup messages
+  handleMessage(message, sender).then(sendResponse);
+
+  // Handle legacy messages
   switch (message.type) {
     case 'GET_STORAGE_USAGE':
       getStorageUsage().then(sendResponse);
@@ -94,8 +106,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return true;
 
     default:
-      console.log(`Unknown message type: ${message.type}`);
+      // Already handled by handleMessage
+      break;
   }
+
+  return true; // Keep message channel open for async response
 });
 
 /**
@@ -170,4 +185,4 @@ async function importData(data: string): Promise<{ success: boolean; error?: str
 }
 
 // Log service worker activation
-console.log('OpenInfinity background service worker activated');
+console.info('OpenInfinity background service worker activated');

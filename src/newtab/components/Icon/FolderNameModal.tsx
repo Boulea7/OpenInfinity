@@ -6,7 +6,7 @@ import { cn } from '../../utils';
 interface FolderNameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (name: string) => void;
+  onConfirm: (_name: string) => void;
   previewIcons?: Icon[];
 }
 

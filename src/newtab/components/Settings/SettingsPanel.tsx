@@ -13,7 +13,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useSettingsStore, useWallpaperStore } from '../../stores';
-import type { WallpaperSource } from '../../stores/wallpaperStore';
+import type { WallpaperSource, AutoChangeInterval } from '../../stores/wallpaperStore';
 import type { IconStyle, SearchSettings, ViewSettings, FontSettings } from '../../stores/settingsStore';
 import { Modal } from '../ui/Modal';
 import { cn } from '../../utils';
@@ -60,7 +60,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     resetToDefaults,
   } = useSettingsStore();
 
-  const { activeSource, setActiveSource, effects, setEffects } = useWallpaperStore();
+  const { activeSource, setActiveSource, effects, setEffects, autoChange, setAutoChange, searchQuery, setSearchQuery, fetchRandomWallpaper } = useWallpaperStore();
 
   // Handle reset all settings
   const handleResetAll = useCallback(() => {
@@ -75,7 +75,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       case 'general':
         return <GeneralSettings theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />;
       case 'wallpaper':
-        return <WallpaperSettings activeSource={activeSource} setActiveSource={setActiveSource} effects={effects} setEffects={setEffects} />;
+        return <WallpaperSettings activeSource={activeSource} setActiveSource={setActiveSource} effects={effects} setEffects={setEffects} autoChange={autoChange} setAutoChange={setAutoChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} fetchRandomWallpaper={fetchRandomWallpaper} />;
       case 'icons':
         return <IconSettings iconStyle={iconStyle} setIconStyle={setIconStyle} />;
       case 'search':
@@ -232,9 +232,14 @@ interface WallpaperSettingsProps {
   setActiveSource: (source: WallpaperSource) => void;
   effects: { blur: number; maskOpacity: number; brightness: number };
   setEffects: (effects: Partial<{ blur: number; maskOpacity: number; brightness: number }>) => void;
+  autoChange: { enabled: boolean; interval: AutoChangeInterval; sources: WallpaperSource[] };
+  setAutoChange: (config: Partial<{ enabled: boolean; interval: AutoChangeInterval; sources: WallpaperSource[] }>) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  fetchRandomWallpaper: (source?: WallpaperSource) => Promise<void>;
 }
 
-function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects }: WallpaperSettingsProps) {
+function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects, autoChange, setAutoChange, searchQuery, setSearchQuery, fetchRandomWallpaper }: WallpaperSettingsProps) {
   const wallpaperSources: { id: WallpaperSource; label: string }[] = [
     { id: 'local', label: 'Local' },
     { id: 'custom', label: 'URL' },
@@ -325,6 +330,108 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects 
             className="w-full"
           />
         </div>
+      </div>
+
+      {/* Search Query Settings */}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+        <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          Search Preferences
+        </h4>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Wallpaper Search Query
+          </label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="nature, landscape, city..."
+            className={cn(
+              'w-full px-3 py-2 rounded-lg',
+              'bg-gray-50 dark:bg-gray-700',
+              'border border-gray-300 dark:border-gray-600',
+              'text-gray-900 dark:text-gray-100',
+              'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500'
+            )}
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Keywords used when fetching wallpapers from Unsplash, Pexels, or Bing
+          </p>
+        </div>
+      </div>
+
+      {/* Auto-Change Settings */}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+        <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-4">
+          Auto-Change Wallpaper
+        </h4>
+
+        {/* Enable Toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Enable Auto-Change
+          </label>
+          <button
+            onClick={() => {
+              const newEnabled = !autoChange.enabled;
+              setAutoChange({ enabled: newEnabled });
+            }}
+            className={cn(
+              'w-11 h-6 rounded-full transition-colors duration-200',
+              autoChange.enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                autoChange.enabled ? 'translate-x-5' : 'translate-x-0.5'
+              )}
+            />
+          </button>
+        </div>
+
+        {/* Interval Selection */}
+        {autoChange.enabled && (
+          <div className="space-y-2 mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Change Interval
+            </label>
+            <div className="flex gap-2">
+              {(['hourly', 'daily', 'weekly'] as const).map((interval) => (
+                <button
+                  key={interval}
+                  onClick={() => setAutoChange({ interval })}
+                  className={cn(
+                    'px-4 py-2 rounded-lg text-sm capitalize',
+                    'transition-colors duration-200',
+                    autoChange.interval === interval
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  )}
+                >
+                  {interval === 'hourly' && 'Every Hour'}
+                  {interval === 'daily' && 'Daily'}
+                  {interval === 'weekly' && 'Weekly'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Manual Refresh Button */}
+        <button
+          onClick={() => void fetchRandomWallpaper()}
+          className={cn(
+            'w-full px-4 py-2 rounded-lg text-sm',
+            'bg-primary-600 text-white',
+            'hover:bg-primary-700',
+            'transition-colors duration-200'
+          )}
+        >
+          Refresh Wallpaper Now
+        </button>
       </div>
     </div>
   );

@@ -30,8 +30,8 @@ import { openWebsite, isSafeUrl } from '../../utils/navigation';
 interface IconGridProps {
   className?: string;
   onAddIcon?: () => void;
-  onEditIcon?: (icon: Icon) => void;
-  onOpenFolder?: (folder: Folder) => void;
+  onEditIcon?: (_icon: Icon) => void;
+  onOpenFolder?: (_folder: Folder) => void;
 }
 
 /**
@@ -184,7 +184,7 @@ export function IconGrid({
         setHoverTarget(null);
       }
     }
-  }, [pageItems, hoverTimer, hoverTarget, createFolderWithIcons]);
+  }, [pageItems, hoverTimer, hoverTarget]);
 
   // Handle drag end
   const handleDragEnd = useCallback(

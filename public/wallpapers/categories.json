@@ -1,14 +1,27 @@
 {
   "version": 1,
-  "lastUpdated": "2025-12-12",
+  "lastUpdated": "2025-12-13",
   "categories": [
     {
-      "id": "sample",
-      "name": "示例壁纸",
-      "nameEn": "Sample Wallpapers",
-      "description": "示例壁纸类别 - 请替换为实际内容",
+      "id": "nature",
+      "name": "自然风景",
+      "nameEn": "Nature",
+      "description": "优美的自然风景壁纸",
+      "wallpapers": []
+    },
+    {
+      "id": "city",
+      "name": "城市景观",
+      "nameEn": "City",
+      "description": "现代城市风景壁纸",
+      "wallpapers": []
+    },
+    {
+      "id": "abstract",
+      "name": "抽象艺术",
+      "nameEn": "Abstract",
+      "description": "现代抽象艺术设计",
       "wallpapers": []
     }
-  ],
-  "readme": "This is a placeholder categories.json. To add preset wallpapers: 1. Create subdirectories (nature/, city/, etc.) in public/wallpapers/, 2. Add images (1920x1080 recommended), 3. Update this JSON with wallpaper metadata"
+  ]
 }

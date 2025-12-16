@@ -26,7 +26,7 @@ interface FolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   folder: Folder | null;
-  onEditIcon?: (icon: Icon) => void;
+  onEditIcon?: (_icon: Icon) => void;
   onAddIcon?: () => void;
 }
 

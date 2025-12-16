@@ -1,0 +1,49 @@
+{
+  "searchBar": {
+    "placeholder": "搜索或输入网址",
+    "types": {
+      "web": "网页",
+      "images": "图片",
+      "videos": "视频",
+      "maps": "地图"
+    }
+  },
+  "popup": {
+    "title": "添加到 OpenInfinity",
+    "websiteName": "网站名称",
+    "websiteUrl": "网站地址",
+    "selectIcon": "选择图标",
+    "iconTypes": {
+      "text": "纯色图标",
+      "favicon": "网站图标",
+      "upload": "本地上传"
+    },
+    "displayText": "显示文字",
+    "fontSize": "字体大小",
+    "backgroundColor": "背景颜色",
+    "preview": "预览",
+    "confirm": "确定",
+    "adding": "添加中...",
+    "selectFile": "选择图片",
+    "fileHint": "支持 PNG、JPG、SVG 格式，最大 2MB",
+    "fetchingIcon": "获取网站图标中...",
+    "noIconAvailable": "无法获取网站图标，请使用纯色图标或本地上传"
+  },
+  "settings": {
+    "title": "设置",
+    "general": "通用",
+    "wallpaper": "壁纸",
+    "icons": "图标",
+    "search": "搜索",
+    "layout": "布局",
+    "fonts": "字体",
+    "marketplace": "应用市场",
+    "backup": "备份",
+    "about": "关于",
+    "language": "语言",
+    "theme": "主题",
+    "searchEngine": "搜索引擎",
+    "chinese": "中文",
+    "english": "English"
+  }
+}

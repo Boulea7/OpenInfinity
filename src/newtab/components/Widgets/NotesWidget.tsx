@@ -16,10 +16,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Don't render if widget is disabled
-  if (!viewSettings.showNotesWidget) return null;
-
-  // Auto-select first note if none selected
+  // Auto-select first note if none selected - must be before early return
   useEffect(() => {
     if (notes.length > 0 && !selectedNoteId) {
       setSelectedNoteId(notes[0].id);
@@ -28,7 +25,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
 
   const selectedNote = notes.find(n => n.id === selectedNoteId);
 
-  // Handle adding new note
+  // Handle adding new note - must be defined before early return
   const handleAddNote = useCallback(async () => {
     try {
       await addNote('# New Note\n\nStart writing...');
@@ -39,7 +36,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
     }
   }, [addNote]);
 
-  // Handle delete note
+  // Handle delete note - must be defined before early return
   const handleDeleteNote = useCallback(async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (confirm('确定要删除这条笔记吗？')) {
@@ -54,7 +51,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
     }
   }, [deleteNote, selectedNoteId]);
 
-  // Handle note content update
+  // Handle note content update - must be defined before early return
   const handleNoteChange = useCallback(async (value: string | undefined) => {
     if (!selectedNote) return;
     try {
@@ -63,6 +60,9 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
       console.error('Failed to update note:', error);
     }
   }, [selectedNote, updateNote]);
+
+  // Don't render if widget is disabled
+  if (!viewSettings.showNotesWidget) return null;
 
   // Format date
   const formatDate = (timestamp: number) => {

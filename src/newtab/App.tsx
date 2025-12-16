@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Settings } from 'lucide-react';
-import { useSettingsStore, useIconStore } from './stores';
+import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import type { Icon, Folder } from './services/database';
 import {
   WallpaperBackground,
@@ -38,6 +38,20 @@ function App() {
     initializeSettings();
     loadIcons();
   }, [initializeSettings, loadIcons]);
+
+  // Initialize auto-change timer based on stored config
+  useEffect(() => {
+    const { autoChange, startAutoChange, stopAutoChange } = useWallpaperStore.getState();
+
+    if (autoChange.enabled) {
+      startAutoChange();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      stopAutoChange();
+    };
+  }, []);
 
   // Apply dark mode class to document
   useEffect(() => {
