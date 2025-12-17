@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../stores';
 import { useDebounce } from '../../hooks';
+import { preloadEngineIcons } from '../../utils/iconCache';
 import { cn } from '../../utils';
 
 interface SearchBarProps {
@@ -92,9 +93,20 @@ export function SearchBar({ className }: SearchBarProps) {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [showEngineSelector, setShowEngineSelector] = useState(false);
   const [iconLoadFailed, setIconLoadFailed] = useState(false);
+  const [iconCache, setIconCache] = useState<Record<string, string>>({});
 
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Preload and cache engine icons
+  useEffect(() => {
+    const loadIcons = async () => {
+      const cache = await preloadEngineIcons(searchSettings.engines);
+      setIconCache(cache);
+    };
+
+    loadIcons();
+  }, [searchSettings.engines]);
 
   // Handle click outside to close suggestions
   useEffect(() => {
@@ -332,7 +344,7 @@ export function SearchBar({ className }: SearchBarProps) {
                   aria-checked={engine.id === currentEngine.id}
                 >
                   {engine.icon ? (
-                    <img src={engine.icon} alt="" className="w-4 h-4 rounded-sm" />
+                    <img src={iconCache[engine.id] || engine.icon} alt="" className="w-4 h-4 rounded-sm" />
                   ) : (
                     <Search className="w-4 h-4" />
                   )}

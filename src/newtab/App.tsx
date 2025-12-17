@@ -57,6 +57,24 @@ function App() {
     }
   }, [language, i18n]); // React to store changes
 
+  // Initialize wallpaper - fetch fresh wallpaper every time
+  useEffect(() => {
+    const initializeWallpaper = async () => {
+      const { activeSource } = useWallpaperStore.getState();
+
+      // For online wallpaper sources, always fetch fresh wallpaper
+      if (activeSource === 'unsplash' || activeSource === 'pexels') {
+        console.log(`[Wallpaper] Fetching fresh ${activeSource} wallpaper...`);
+        await useWallpaperStore.getState().fetchRandomWallpaper();
+      } else {
+        // For gradient/solid/local, load cached wallpaper
+        await useWallpaperStore.getState().loadWallpaper();
+      }
+    };
+
+    initializeWallpaper();
+  }, []); // Only run once on mount
+
   // Initialize auto-change timer based on stored config
   useEffect(() => {
     const { autoChange, startAutoChange, stopAutoChange } = useWallpaperStore.getState();

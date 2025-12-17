@@ -212,7 +212,7 @@ const defaultSearchEngines: SearchEngine[] = [
     id: 'bing',
     name: '必应',
     url: 'https://www.bing.com/search?q=',
-    icon: 'https://www.google.com/s2/favicons?domain=bing.com&sz=64',
+    icon: 'https://www.bing.com/favicon.ico',
     isDefault: false,
   },
   {

@@ -177,10 +177,10 @@ const defaultEffects: WallpaperEffects = {
 };
 
 /**
- * Default gradient
+ * Default gradient (yellow theme)
  */
 const defaultGradient: GradientConfig = {
-  colors: ['#8b5cf6', '#6366f1', '#3b82f6'],
+  colors: ['#FCD34D', '#F59E0B', '#D97706'],
   direction: 'to-br',
 };
 
