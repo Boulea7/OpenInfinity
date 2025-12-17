@@ -43,8 +43,8 @@ export function InfinityNavPanel() {
             case 'my':
                 return <MyTab />;
             case 'settings':
-                // Render SettingsPanel content directly (embedded mode)
-                return <SettingsPanel isOpen={true} onClose={() => {}} />;
+                // Render SettingsPanel in embedded mode (no SidePanel wrapper)
+                return <SettingsPanel isOpen={true} onClose={() => {}} embedded={true} />;
             default:
                 return null;
         }

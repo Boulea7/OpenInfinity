@@ -11,7 +11,9 @@ import {
   Download,
   Info,
   RotateCcw,
+  Clock,
 } from 'lucide-react';
+import { COMMON_TIMEZONES } from '../../data/timezones';
 import { useSettingsStore, useWallpaperStore } from '../../stores';
 import type { WallpaperSource, AutoChangeInterval } from '../../stores/wallpaperStore';
 import type { IconStyle, SearchSettings, ViewSettings, FontSettings } from '../../stores/settingsStore';
@@ -21,6 +23,7 @@ import { cn } from '../../utils';
 // Settings tab definitions
 const SETTINGS_TABS = [
   { id: 'general', label: 'General', icon: Settings },
+  { id: 'clock', label: 'Clock', icon: Clock },
   { id: 'wallpaper', label: 'Wallpaper', icon: Image },
   { id: 'icons', label: 'Icons', icon: Grid3X3 },
   { id: 'search', label: 'Search', icon: Search },
@@ -36,13 +39,14 @@ type SettingsTab = (typeof SETTINGS_TABS)[number]['id'];
 interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  embedded?: boolean; // If true, render content only without SidePanel wrapper
 }
 
 /**
  * SettingsPanel Component
  * Full settings interface with categorized tabs
  */
-export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const {
     theme,
@@ -57,6 +61,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     setViewSettings,
     fontSettings,
     setFontSettings,
+    clockSettings,
+    setClockSettings,
     resetToDefaults,
   } = useSettingsStore();
 
@@ -74,6 +80,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     switch (activeTab) {
       case 'general':
         return <GeneralSettings theme={theme} setTheme={setTheme} language={language} setLanguage={setLanguage} />;
+      case 'clock':
+        return <ClockSettings clockSettings={clockSettings} setClockSettings={setClockSettings} />;
       case 'wallpaper':
         return <WallpaperSettings activeSource={activeSource} setActiveSource={setActiveSource} effects={effects} setEffects={setEffects} autoChange={autoChange} setAutoChange={setAutoChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} fetchRandomWallpaper={fetchRandomWallpaper} />;
       case 'icons':
@@ -95,63 +103,74 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     }
   };
 
+  // Settings content (sidebar + content area)
+  const settingsContent = (
+    <div className="flex h-full">
+      {/* Sidebar */}
+      <nav className="w-48 border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex-shrink-0">
+        <div className="py-4">
+          {/* Reset All Button - moved to sidebar top */}
+          <div className="px-4 mb-2">
+            <button
+              onClick={handleResetAll}
+              className={cn(
+                'w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm',
+                'text-gray-600 dark:text-gray-400',
+                'hover:bg-gray-100 dark:hover:bg-gray-700',
+                'transition-colors duration-200'
+              )}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset All
+            </button>
+          </div>
+
+          {/* Tab List */}
+          <ul>
+            {SETTINGS_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <li key={tab.id}>
+                  <button
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-2.5 text-sm',
+                      'transition-colors duration-200',
+                      activeTab === tab.id
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-r-2 border-primary-500'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
+
+      {/* Tab content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {renderTabContent()}
+      </div>
+    </div>
+  );
+
+  // If embedded mode, return content only
+  if (embedded) {
+    return settingsContent;
+  }
+
+  // Otherwise, wrap in SidePanel for modal usage
   return (
     <SidePanel
       isOpen={isOpen}
       onClose={onClose}
       title="Settings"
     >
-      <div className="flex h-full">
-        {/* Sidebar */}
-        <nav className="w-48 border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex-shrink-0">
-          <div className="py-4">
-            {/* Reset All Button - moved to sidebar top */}
-            <div className="px-4 mb-2">
-              <button
-                onClick={handleResetAll}
-                className={cn(
-                  'w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm',
-                  'text-gray-600 dark:text-gray-400',
-                  'hover:bg-gray-100 dark:hover:bg-gray-700',
-                  'transition-colors duration-200'
-                )}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Reset All
-              </button>
-            </div>
-
-            {/* Tab List */}
-            <ul>
-              {SETTINGS_TABS.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <li key={tab.id}>
-                    <button
-                      onClick={() => setActiveTab(tab.id)}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-4 py-2.5 text-sm',
-                        'transition-colors duration-200',
-                        activeTab === tab.id
-                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-r-2 border-primary-500'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {tab.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </nav>
-
-        {/* Tab content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {renderTabContent()}
-        </div>
-      </div>
+      {settingsContent}
     </SidePanel>
   );
 }
@@ -587,6 +606,129 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
               {size}
             </button>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Clock Settings Section
+interface ClockSettingsProps {
+  clockSettings: import('../../stores/settingsStore').ClockSettings;
+  setClockSettings: (settings: Partial<import('../../stores/settingsStore').ClockSettings>) => void;
+}
+
+function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) {
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Clock Settings</h3>
+
+      {/* Time Format Card */}
+      <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 space-y-4 shadow-sm">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Time Format
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(['12h', '24h'] as const).map((format) => (
+            <button
+              key={format}
+              onClick={() => setClockSettings({ format })}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                clockSettings.format === format
+                  ? 'bg-brand-orange-500 text-white shadow-md'
+                  : 'bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-brand-orange-50 dark:hover:bg-gray-600'
+              )}
+            >
+              {format === '12h' ? '12-Hour (am/pm)' : '24-Hour'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Display Options Card */}
+      <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 space-y-4 shadow-sm">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Display Options</h4>
+
+        {/* Show Seconds Toggle */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-gray-600 dark:text-gray-400">
+            Show Seconds
+          </label>
+          <button
+            onClick={() => setClockSettings({ showSeconds: !clockSettings.showSeconds })}
+            className={cn(
+              'w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/50',
+              clockSettings.showSeconds ? 'bg-brand-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                clockSettings.showSeconds ? 'translate-x-5' : 'translate-x-0.5'
+              )}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Timezone Settings Card */}
+      <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 space-y-4 shadow-sm">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Timezone</h4>
+
+        {/* Auto Detect Toggle */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-gray-600 dark:text-gray-400">
+            Auto Detect Timezone
+          </label>
+          <button
+            onClick={() => setClockSettings({ autoDetect: !clockSettings.autoDetect })}
+            className={cn(
+              'w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/50',
+              clockSettings.autoDetect ? 'bg-brand-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+            )}
+          >
+            <span
+              className={cn(
+                'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                clockSettings.autoDetect ? 'translate-x-5' : 'translate-x-0.5'
+              )}
+            />
+          </button>
+        </div>
+
+        {/* Timezone Selector */}
+        <div className={cn(
+          "transition-opacity duration-200",
+          clockSettings.autoDetect ? "opacity-50 pointer-events-none" : "opacity-100"
+        )}>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+            Select Timezone
+          </label>
+          <select
+            value={clockSettings.timezone}
+            onChange={(e) => setClockSettings({ timezone: e.target.value })}
+            disabled={clockSettings.autoDetect}
+            className={cn(
+              'w-full px-3 py-2 rounded-lg text-sm appearance-none',
+              'bg-white/50 dark:bg-gray-700/50',
+              'border border-gray-200 dark:border-gray-600',
+              'text-gray-900 dark:text-gray-100',
+              'focus:outline-none focus:ring-2 focus:ring-brand-orange-500',
+              'transition-all duration-200'
+            )}
+          >
+            {COMMON_TIMEZONES.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+          {clockSettings.autoDetect && (
+            <p className="mt-1.5 text-xs text-brand-orange-500">
+              Using system timezone
+            </p>
+          )}
         </div>
       </div>
     </div>

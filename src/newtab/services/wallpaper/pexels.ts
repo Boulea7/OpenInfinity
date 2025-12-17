@@ -52,7 +52,9 @@ export class PexelsProvider implements WallpaperProvider {
     this.apiKey = apiKey || import.meta.env.VITE_PEXELS_API_KEY || '';
 
     if (!this.apiKey) {
-      console.warn('Pexels API key not configured. Provider will not work.');
+      // Silently skip initialization if API key not configured
+      // This is expected when only using Unsplash or other providers
+      // console.warn('Pexels API key not configured. Provider will not work.');
     }
   }
 
