@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { SidePanel } from '../ui/SidePanel';
 import { useNavigationStore, type NavigationTab } from '../../stores/navigationStore';
+import { SettingsPanel } from '../Settings/SettingsPanel';
 import { AddTab } from './AddTab/AddTab';
 import { MyTab } from './MyTab/MyTab';
 import { cn } from '../../utils';
@@ -42,16 +43,8 @@ export function InfinityNavPanel() {
             case 'my':
                 return <MyTab />;
             case 'settings':
-                return (
-                    <div className="animate-fade-in p-6">
-                        <div className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-2xl p-8 shadow-sm">
-                            <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">全局设置</h3>
-                            <p className="text-zinc-600 dark:text-zinc-400">
-                                配置选项迁移中...
-                            </p>
-                        </div>
-                    </div>
-                );
+                // Render SettingsPanel content directly (embedded mode)
+                return <SettingsPanel isOpen={true} onClose={() => {}} />;
             default:
                 return null;
         }

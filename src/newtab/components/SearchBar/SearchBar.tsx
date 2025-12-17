@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Search, ChevronDown, Monitor, Image, Video, Map } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../stores';
 import { useDebounce } from '../../hooks';
 import { cn } from '../../utils';
@@ -77,6 +78,7 @@ const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
  * Redesigned with Modern Glassmorphism + Windows 11 Fluent Style
  */
 export function SearchBar({ className }: SearchBarProps) {
+  const { t } = useTranslation();
   const { searchSettings, openBehavior, setSearchSettings } = useSettingsStore(
     useShallow((state) => ({
       searchSettings: state.searchSettings,
@@ -352,7 +354,7 @@ export function SearchBar({ className }: SearchBarProps) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => searchSettings.showSuggestions && suggestions.length > 0 && setShowSuggestions(true)}
-          placeholder={searchSettings.placeholder || `Search with ${currentEngine.name}...`}
+          placeholder={t('searchBar.placeholder')}
           className={cn(
             'flex-1 bg-transparent border-none outline-none',
             'text-zinc-800 dark:text-zinc-100 placeholder-zinc-400',

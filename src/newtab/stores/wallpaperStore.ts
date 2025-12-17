@@ -190,11 +190,11 @@ const defaultGradient: GradientConfig = {
 export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
   persist(
     (set, get) => ({
-      // Initial state
+      // Initial state (read default source from environment)
       currentWallpaper: null,
       currentUrl: null,
       mode: 'full',
-      activeSource: 'gradient',
+      activeSource: (import.meta.env.VITE_DEFAULT_WALLPAPER_SOURCE as WallpaperSource) || 'gradient',
       solidColor: '#1e293b',
       gradient: defaultGradient,
       effects: defaultEffects,
@@ -234,6 +234,12 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
               currentUrl: url,
               activeSource: wallpapers.type as WallpaperSource,
             });
+          } else {
+            // No saved wallpaper - auto-fetch if source is unsplash
+            const currentSource = get().activeSource;
+            if (currentSource === 'unsplash') {
+              await get().fetchRandomWallpaper();
+            }
           }
 
           // Load favorites
