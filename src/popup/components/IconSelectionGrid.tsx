@@ -1,29 +1,44 @@
 import { useState } from 'react';
 import { useFaviconFetch } from '../hooks/useFaviconFetch';
 import TextIconEditor from './TextIconEditor';
+import type { EditRequest, IconDraft } from '../types/iconDraft';
 
 interface Props {
   url: string;
   websiteName: string;
-  onIconSelect: (iconData: any) => void;
-  onEditRequest?: (imageUrl: string) => void;
+  onIconSelect: (iconData: IconDraft | null) => void;
+  onEditRequest?: (req: EditRequest) => void;
 }
 
 export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEditRequest }: Props) {
   const { sources, isLoading } = useFaviconFetch(url);
-  const [selectedType, setSelectedType] = useState<'text' | 'google' | 'duckduckgo' | 'upload' | null>('text');
+  const [selectedType, setSelectedType] = useState<'text' | 'duckduckgo' | 'upload' | null>('text');
+
+  const duckSource = !isLoading
+    ? sources.find((s) => s.provider === 'duckduckgo' && s.status === 'success')
+    : undefined;
 
   const handleTextIconSelect = () => {
     setSelectedType('text');
   };
 
-  const handleFaviconSelect = (source: any) => {
-    if (onEditRequest && source.dataUrl) {
-      onEditRequest(source.dataUrl);
+  const handleFaviconSelect = () => {
+    setSelectedType('duckduckgo');
+    onIconSelect(null);
+
+    if (duckSource?.dataUrl) {
+      if (onEditRequest) {
+        onEditRequest({ imageUrl: duckSource.dataUrl, iconType: 'favicon' });
+      } else {
+        onIconSelect({ type: 'favicon', value: duckSource.dataUrl });
+      }
     }
   };
 
   const handleUploadSelect = () => {
+    setSelectedType('upload');
+    onIconSelect(null);
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -37,8 +52,11 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
 
         const reader = new FileReader();
         reader.onload = () => {
+          const dataUrl = reader.result as string;
           if (onEditRequest) {
-            onEditRequest(reader.result as string);
+            onEditRequest({ imageUrl: dataUrl, iconType: 'custom' });
+          } else {
+            onIconSelect({ type: 'custom', value: dataUrl });
           }
         };
         reader.readAsDataURL(file);
@@ -66,15 +84,17 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
         </button>
 
         {/* DuckDuckGo favicon (if available) - only show DuckDuckGo */}
-        {!isLoading && sources.find((s) => s.provider === 'duckduckgo' && s.status === 'success') && (
+        {duckSource && (
           <button
             type="button"
-            onClick={() => handleFaviconSelect(sources.find((s) => s.provider === 'duckduckgo'))}
-            className="flex flex-col items-center gap-2 p-3 border-2 border-gray-200 hover:border-gray-300 rounded-lg transition-all"
+            onClick={handleFaviconSelect}
+            className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${
+              selectedType === 'duckduckgo' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+            }`}
           >
             <div className="w-12 h-12 flex items-center justify-center">
               <img
-                src={sources.find((s) => s.provider === 'duckduckgo')?.dataUrl}
+                src={duckSource.dataUrl}
                 alt="Favicon"
                 className="w-12 h-12 rounded"
               />
@@ -87,7 +107,11 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
         <button
           type="button"
           onClick={handleUploadSelect}
-          className="flex flex-col items-center gap-2 p-3 border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg transition-all"
+          className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${
+            selectedType === 'upload'
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-dashed border-gray-300 hover:border-gray-400'
+          }`}
         >
           <div className="w-12 h-12 flex items-center justify-center text-gray-400 text-3xl">
             +

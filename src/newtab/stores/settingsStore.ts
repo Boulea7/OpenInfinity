@@ -423,15 +423,61 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'openinfinity-settings',
-      version: 2,  // Increment version to force migration
+      version: 3, // Increment version to force migration
       migrate: (persistedState: any, version: number) => {
-        // V2: Force update search engine icons from DuckDuckGo to Google Favicon API
-        if (version < 2) {
-          if (persistedState?.searchSettings?.engines) {
-            persistedState.searchSettings.engines = defaultSearchEngines;
+        // V3: Ensure default search engines are up-to-date without requiring manual localStorage clear
+        const state = persistedState ?? {};
+
+        if (version < 3) {
+          const persistedEngines = Array.isArray(state?.searchSettings?.engines)
+            ? (state.searchSettings.engines as SearchEngine[])
+            : [];
+
+          const defaultIds = new Set(defaultSearchEngines.map((e) => e.id));
+          const persistedById = new Map<string, SearchEngine>();
+          const customEngines: SearchEngine[] = [];
+
+          for (const engine of persistedEngines) {
+            if (!engine || typeof engine.id !== 'string') continue;
+            persistedById.set(engine.id, engine);
+            if (!defaultIds.has(engine.id)) {
+              customEngines.push(engine);
+            }
           }
+
+          const mergedEngines = [
+            ...defaultSearchEngines.map((def) => {
+              const existing = persistedById.get(def.id);
+              if (!existing) return def;
+
+              // Keep user edits where possible, but always refresh the favicon URL from defaults
+              return {
+                ...def,
+                ...existing,
+                icon: def.icon ?? existing.icon,
+              };
+            }),
+            ...customEngines,
+          ];
+
+          const persistedDefaultEngine = state?.searchSettings?.defaultEngine as string | undefined;
+          const defaultEngine =
+            persistedDefaultEngine && mergedEngines.some((e) => e.id === persistedDefaultEngine)
+              ? persistedDefaultEngine
+              : (mergedEngines.find((e) => e.isDefault)?.id || mergedEngines[0]?.id || 'google');
+
+          return {
+            ...state,
+            searchSettings: {
+              ...state.searchSettings,
+              engines: mergedEngines,
+              defaultEngine,
+              searchType: state?.searchSettings?.searchType ?? 'web',
+            },
+          };
         }
-        return persistedState;
+
+        return state;
       },
       partialize: (state) => ({
         theme: state.theme,

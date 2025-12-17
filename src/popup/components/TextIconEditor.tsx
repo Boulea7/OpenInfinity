@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { generateTextIcon } from '../utils/iconGenerator';
+import type { IconDraft } from '../types/iconDraft';
 
 const PRESET_COLORS = [
   '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
@@ -7,7 +8,7 @@ const PRESET_COLORS = [
 ];
 
 interface Props {
-  onIconChange: (iconData: any) => void;
+  onIconChange: (iconData: IconDraft | null) => void;
   websiteName?: string;  // Website name for syncing
 }
 
@@ -36,9 +37,11 @@ export default function TextIconEditor({ onIconChange, websiteName }: Props) {
 
     // Increment generation ID to cancel previous operations
     const currentId = ++generationIdRef.current;
+    let cancelled = false;
 
     generateTextIcon({ text, color, fontSize })
       .then((dataUrl) => {
+        if (cancelled) return;
         // Only update if this is still the latest generation
         if (currentId === generationIdRef.current) {
           onIconChange({
@@ -50,11 +53,16 @@ export default function TextIconEditor({ onIconChange, websiteName }: Props) {
         }
       })
       .catch((error) => {
+        if (cancelled) return;
         console.error('Failed to generate text icon:', error);
         if (currentId === generationIdRef.current) {
           onIconChange(null);
         }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [text, fontSize, color, onIconChange]);
 
   return (

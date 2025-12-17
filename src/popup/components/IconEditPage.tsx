@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import ReactCrop, { type Crop } from 'react-image-crop';
+import ReactCrop, { type PercentCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 const PRESET_COLORS = [
@@ -9,12 +9,16 @@ const PRESET_COLORS = [
 
 interface Props {
   imageUrl: string;
+  iconType?: 'favicon' | 'custom';
   onConfirm: (croppedImageData: string, backgroundColor: string) => void;
   onCancel: () => void;
 }
 
-export default function IconEditPage({ imageUrl, onConfirm, onCancel }: Props) {
-  const [crop, setCrop] = useState<Crop>({
+export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm, onCancel }: Props) {
+  const isFavicon = iconType === 'favicon';
+  const outputSize = isFavicon ? 64 : 128;
+
+  const [crop, setCrop] = useState<PercentCrop>({
     unit: '%',
     width: 80,
     height: 80,
@@ -33,23 +37,29 @@ export default function IconEditPage({ imageUrl, onConfirm, onCancel }: Props) {
       if (!ctx) return;
 
       // Set canvas size
-      canvas.width = 128;
-      canvas.height = 128;
+      canvas.width = outputSize;
+      canvas.height = outputSize;
 
-      // Calculate crop dimensions
-      const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-      const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+      // Calculate crop dimensions (PercentCrop -> pixels in natural image space)
+      const x = typeof crop.x === 'number' ? crop.x : 0;
+      const y = typeof crop.y === 'number' ? crop.y : 0;
+      const width = typeof crop.width === 'number' ? crop.width : 0;
+      const height = typeof crop.height === 'number' ? crop.height : 0;
+
+      if (width <= 0 || height <= 0) return;
 
       const pixelCrop = {
-        x: crop.x * scaleX,
-        y: crop.y * scaleY,
-        width: crop.width * scaleX,
-        height: crop.height * scaleY,
+        x: (x / 100) * imgRef.current.naturalWidth,
+        y: (y / 100) * imgRef.current.naturalHeight,
+        width: (width / 100) * imgRef.current.naturalWidth,
+        height: (height / 100) * imgRef.current.naturalHeight,
       };
 
-      // Draw background
-      ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, 128, 128);
+      // Draw background (favicon keeps transparency)
+      if (!isFavicon) {
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, outputSize, outputSize);
+      }
 
       // Draw cropped image centered
       ctx.drawImage(
@@ -60,8 +70,8 @@ export default function IconEditPage({ imageUrl, onConfirm, onCancel }: Props) {
         pixelCrop.height,
         0,
         0,
-        128,
-        128
+        outputSize,
+        outputSize
       );
 
       const croppedImageData = canvas.toDataURL('image/png');
@@ -84,17 +94,17 @@ export default function IconEditPage({ imageUrl, onConfirm, onCancel }: Props) {
   };
 
   return (
-    <div className="w-[600px] min-h-[500px] p-4 bg-white">
+    <div className="w-full max-w-[560px] min-h-[500px] p-4 bg-white">
       <h2 className="text-xl font-semibold mb-4">自定义图标</h2>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Left: Crop area */}
         <div>
           <h3 className="text-sm font-medium mb-2">裁切区域</h3>
           <div className="border rounded-lg overflow-hidden">
             <ReactCrop
               crop={crop}
-              onChange={(c) => setCrop(c)}
+              onChange={(_c, percentCrop) => setCrop(percentCrop)}
               aspect={1}  // Square crop
             >
               <img
@@ -110,8 +120,11 @@ export default function IconEditPage({ imageUrl, onConfirm, onCancel }: Props) {
         {/* Right: Preview */}
         <div>
           <h3 className="text-sm font-medium mb-2">预览</h3>
-          <div className="border rounded-lg p-4 flex items-center justify-center" style={{ backgroundColor }}>
-            <div className="w-24 h-24 flex items-center justify-center">
+          <div
+            className="border rounded-lg p-4 flex items-center justify-center"
+            style={isFavicon ? undefined : { backgroundColor }}
+          >
+            <div className={isFavicon ? 'w-16 h-16 flex items-center justify-center' : 'w-24 h-24 flex items-center justify-center'}>
               <img
                 src={imageUrl}
                 alt="Preview"
@@ -123,35 +136,37 @@ export default function IconEditPage({ imageUrl, onConfirm, onCancel }: Props) {
       </div>
 
       {/* Background color selector */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">背景颜色</label>
-        <div className="flex gap-2">
-          {PRESET_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setBackgroundColor(c)}
-              className="w-10 h-10 rounded-lg border-2 transition-all"
-              style={{
-                backgroundColor: c,
-                borderColor: backgroundColor === c ? '#000' : '#ccc',
-              }}
-            />
-          ))}
-          <label
-            className="w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
-            title="自定义颜色"
-          >
-            🎨
-            <input
-              type="color"
-              value={backgroundColor}
-              onChange={(e) => setBackgroundColor(e.target.value)}
-              className="hidden"
-            />
-          </label>
+      {!isFavicon && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">背景颜色</label>
+          <div className="flex gap-2">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setBackgroundColor(c)}
+                className="w-10 h-10 rounded-lg border-2 transition-all"
+                style={{
+                  backgroundColor: c,
+                  borderColor: backgroundColor === c ? '#000' : '#ccc',
+                }}
+              />
+            ))}
+            <label
+              className="w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
+              title="自定义颜色"
+            >
+              🎨
+              <input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="hidden"
+              />
+            </label>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex gap-2">
