@@ -527,19 +527,43 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
       </div>
 
       {/* Border Radius */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Border Radius</span>
-          <span>{iconStyle.borderRadius}%</span>
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <label htmlFor="border-radius-slider" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            圆角弧度 / Border Radius
+          </label>
+          <span className="text-sm font-semibold text-primary-600" aria-live="polite">
+            {iconStyle.borderRadius}%
+          </span>
         </div>
         <input
+          id="border-radius-slider"
           type="range"
           min="0"
           max="50"
+          step="1"
           value={iconStyle.borderRadius}
           onChange={(e) => setIconStyle({ borderRadius: Number(e.target.value) })}
-          className="w-full"
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600 dark:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          aria-label="Icon border radius"
+          aria-valuemin={0}
+          aria-valuemax={50}
+          aria-valuenow={iconStyle.borderRadius}
+          aria-valuetext={`${iconStyle.borderRadius}% border radius`}
         />
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400" id="border-radius-description">
+          <span>方形</span>
+          <span className="text-center">圆角</span>
+          <span>圆形</span>
+        </div>
+
+        {/* Preview */}
+        <div className="mt-3 flex items-center justify-center" aria-hidden="true">
+          <div
+            className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 transition-all duration-200"
+            style={{ borderRadius: `${iconStyle.borderRadius}%` }}
+          />
+        </div>
       </div>
 
       {/* Size */}
