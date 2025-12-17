@@ -164,13 +164,24 @@ export function SearchBar({ className }: SearchBarProps) {
     large: 'max-w-2xl py-4 px-6',
   };
 
+  // Get max-width classes for alignment
+  const maxWidthClasses: Record<'small' | 'medium' | 'large', string> = {
+    small: 'max-w-md',
+    medium: 'max-w-xl',
+    large: 'max-w-2xl',
+  };
+
   // Get size class safely
   const currentSizeClass = sizeClasses[searchSettings.size as keyof typeof sizeClasses] || sizeClasses.medium;
+  const currentMaxWidth = maxWidthClasses[searchSettings.size as keyof typeof maxWidthClasses] || maxWidthClasses.medium;
 
   return (
     <div className={cn('relative w-full', className)} ref={suggestionsRef}>
       {/* Search type tabs */}
-      <div className="mx-auto mb-2 flex justify-start gap-4 text-sm">
+      <div className={cn(
+        'mx-auto mb-2 flex justify-start gap-3 text-sm',
+        currentMaxWidth  // Use dedicated max-width class for alignment
+      )}>
         {(['web', 'images', 'videos', 'maps'] as const).map((type) => (
           <button
             key={type}
