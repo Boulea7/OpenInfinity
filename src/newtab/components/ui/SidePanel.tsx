@@ -3,14 +3,11 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../utils';
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
-
-interface ModalProps {
+interface SidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: ModalSize;
   closable?: boolean;
   showCloseButton?: boolean;
   className?: string;
@@ -18,31 +15,23 @@ interface ModalProps {
   overlayClassName?: string;
 }
 
-const sizeClasses: Record<ModalSize, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  full: 'max-w-4xl',
-};
-
 /**
- * Modal Component
- * Renders a modal dialog with overlay, animations, and accessibility features
+ * SidePanel Component
+ * Right-side slide-out panel with backdrop and animations
+ * Allows live preview of background content
  */
-export function Modal({
+export function SidePanel({
   isOpen,
   onClose,
   title,
   children,
-  size = 'md',
   closable = true,
   showCloseButton = true,
   className,
   contentClassName,
   overlayClassName,
-}: ModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
+}: SidePanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Handle escape key to close
@@ -58,15 +47,15 @@ export function Modal({
   // Handle overlay click to close
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
-      // Check if click is outside the modal
-      if (closable && modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      // Check if click is outside the panel
+      if (closable && panelRef.current && !panelRef.current.contains(e.target as Node)) {
         onClose();
       }
     },
     [closable, onClose]
   );
 
-  // Save previous focus and lock body scroll when modal opens
+  // Save previous focus and lock body scroll when panel opens
   useEffect(() => {
     if (isOpen) {
       // Save current focused element
@@ -80,7 +69,7 @@ export function Modal({
         document.body.style.overflow = originalOverflow;
         document.removeEventListener('keydown', handleKeyDown);
 
-        // Restore focus when modal closes
+        // Restore focus when panel closes
         if (previousFocusRef.current) {
           previousFocusRef.current.focus();
         }
@@ -88,40 +77,40 @@ export function Modal({
     }
   }, [isOpen, handleKeyDown]);
 
-  // Focus modal when opened
+  // Focus panel when opened
   useEffect(() => {
-    if (isOpen && modalRef.current) {
-      modalRef.current.focus();
+    if (isOpen && panelRef.current) {
+      panelRef.current.focus();
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const modalContent = (
+  const panelContent = (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center p-4',
+        'fixed inset-0 z-50',
         'animate-fade-in',
         overlayClassName
       )}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
+      aria-labelledby={title ? 'sidepanel-title' : undefined}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      {/* Backdrop - semi-transparent to show background */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
 
-      {/* Modal content */}
+      {/* Side Panel */}
       <div
-        ref={modalRef}
+        ref={panelRef}
         className={cn(
-          'relative w-full',
-          sizeClasses[size],
+          'absolute right-0 top-0 h-screen w-[480px]',
           'bg-white dark:bg-gray-800',
-          'rounded-2xl shadow-2xl shadow-black/20',
-          'max-h-[90vh] overflow-hidden',
-          'animate-scale-in',
+          'shadow-2xl shadow-black/30',
+          'overflow-hidden',
+          'transform transition-transform duration-300 ease-out',
+          isOpen ? 'translate-x-0' : 'translate-x-full',
           className
         )}
         tabIndex={-1}
@@ -131,8 +120,8 @@ export function Modal({
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             {title && (
               <h2
-                id="modal-title"
-                className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+                id="sidepanel-title"
+                className="text-xl font-semibold text-gray-900 dark:text-gray-100"
               >
                 {title}
               </h2>
@@ -146,7 +135,7 @@ export function Modal({
                   'hover:bg-gray-100 dark:hover:bg-gray-700',
                   !title && 'absolute top-4 right-4'
                 )}
-                aria-label="Close modal"
+                aria-label="Close panel"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -157,10 +146,9 @@ export function Modal({
         {/* Content */}
         <div
           className={cn(
-            'overflow-y-auto',
+            'overflow-y-auto h-full pb-20',
             contentClassName
           )}
-          style={{ maxHeight: 'calc(90vh - 80px)' }}
         >
           {children}
         </div>
@@ -172,7 +160,7 @@ export function Modal({
   const portalTarget =
     document.getElementById('overlay-root') || document.body;
 
-  return createPortal(modalContent, portalTarget);
+  return createPortal(panelContent, portalTarget);
 }
 
-export default Modal;
+export default SidePanel;
