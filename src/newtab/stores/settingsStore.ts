@@ -186,26 +186,26 @@ const defaultSearchEngines: SearchEngine[] = [
     id: 'google',
     name: 'Google',
     url: 'https://www.google.com/search?q=',
-    icon: '🔍',
+    icon: 'https://icons.duckduckgo.com/ip3/google.com.ico',
     isDefault: true,
   },
   {
     id: 'bing',
     name: 'Bing',
     url: 'https://www.bing.com/search?q=',
-    icon: '🅱️',
+    icon: 'https://icons.duckduckgo.com/ip3/bing.com.ico',
   },
   {
     id: 'duckduckgo',
     name: 'DuckDuckGo',
     url: 'https://duckduckgo.com/?q=',
-    icon: '🦆',
+    icon: 'https://icons.duckduckgo.com/ip3/duckduckgo.com.ico',
   },
   {
     id: 'baidu',
     name: 'Baidu',
     url: 'https://www.baidu.com/s?wd=',
-    icon: '百',
+    icon: 'https://icons.duckduckgo.com/ip3/baidu.com.ico',
   },
 ];
 
@@ -214,7 +214,7 @@ const defaultSearchEngines: SearchEngine[] = [
  */
 const defaultSettings: SettingsState = {
   theme: 'system',
-  language: 'zh-CN',
+  language: 'zh',
   openBehavior: {
     websites: 'current_tab',
     searchResults: 'new_tab',
