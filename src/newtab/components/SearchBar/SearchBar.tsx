@@ -55,6 +55,36 @@ export function SearchBar({ className }: SearchBarProps) {
       videos: 'https://www.baidu.com/sf/vsearch?pd=video&wd=',
       maps: 'https://map.baidu.com/search/',
     },
+    yahoo: {
+      web: 'https://search.yahoo.com/search?p=',
+      images: 'https://images.search.yahoo.com/search/images?p=',
+      videos: 'https://video.search.yahoo.com/search/video?p=',
+      maps: 'https://www.google.com/maps/search/',  // Yahoo doesn't have maps, fallback to Google
+    },
+    yandex: {
+      web: 'https://yandex.com/search/?text=',
+      images: 'https://yandex.com/images/search?text=',
+      videos: 'https://yandex.com/video/search?text=',
+      maps: 'https://yandex.com/maps/?text=',
+    },
+    yandexru: {
+      web: 'https://yandex.ru/search/?text=',
+      images: 'https://yandex.ru/images/search?text=',
+      videos: 'https://yandex.ru/video/search?text=',
+      maps: 'https://yandex.ru/maps/?text=',
+    },
+    sogou: {
+      web: 'https://www.sogou.com/web?query=',
+      images: 'https://pic.sogou.com/pics?query=',
+      videos: 'https://v.sogou.com/v?query=',
+      maps: 'https://map.sogou.com/#city=%u5317%u4eac&query=',  // Sogou Maps
+    },
+    '360': {
+      web: 'https://www.so.com/s?q=',
+      images: 'https://image.so.com/i?q=',
+      videos: 'https://www.so.com/s?q=',  // 360 uses same URL for videos
+      maps: 'https://ditu.so.com/?k=',
+    },
   };
 
   // Handle click outside to close suggestions

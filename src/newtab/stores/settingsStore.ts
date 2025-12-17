@@ -183,29 +183,67 @@ interface SettingsActions {
  */
 const defaultSearchEngines: SearchEngine[] = [
   {
+    id: 'baidu',
+    name: '百度',
+    url: 'https://www.baidu.com/s?wd=',
+    icon: 'https://www.google.com/s2/favicons?domain=baidu.com&sz=64',
+    isDefault: false,
+  },
+  {
     id: 'google',
-    name: 'Google',
+    name: '谷歌',
     url: 'https://www.google.com/search?q=',
     icon: 'https://www.google.com/s2/favicons?domain=google.com&sz=64',
     isDefault: true,
   },
   {
     id: 'bing',
-    name: 'Bing',
+    name: '必应',
     url: 'https://www.bing.com/search?q=',
     icon: 'https://www.google.com/s2/favicons?domain=bing.com&sz=64',
+    isDefault: false,
+  },
+  {
+    id: 'yahoo',
+    name: '雅虎',
+    url: 'https://search.yahoo.com/search?p=',
+    icon: 'https://www.google.com/s2/favicons?domain=yahoo.com&sz=64',
+    isDefault: false,
+  },
+  {
+    id: 'yandex',
+    name: 'Yandex',
+    url: 'https://yandex.com/search/?text=',
+    icon: 'https://www.google.com/s2/favicons?domain=yandex.com&sz=64',
+    isDefault: false,
   },
   {
     id: 'duckduckgo',
     name: 'DuckDuckGo',
     url: 'https://duckduckgo.com/?q=',
     icon: 'https://www.google.com/s2/favicons?domain=duckduckgo.com&sz=64',
+    isDefault: false,
   },
   {
-    id: 'baidu',
-    name: 'Baidu',
-    url: 'https://www.baidu.com/s?wd=',
-    icon: 'https://www.google.com/s2/favicons?domain=baidu.com&sz=64',
+    id: 'yandexru',
+    name: 'YandexRU',
+    url: 'https://yandex.ru/search/?text=',
+    icon: 'https://www.google.com/s2/favicons?domain=yandex.ru&sz=64',
+    isDefault: false,
+  },
+  {
+    id: 'sogou',
+    name: '搜狗',
+    url: 'https://www.sogou.com/web?query=',
+    icon: 'https://www.google.com/s2/favicons?domain=sogou.com&sz=64',
+    isDefault: false,
+  },
+  {
+    id: '360',
+    name: '360搜索',
+    url: 'https://www.so.com/s?q=',
+    icon: 'https://www.google.com/s2/favicons?domain=so.com&sz=64',
+    isDefault: false,
   },
 ];
 
