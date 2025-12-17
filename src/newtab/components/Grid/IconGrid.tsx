@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragOverlay,
@@ -44,6 +45,7 @@ export function IconGrid({
   onEditIcon,
   onOpenFolder,
 }: IconGridProps) {
+  const { t } = useTranslation();
   const {
     icons,
     folders,
@@ -467,14 +469,14 @@ export function IconGrid({
               d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
             />
           </svg>
-          <p className="text-lg font-medium mb-2">No icons yet</p>
-          <p className="text-sm mb-4">Click the button below to add your first shortcut</p>
+          <p className="text-lg font-medium mb-2">{t('iconGrid.emptyTitle')}</p>
+          <p className="text-sm mb-4">{t('iconGrid.emptyDescription')}</p>
           <button
             onClick={onAddIcon}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Add Icon
+            {t('iconGrid.addIcon')}
           </button>
         </div>
       )}

@@ -8,6 +8,11 @@
       "maps": "地图"
     }
   },
+  "iconGrid": {
+    "emptyTitle": "还没有图标",
+    "emptyDescription": "点击下方按钮添加您的第一个快捷方式",
+    "addIcon": "添加图标"
+  },
   "popup": {
     "title": "添加到 OpenInfinity",
     "websiteName": "网站名称",

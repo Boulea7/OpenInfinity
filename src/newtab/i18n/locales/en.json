@@ -8,6 +8,11 @@
       "maps": "Maps"
     }
   },
+  "iconGrid": {
+    "emptyTitle": "No icons yet",
+    "emptyDescription": "Click the button below to add your first shortcut",
+    "addIcon": "Add Icon"
+  },
   "popup": {
     "title": "Add to OpenInfinity",
     "websiteName": "Website Name",
