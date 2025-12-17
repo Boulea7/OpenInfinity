@@ -9,7 +9,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
   },
   lng: localStorage.getItem('language') || 'zh',  // Get from localStorage
-  fallbackLng: 'en',
+  fallbackLng: 'zh',
   interpolation: {
     escapeValue: false,
   },

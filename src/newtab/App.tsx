@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings } from 'lucide-react';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import type { Icon, Folder } from './services/database';
@@ -19,7 +20,8 @@ import {
  * Main entry component that sets up the app structure
  */
 function App() {
-  const { theme, initializeSettings, viewSettings } = useSettingsStore();
+  const { i18n } = useTranslation();
+  const { theme, language, initializeSettings, viewSettings } = useSettingsStore();
   const { loadIcons, isLoading } = useIconStore();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -38,6 +40,21 @@ function App() {
     initializeSettings();
     loadIcons();
   }, [initializeSettings, loadIcons]);
+
+  // Sync language between store, localStorage, and i18n
+  useEffect(() => {
+    const storedLanguage = localStorage.getItem('language');
+
+    // If localStorage has no language but store does, sync to localStorage
+    if (!storedLanguage && language) {
+      localStorage.setItem('language', language);
+    }
+
+    // Ensure i18n uses the correct language
+    if (language && i18n.language !== language) {
+      i18n.changeLanguage(language);
+    }
+  }, [language, i18n]);
 
   // Initialize auto-change timer based on stored config
   useEffect(() => {
