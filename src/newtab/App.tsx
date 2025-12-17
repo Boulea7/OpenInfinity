@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings } from 'lucide-react';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import type { Icon, Folder } from './services/database';
 import {
@@ -11,9 +10,10 @@ import {
   ClockWidget,
   IconEditor,
   FolderModal,
-  SettingsPanel,
   WidgetContainer,
 } from './components';
+import { InfinityLogo } from './components/Navigation/InfinityLogo';
+import { InfinityNavPanel } from './components/Navigation/InfinityNavPanel';
 
 /**
  * OpenInfinity New Tab Application
@@ -23,7 +23,6 @@ function App() {
   const { i18n } = useTranslation();
   const { theme, language, initializeSettings, viewSettings } = useSettingsStore();
   const { loadIcons, isLoading } = useIconStore();
-  const [showSettings, setShowSettings] = useState(false);
 
   // P0-9: Sidebar width state (lifted up for proper layout coordination)
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
@@ -173,18 +172,9 @@ function App() {
             </div>
           )}
 
-          {/* Right: Settings and notification icons */}
+          {/* Right: Clock widget placeholder */}
           <div className="flex items-center gap-2 ml-auto">
-            {/* Notification bell - TODO */}
-
-            {/* Settings button */}
-            <button
-              onClick={() => setShowSettings(true)}
-              className="btn-ghost text-white/80 hover:text-white hover:bg-white/10"
-              aria-label="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+            {/* Infinity Logo replaces Settings button */}
           </div>
         </header>
 
@@ -236,8 +226,11 @@ function App() {
         onAddIcon={handleAddIcon}
       />
 
-      {/* Settings Panel */}
-      <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      {/* Infinity Logo - Fixed top-right button */}
+      <InfinityLogo />
+
+      {/* Infinity Navigation Panel */}
+      <InfinityNavPanel />
     </div>
   );
 }
