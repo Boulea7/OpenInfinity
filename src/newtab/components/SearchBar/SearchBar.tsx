@@ -18,15 +18,44 @@ interface SearchSuggestion {
  * Multi-engine search with suggestions and keyboard navigation
  */
 export function SearchBar({ className }: SearchBarProps) {
-  const { searchSettings, openBehavior } = useSettingsStore();
+  const { searchSettings, openBehavior, setSearchSettings } = useSettingsStore();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [showEngineSelector, setShowEngineSelector] = useState(false);
+  const [iconLoadFailed, setIconLoadFailed] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Search type URLs for different engines
+  const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
+    google: {
+      web: 'https://www.google.com/search?q=',
+      images: 'https://www.google.com/search?tbm=isch&q=',
+      videos: 'https://www.google.com/search?tbm=vid&q=',
+      maps: 'https://www.google.com/maps/search/',
+    },
+    bing: {
+      web: 'https://www.bing.com/search?q=',
+      images: 'https://www.bing.com/images/search?q=',
+      videos: 'https://www.bing.com/videos/search?q=',
+      maps: 'https://www.bing.com/maps?q=',
+    },
+    duckduckgo: {
+      web: 'https://duckduckgo.com/?q=',
+      images: 'https://duckduckgo.com/?iax=images&ia=images&q=',
+      videos: 'https://duckduckgo.com/?iax=videos&ia=videos&q=',
+      maps: 'https://www.openstreetmap.org/search?query=',
+    },
+    baidu: {
+      web: 'https://www.baidu.com/s?wd=',
+      images: 'https://image.baidu.com/search/index?tn=baiduimage&word=',
+      videos: 'https://www.baidu.com/sf/vsearch?pd=video&wd=',
+      maps: 'https://map.baidu.com/search/',
+    },
+  };
 
   // Handle click outside to close suggestions
   useEffect(() => {
@@ -46,51 +75,17 @@ export function SearchBar({ className }: SearchBarProps) {
     (e) => e.id === searchSettings.defaultEngine
   ) || searchSettings.engines[0];
 
-  // Fetch suggestions via JSONP
-  const fetchSuggestions = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim() || !searchSettings.showSuggestions) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      // Google suggestions via JSONP
-      const callbackName = `googleSuggest_${Date.now()}`;
-      const script = document.createElement('script');
-
-      const promise = new Promise<string[]>((resolve) => {
-        (window as unknown as Record<string, unknown>)[callbackName] = (data: [string, string[]]) => {
-          resolve(data[1] || []);
-          delete (window as unknown as Record<string, unknown>)[callbackName];
-          script.remove();
-        };
-
-        // Timeout fallback
-        setTimeout(() => {
-          if ((window as unknown as Record<string, unknown>)[callbackName]) {
-            resolve([]);
-            delete (window as unknown as Record<string, unknown>)[callbackName];
-            script.remove();
-          }
-        }, 3000);
-      });
-
-      script.src = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(searchQuery)}&callback=${callbackName}`;
-      document.head.appendChild(script);
-
-      const results = await promise;
-      setSuggestions(
-        results.slice(0, 8).map((text) => ({ text, type: 'suggestion' as const }))
-      );
-    } catch {
-      setSuggestions([]);
-    }
-  }, [searchSettings.showSuggestions]);
+  // Fetch suggestions (disabled - CORS issues with all APIs)
+  const fetchSuggestions = useCallback(async () => {
+    // Disabled due to CORS restrictions
+    // Google suggestions API does not support CORS even in Background Service Worker
+    setSuggestions([]);
+  }, []);
 
   // Fetch suggestions when debounced query changes
   useEffect(() => {
     if (debouncedQuery) {
-      fetchSuggestions(debouncedQuery);
+      fetchSuggestions();
       setShowSuggestions(true);
     } else {
       setSuggestions([]);
@@ -98,12 +93,16 @@ export function SearchBar({ className }: SearchBarProps) {
     }
   }, [debouncedQuery, fetchSuggestions]);
 
-  // Perform search
+  // Perform search with search type support
   const performSearch = useCallback(
     (searchQuery: string) => {
       if (!searchQuery.trim()) return;
 
-      const url = currentEngine.url + encodeURIComponent(searchQuery);
+      const searchType = searchSettings.searchType || 'web';
+      const engineUrls = SEARCH_TYPE_URLS[currentEngine.id] || SEARCH_TYPE_URLS.google;
+      const baseUrl = engineUrls[searchType] || engineUrls.web || currentEngine.url;
+
+      const url = baseUrl + encodeURIComponent(searchQuery);
       const target = openBehavior.searchResults === 'new_tab' ? '_blank' : '_self';
       window.open(url, target);
 
@@ -111,7 +110,7 @@ export function SearchBar({ className }: SearchBarProps) {
       setSuggestions([]);
       setShowSuggestions(false);
     },
-    [currentEngine, openBehavior.searchResults]
+    [currentEngine, openBehavior.searchResults, searchSettings.searchType, SEARCH_TYPE_URLS]
   );
 
   // Handle keyboard navigation
@@ -151,6 +150,7 @@ export function SearchBar({ className }: SearchBarProps) {
   const handleEngineChange = (engineId: string) => {
     useSettingsStore.getState().setSearchSettings({ defaultEngine: engineId });
     setShowEngineSelector(false);
+    setIconLoadFailed(false); // Reset icon load state when engine changes
     inputRef.current?.focus();
   };
 
@@ -169,6 +169,27 @@ export function SearchBar({ className }: SearchBarProps) {
 
   return (
     <div className={cn('relative w-full', className)} ref={suggestionsRef}>
+      {/* Search type tabs */}
+      <div className="mx-auto mb-2 flex justify-start gap-4 text-sm">
+        {(['web', 'images', 'videos', 'maps'] as const).map((type) => (
+          <button
+            key={type}
+            onClick={() => setSearchSettings({ searchType: type })}
+            className={cn(
+              'px-3 py-1 rounded transition-colors duration-200',
+              searchSettings.searchType === type
+                ? 'bg-blue-600 text-white font-medium'
+                : 'bg-black/20 backdrop-blur-sm text-white/90 hover:bg-black/30 hover:text-white'
+            )}
+          >
+            {type === 'web' && '网页'}
+            {type === 'images' && '图片'}
+            {type === 'videos' && '视频'}
+            {type === 'maps' && '地图'}
+          </button>
+        ))}
+      </div>
+
       {/* Search input container */}
       <div
         className={cn(
@@ -191,11 +212,13 @@ export function SearchBar({ className }: SearchBarProps) {
             className="flex items-center gap-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             aria-label="Select search engine"
           >
-            {currentEngine.icon ? (
+            {currentEngine.icon && !iconLoadFailed ? (
               <img
                 src={currentEngine.icon}
                 alt={currentEngine.name}
                 className="w-5 h-5"
+                onError={() => setIconLoadFailed(true)}
+                referrerPolicy="no-referrer"
               />
             ) : (
               <Search className="w-5 h-5" />
