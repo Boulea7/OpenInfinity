@@ -42,19 +42,21 @@ function App() {
   }, [initializeSettings, loadIcons]);
 
   // Sync language between store, localStorage, and i18n
+  // Store is the single source of truth
   useEffect(() => {
-    const storedLanguage = localStorage.getItem('language');
+    if (!language) return; // Wait for store initialization
 
-    // If localStorage has no language but store does, sync to localStorage
-    if (!storedLanguage && language) {
+    // Sync store -> localStorage
+    const storedLanguage = localStorage.getItem('language');
+    if (storedLanguage !== language) {
       localStorage.setItem('language', language);
     }
 
-    // Ensure i18n uses the correct language
-    if (language && i18n.language !== language) {
+    // Sync store -> i18n
+    if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
-  }, [language, i18n]);
+  }, [language, i18n]); // React to store changes
 
   // Initialize auto-change timer based on stored config
   useEffect(() => {

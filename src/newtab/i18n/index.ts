@@ -8,7 +8,15 @@ i18n.use(initReactI18next).init({
     zh: { translation: zh },
     en: { translation: en },
   },
-  lng: localStorage.getItem('language') || 'zh',  // Get from localStorage
+  lng: (() => {
+    const stored = localStorage.getItem('language');
+    if (!stored) {
+      // First time user: force set to Chinese
+      localStorage.setItem('language', 'zh');
+      return 'zh';
+    }
+    return stored;
+  })(),
   fallbackLng: 'zh',
   interpolation: {
     escapeValue: false,
