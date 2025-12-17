@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Settings,
   Image,
@@ -9,13 +10,12 @@ import {
   Store,
   Download,
   Info,
-  X,
   RotateCcw,
 } from 'lucide-react';
 import { useSettingsStore, useWallpaperStore } from '../../stores';
 import type { WallpaperSource, AutoChangeInterval } from '../../stores/wallpaperStore';
 import type { IconStyle, SearchSettings, ViewSettings, FontSettings } from '../../stores/settingsStore';
-import { Modal } from '../ui/Modal';
+import { SidePanel } from '../ui/SidePanel';
 import { cn } from '../../utils';
 
 // Settings tab definitions
@@ -96,40 +96,33 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <div className="flex flex-col h-[600px]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Settings
-          </h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleResetAll}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm',
-                'text-gray-600 dark:text-gray-400',
-                'hover:bg-gray-100 dark:hover:bg-gray-700',
-                'transition-colors duration-200'
-              )}
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset All
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+    <SidePanel
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Settings"
+    >
+      <div className="flex h-full">
+        {/* Sidebar */}
+        <nav className="w-48 border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex-shrink-0">
+          <div className="py-4">
+            {/* Reset All Button - moved to sidebar top */}
+            <div className="px-4 mb-2">
+              <button
+                onClick={handleResetAll}
+                className={cn(
+                  'w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm',
+                  'text-gray-600 dark:text-gray-400',
+                  'hover:bg-gray-100 dark:hover:bg-gray-700',
+                  'transition-colors duration-200'
+                )}
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset All
+              </button>
+            </div>
 
-        {/* Content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <nav className="w-48 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-            <ul className="py-2">
+            {/* Tab List */}
+            <ul>
               {SETTINGS_TABS.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -151,15 +144,15 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 );
               })}
             </ul>
-          </nav>
-
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {renderTabContent()}
           </div>
+        </nav>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {renderTabContent()}
         </div>
       </div>
-    </Modal>
+    </SidePanel>
   );
 }
 
@@ -172,6 +165,15 @@ interface GeneralSettingsProps {
 }
 
 function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSettingsProps) {
+  const { i18n } = useTranslation();
+
+  const handleLanguageChange = (lng: string) => {
+    setLanguage(lng);
+    i18n.changeLanguage(lng);
+    // Persist to localStorage for consistency with i18n initialization
+    localStorage.setItem('language', lng);
+  };
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">General Settings</h3>
@@ -203,24 +205,34 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
       {/* Language */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Language
+          语言 / Language
         </label>
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className={cn(
-            'w-full px-3 py-2 rounded-lg',
-            'bg-gray-50 dark:bg-gray-700',
-            'border border-gray-300 dark:border-gray-600',
-            'text-gray-900 dark:text-gray-100',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500'
-          )}
-        >
-          <option value="zh-CN">简体中文</option>
-          <option value="en">English</option>
-          <option value="zh-TW">繁體中文</option>
-          <option value="ja">日本語</option>
-        </select>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleLanguageChange('zh')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm',
+              'transition-colors duration-200',
+              i18n.language === 'zh' || language === 'zh'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            )}
+          >
+            中文
+          </button>
+          <button
+            onClick={() => handleLanguageChange('en')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm',
+              'transition-colors duration-200',
+              i18n.language === 'en' || language === 'en'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            )}
+          >
+            English
+          </button>
+        </div>
       </div>
     </div>
   );
