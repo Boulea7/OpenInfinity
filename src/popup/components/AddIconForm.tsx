@@ -1,27 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useCurrentTab } from '../hooks/useCurrentTab';
 import { useAddIcon } from '../hooks/useAddIcon';
-import IconTypeSelector from './IconTypeSelector';
-import IconPreview from './IconPreview';
+import IconSelectionGrid from './IconSelectionGrid';
 
-type IconType = 'text' | 'favicon' | 'upload';
+interface Props {
+  onEditIcon?: (imageUrl: string) => void;
+}
 
-export default function AddIconForm() {
+export default function AddIconForm({ onEditIcon }: Props) {
   const { tabInfo, isLoading } = useCurrentTab();
   const { addIcon, isAdding } = useAddIcon();
 
   const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-  const [iconType, setIconType] = useState<IconType>('text');
   const [iconData, setIconData] = useState<any>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
-  // Auto-fill from current tab (only if fields are empty)
+  // Auto-fill title from current tab (only if empty and not dirty)
   useEffect(() => {
-    if (tabInfo && !title && !url) {
+    if (tabInfo && !title && !isDirty) {
       setTitle(tabInfo.title);
-      setUrl(tabInfo.url);
     }
-  }, [tabInfo, title, url]);
+  }, [tabInfo, title, isDirty]);
 
   const validateUrl = (url: string): boolean => {
     try {
@@ -41,16 +40,21 @@ export default function AddIconForm() {
       return;
     }
 
+    if (!tabInfo?.url) {
+      alert('无法获取当前页面地址');
+      return;
+    }
+
     // Validate URL scheme
-    if (!validateUrl(url)) {
-      alert('请输入有效的 HTTP 或 HTTPS 网址');
+    if (!validateUrl(tabInfo.url)) {
+      alert('当前页面地址无效');
       return;
     }
 
     try {
       await addIcon({
         title,
-        url,
+        url: tabInfo.url,  // Use URL from current tab
         icon: {
           type: iconData.type,
           value: iconData.dataUrl || iconData.value,
@@ -79,42 +83,30 @@ export default function AddIconForm() {
         <input
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setIsDirty(true);  // Mark as dirty when user edits
+          }}
           className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required
         />
       </div>
 
-      {/* URL */}
-      <div>
-        <label className="block text-sm font-medium mb-1">网站地址</label>
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          required
-        />
-      </div>
-
-      {/* Icon type selector */}
+      {/* Icon selection grid (no separate preview) */}
       <div>
         <label className="block text-sm font-medium mb-2">选择图标</label>
-        <IconTypeSelector
-          type={iconType}
-          onTypeChange={setIconType}
-          url={url}
-          onIconChange={setIconData}
+        <IconSelectionGrid
+          url={tabInfo?.url || ''}
+          websiteName={title}
+          onIconSelect={setIconData}
+          onEditRequest={onEditIcon}
         />
       </div>
-
-      {/* Preview */}
-      <IconPreview title={title} icon={iconData} />
 
       {/* Submit button */}
       <button
         type="submit"
-        disabled={isAdding || !title || !url || !iconData}
+        disabled={isAdding || !title || !iconData}
         className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {isAdding ? '添加中...' : '确定'}

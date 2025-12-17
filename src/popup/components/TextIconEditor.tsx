@@ -8,13 +8,24 @@ const PRESET_COLORS = [
 
 interface Props {
   onIconChange: (iconData: any) => void;
+  websiteName?: string;  // Website name for syncing
 }
 
-export default function TextIconEditor({ onIconChange }: Props) {
+export default function TextIconEditor({ onIconChange, websiteName }: Props) {
   const [text, setText] = useState('');
   const [fontSize, setFontSize] = useState(64);
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const generationIdRef = useRef(0);
+
+  // Auto-sync with website name (real-time sync)
+  useEffect(() => {
+    if (websiteName) {
+      const extracted = websiteName.slice(0, 2);  // Support Chinese, English, lowercase
+      setText(extracted);  // Always sync
+    } else if (websiteName === '') {
+      setText('');  // Clear when website name is empty
+    }
+  }, [websiteName]);
 
   useEffect(() => {
     // Clear icon when text is empty
@@ -54,7 +65,7 @@ export default function TextIconEditor({ onIconChange }: Props) {
         <input
           type="text"
           value={text}
-          onChange={(e) => setText(e.target.value.slice(0, 2))}
+          onChange={(e) => setText(e.target.value.slice(0, 2))}  // Allow lowercase and Chinese
           placeholder="输入1-2个字符"
           maxLength={2}
           className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -76,28 +87,37 @@ export default function TextIconEditor({ onIconChange }: Props) {
         />
       </div>
 
-      {/* Color picker */}
+      {/* Color picker - Single row with rainbow palette */}
       <div>
         <label className="block text-sm font-medium mb-1">背景颜色</label>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2">
           {PRESET_COLORS.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setColor(c)}
-              className="w-10 h-10 rounded-lg border-2 transition-all"
+              className="w-10 h-10 rounded-full border-2 transition-all flex-shrink-0"
               style={{
                 backgroundColor: c,
                 borderColor: color === c ? '#000' : '#ccc',
               }}
             />
           ))}
-          <input
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="w-10 h-10 rounded-lg cursor-pointer"
-          />
+          {/* Rainbow gradient palette */}
+          <label
+            className="w-10 h-10 rounded-full cursor-pointer border-2 border-gray-300 hover:border-gray-400 transition-colors flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)',
+            }}
+            title="自定义颜色"
+          >
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="opacity-0 w-full h-full cursor-pointer"
+            />
+          </label>
         </div>
       </div>
     </div>

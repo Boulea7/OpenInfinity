@@ -7,14 +7,18 @@ interface Props {
   type: IconType;
   onTypeChange: (type: IconType) => void;
   url: string;
+  websiteName?: string;  // Website name for syncing
   onIconChange: (iconData: any) => void;
+  onEditRequest?: (imageUrl: string) => void;  // New: callback to open edit page
 }
 
 export default function IconTypeSelector({
   type,
   onTypeChange,
   url,
+  websiteName,
   onIconChange,
+  onEditRequest,
 }: Props) {
   return (
     <div>
@@ -56,8 +60,20 @@ export default function IconTypeSelector({
       </div>
 
       {/* Conditional rendering */}
-      {type === 'text' && <TextIconEditor onIconChange={onIconChange} />}
-      {type === 'favicon' && <FaviconSelector url={url} onSelect={onIconChange} />}
+      {type === 'text' && <TextIconEditor websiteName={websiteName} onIconChange={onIconChange} />}
+      {type === 'favicon' && (
+        <FaviconSelector
+          url={url}
+          onSelect={(iconData) => {
+            // If onEditRequest provided, open edit page; otherwise directly use
+            if (onEditRequest && iconData.value) {
+              onEditRequest(iconData.value);
+            } else {
+              onIconChange(iconData);
+            }
+          }}
+        />
+      )}
       {type === 'upload' && (
         <div>
           <label className="block text-sm font-medium mb-2">选择图片</label>
@@ -75,10 +91,16 @@ export default function IconTypeSelector({
 
                 const reader = new FileReader();
                 reader.onload = () => {
-                  onIconChange({
-                    type: 'custom',
-                    value: reader.result,
-                  });
+                  const imageUrl = reader.result as string;
+                  // If onEditRequest provided, open edit page
+                  if (onEditRequest) {
+                    onEditRequest(imageUrl);
+                  } else {
+                    onIconChange({
+                      type: 'custom',
+                      value: imageUrl,
+                    });
+                  }
                 };
                 reader.readAsDataURL(file);
               }

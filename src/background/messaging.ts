@@ -1,11 +1,13 @@
 import { db } from '../newtab/services/database';
+import { fetchFaviconAsDataUrl } from './favicon';
 
 // Message types
 type MessageType =
   | 'GET_CURRENT_TAB'
   | 'ADD_ICON'
   | 'GET_PENDING_ADD_ICON'
-  | 'CLEAR_PENDING_ADD_ICON';
+  | 'CLEAR_PENDING_ADD_ICON'
+  | 'FETCH_FAVICON';
 
 interface Message {
   type: MessageType;
@@ -36,6 +38,9 @@ export async function handleMessage(
 
       case 'CLEAR_PENDING_ADD_ICON':
         return await handleClearPendingAddIcon();
+
+      case 'FETCH_FAVICON':
+        return await handleFetchFavicon(message.payload.url);
 
       default:
         return { success: false, error: 'Unknown message type' };
@@ -109,4 +114,17 @@ async function handleGetPendingAddIcon(): Promise<Response> {
 async function handleClearPendingAddIcon(): Promise<Response> {
   await chrome.storage.local.remove('pendingAddIcon');
   return { success: true };
+}
+
+// Fetch favicon (proxy to avoid CORS issues)
+async function handleFetchFavicon(url: string): Promise<Response> {
+  try {
+    const dataUrl = await fetchFaviconAsDataUrl(url);
+    return { success: true, data: dataUrl };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch favicon',
+    };
+  }
 }

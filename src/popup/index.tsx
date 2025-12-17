@@ -1,11 +1,12 @@
-import React from 'react';
+import '../newtab/i18n';  // Initialize i18n for popup
+import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles.css';
 import '../newtab/styles/globals.css';  // Reuse Tailwind CSS
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>
 );

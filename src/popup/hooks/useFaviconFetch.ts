@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sendMessage } from '../utils/messaging';
 
 interface FaviconSource {
   provider: 'google' | 'duckduckgo';
@@ -23,27 +24,29 @@ export function useFaviconFetch(url: string) {
     setSources([]);
 
     const domain = extractDomain(url);
-    const googleUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+    // Only use DuckDuckGo (Google has CORS issues)
     const duckUrl = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
 
-    Promise.allSettled([
-      loadImageAsDataUrl(googleUrl),
-      loadImageAsDataUrl(duckUrl),
-    ]).then(([googleResult, duckResult]) => {
-      setSources([
-        {
-          provider: 'google',
-          url: googleUrl,
-          status: googleResult.status === 'fulfilled' ? 'success' : 'error',
-          dataUrl: googleResult.status === 'fulfilled' ? googleResult.value : undefined,
-        },
-        {
-          provider: 'duckduckgo',
-          url: duckUrl,
-          status: duckResult.status === 'fulfilled' ? 'success' : 'error',
-          dataUrl: duckResult.status === 'fulfilled' ? duckResult.value : undefined,
-        },
-      ]);
+    sendMessage({ type: 'FETCH_FAVICON', payload: { url: duckUrl } }).then((response) => {
+      if (response.success) {
+        setSources([
+          {
+            provider: 'duckduckgo',
+            url: duckUrl,
+            status: 'success',
+            dataUrl: response.data,
+          },
+        ]);
+      } else {
+        setSources([
+          {
+            provider: 'duckduckgo',
+            url: duckUrl,
+            status: 'error',
+          },
+        ]);
+      }
       setIsLoading(false);
     });
   }, [url]);
@@ -61,48 +64,4 @@ function extractDomain(url: string): string {
   } catch {
     return '';
   }
-}
-
-/**
- * Load image as data URL (avoid CORS issues)
- * Added timeout and error handling to prevent promise hanging
- */
-function loadImageAsDataUrl(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-
-    // Timeout after 5 seconds
-    const timeout = setTimeout(() => {
-      img.src = '';  // Cancel loading
-      reject(new Error('Favicon loading timeout'));
-    }, 5000);
-
-    img.onload = () => {
-      clearTimeout(timeout);
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      } catch (error) {
-        reject(error instanceof Error ? error : new Error('Canvas conversion failed'));
-      }
-    };
-
-    img.onerror = () => {
-      clearTimeout(timeout);
-      reject(new Error('Failed to load favicon'));
-    };
-
-    img.src = url;
-  });
 }
