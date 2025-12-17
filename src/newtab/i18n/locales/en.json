@@ -36,19 +36,102 @@
   },
   "settings": {
     "title": "Settings",
-    "general": "General",
-    "wallpaper": "Wallpaper",
-    "icons": "Icons",
-    "search": "Search",
-    "layout": "Layout",
-    "fonts": "Fonts",
-    "marketplace": "Marketplace",
-    "backup": "Backup",
-    "about": "About",
-    "language": "Language",
-    "theme": "Theme",
-    "searchEngine": "Search Engine",
-    "chinese": "中文",
-    "english": "English"
+    "resetAll": "Reset All Settings",
+    "tabs": {
+      "general": "General",
+      "clock": "Clock",
+      "wallpaper": "Wallpaper",
+      "icons": "Icons",
+      "search": "Search",
+      "layout": "Layout",
+      "fonts": "Fonts",
+      "marketplace": "Marketplace",
+      "backup": "Backup",
+      "about": "About"
+    },
+    "general": {
+      "title": "General Settings",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "System",
+      "language": "Language",
+      "chinese": "中文",
+      "english": "English"
+    },
+    "clock": {
+      "title": "Clock Settings",
+      "timezone": "Timezone",
+      "autoDetect": "Auto Detect",
+      "manualSelect": "Manual Select",
+      "format": "Time Format",
+      "format12h": "12-hour",
+      "format24h": "24-hour",
+      "showSeconds": "Show Seconds"
+    },
+    "icons": {
+      "title": "Icon Settings",
+      "showName": "Show Icon Names",
+      "shadow": "Icon Shadow",
+      "animation": "Hover Animation",
+      "animationNone": "None",
+      "animationScale": "Scale",
+      "animationBounce": "Bounce",
+      "animationShake": "Shake",
+      "borderRadius": "Border Radius",
+      "square": "Square",
+      "rounded": "Rounded",
+      "circle": "Circle",
+      "opacity": "Opacity",
+      "size": "Icon Size",
+      "sizeSmall": "Small",
+      "sizeMedium": "Medium",
+      "sizeLarge": "Large"
+    },
+    "search": {
+      "title": "Search Settings",
+      "hideSearchBar": "Hide Search Bar",
+      "showSuggestions": "Show Suggestions",
+      "keepContent": "Keep Search Content",
+      "hideTypeSelector": "Hide Type Selector",
+      "hideButton": "Hide Search Button",
+      "size": "Search Bar Size",
+      "borderRadius": "Border Radius"
+    },
+    "layout": {
+      "title": "Layout Settings",
+      "zoom": "Screen Zoom",
+      "columns": "Columns",
+      "rows": "Rows",
+      "showTopSites": "Show Top Sites",
+      "showBookmarks": "Show Bookmarks",
+      "showPagination": "Show Pagination",
+      "showClock": "Show Clock",
+      "showWeather": "Show Weather"
+    },
+    "fonts": {
+      "title": "Font Settings",
+      "family": "Font Family",
+      "size": "Font Size",
+      "color": "Font Color",
+      "shadow": "Font Shadow",
+      "weight": "Font Weight",
+      "weightNormal": "Normal",
+      "weightMedium": "Medium",
+      "weightBold": "Bold"
+    },
+    "backup": {
+      "title": "Backup & Restore",
+      "export": "Export All Data",
+      "import": "Import Data",
+      "importBookmarks": "Import Chrome Bookmarks",
+      "exportDescription": "Export settings and icons to JSON file",
+      "importDescription": "Restore data from backup file"
+    },
+    "about": {
+      "title": "About OpenInfinity",
+      "version": "Version",
+      "description": "Secure, transparent, high-performance new tab extension"
+    }
   }
 }

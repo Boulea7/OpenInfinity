@@ -22,16 +22,16 @@ import { cn } from '../../utils';
 
 // Settings tab definitions
 const SETTINGS_TABS = [
-  { id: 'general', label: 'General', icon: Settings },
-  { id: 'clock', label: 'Clock', icon: Clock },
-  { id: 'wallpaper', label: 'Wallpaper', icon: Image },
-  { id: 'icons', label: 'Icons', icon: Grid3X3 },
-  { id: 'search', label: 'Search', icon: Search },
-  { id: 'layout', label: 'Layout', icon: Layout },
-  { id: 'fonts', label: 'Fonts', icon: Type },
-  { id: 'marketplace', label: 'Marketplace', icon: Store },
-  { id: 'backup', label: 'Backup', icon: Download },
-  { id: 'about', label: 'About', icon: Info },
+  { id: 'general', labelKey: 'settings.tabs.general', icon: Settings },
+  { id: 'clock', labelKey: 'settings.tabs.clock', icon: Clock },
+  { id: 'wallpaper', labelKey: 'settings.tabs.wallpaper', icon: Image },
+  { id: 'icons', labelKey: 'settings.tabs.icons', icon: Grid3X3 },
+  { id: 'search', labelKey: 'settings.tabs.search', icon: Search },
+  { id: 'layout', labelKey: 'settings.tabs.layout', icon: Layout },
+  { id: 'fonts', labelKey: 'settings.tabs.fonts', icon: Type },
+  { id: 'marketplace', labelKey: 'settings.tabs.marketplace', icon: Store },
+  { id: 'backup', labelKey: 'settings.tabs.backup', icon: Download },
+  { id: 'about', labelKey: 'settings.tabs.about', icon: Info },
 ] as const;
 
 type SettingsTab = (typeof SETTINGS_TABS)[number]['id'];
@@ -47,6 +47,7 @@ interface SettingsPanelProps {
  * Full settings interface with categorized tabs
  */
 export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPanelProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const {
     theme,
@@ -70,10 +71,10 @@ export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPan
 
   // Handle reset all settings
   const handleResetAll = useCallback(() => {
-    if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
+    if (window.confirm(t('settings.resetAll') + '?')) {
       resetToDefaults();
     }
-  }, [resetToDefaults]);
+  }, [resetToDefaults, t]);
 
   // Render tab content based on active tab
   const renderTabContent = () => {
@@ -121,7 +122,7 @@ export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPan
               )}
             >
               <RotateCcw className="w-4 h-4" />
-              Reset All
+              {t('settings.resetAll')}
             </button>
           </div>
 
@@ -142,7 +143,7 @@ export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPan
                     )}
                   >
                     <Icon className="w-4 h-4" />
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </button>
                 </li>
               );

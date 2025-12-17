@@ -36,19 +36,102 @@
   },
   "settings": {
     "title": "设置",
-    "general": "通用",
-    "wallpaper": "壁纸",
-    "icons": "图标",
-    "search": "搜索",
-    "layout": "布局",
-    "fonts": "字体",
-    "marketplace": "应用市场",
-    "backup": "备份",
-    "about": "关于",
-    "language": "语言",
-    "theme": "主题",
-    "searchEngine": "搜索引擎",
-    "chinese": "中文",
-    "english": "English"
+    "resetAll": "重置所有设置",
+    "tabs": {
+      "general": "通用",
+      "clock": "时钟",
+      "wallpaper": "壁纸",
+      "icons": "图标",
+      "search": "搜索",
+      "layout": "布局",
+      "fonts": "字体",
+      "marketplace": "应用市场",
+      "backup": "备份",
+      "about": "关于"
+    },
+    "general": {
+      "title": "通用设置",
+      "theme": "主题",
+      "themeLight": "浅色",
+      "themeDark": "深色",
+      "themeSystem": "跟随系统",
+      "language": "语言",
+      "chinese": "中文",
+      "english": "English"
+    },
+    "clock": {
+      "title": "时钟设置",
+      "timezone": "时区",
+      "autoDetect": "自动检测",
+      "manualSelect": "手动选择",
+      "format": "时间格式",
+      "format12h": "12小时制",
+      "format24h": "24小时制",
+      "showSeconds": "显示秒数"
+    },
+    "icons": {
+      "title": "图标设置",
+      "showName": "显示图标名称",
+      "shadow": "图标阴影",
+      "animation": "悬停动画",
+      "animationNone": "无动画",
+      "animationScale": "缩放",
+      "animationBounce": "弹跳",
+      "animationShake": "抖动",
+      "borderRadius": "圆角弧度",
+      "square": "方形",
+      "rounded": "圆角",
+      "circle": "圆形",
+      "opacity": "不透明度",
+      "size": "图标大小",
+      "sizeSmall": "小",
+      "sizeMedium": "中",
+      "sizeLarge": "大"
+    },
+    "search": {
+      "title": "搜索设置",
+      "hideSearchBar": "隐藏搜索栏",
+      "showSuggestions": "显示搜索建议",
+      "keepContent": "保留搜索栏内容",
+      "hideTypeSelector": "隐藏搜索类型选择器",
+      "hideButton": "隐藏搜索按钮",
+      "size": "搜索栏大小",
+      "borderRadius": "搜索栏圆角"
+    },
+    "layout": {
+      "title": "布局设置",
+      "zoom": "屏幕缩放",
+      "columns": "列数",
+      "rows": "行数",
+      "showTopSites": "显示常用网站",
+      "showBookmarks": "显示书签",
+      "showPagination": "显示翻页按钮",
+      "showClock": "显示时钟",
+      "showWeather": "显示天气"
+    },
+    "fonts": {
+      "title": "字体设置",
+      "family": "字体系列",
+      "size": "字体大小",
+      "color": "字体颜色",
+      "shadow": "字体阴影",
+      "weight": "字体粗细",
+      "weightNormal": "正常",
+      "weightMedium": "中等",
+      "weightBold": "粗体"
+    },
+    "backup": {
+      "title": "备份与恢复",
+      "export": "导出所有数据",
+      "import": "导入数据",
+      "importBookmarks": "导入Chrome书签",
+      "exportDescription": "导出配置和图标到JSON文件",
+      "importDescription": "从备份文件恢复数据"
+    },
+    "about": {
+      "title": "关于 OpenInfinity",
+      "version": "版本",
+      "description": "安全、透明、高性能的新标签页扩展"
+    }
   }
 }
