@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../stores';
+import { getAutoTimezone } from '../../data/timezones';
 import { cn } from '../../utils';
 
 interface ClockWidgetProps {
@@ -12,7 +14,8 @@ interface ClockWidgetProps {
  * Displays current time and optionally date
  */
 export function ClockWidget({ className, showDate = false }: ClockWidgetProps) {
-  const { viewSettings, fontSettings } = useSettingsStore();
+  const { i18n } = useTranslation();
+  const { viewSettings, fontSettings, clockSettings } = useSettingsStore();
   const [time, setTime] = useState(new Date());
 
   // Update time every second
@@ -26,17 +29,25 @@ export function ClockWidget({ className, showDate = false }: ClockWidgetProps) {
 
   if (!viewSettings.showClock) return null;
 
-  // Format time
-  const timeString = time.toLocaleTimeString('zh-CN', {
+  // Get timezone (auto-detect or manual)
+  const timezone = clockSettings.autoDetect ? getAutoTimezone() : clockSettings.timezone;
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
+
+  // Format time with timezone support
+  const timeString = time.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
+    second: clockSettings.showSeconds ? '2-digit' : undefined,
+    hour12: clockSettings.format === '12h',
+    timeZone: timezone === 'auto' ? undefined : timezone,
   });
 
-  // Format date
-  const dateString = time.toLocaleDateString('zh-CN', {
+  // Format date with timezone support
+  const dateString = time.toLocaleDateString(locale, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
+    timeZone: timezone === 'auto' ? undefined : timezone,
   });
 
   return (

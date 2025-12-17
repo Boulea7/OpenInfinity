@@ -128,6 +128,16 @@ export interface FontSettings {
 }
 
 /**
+ * Clock and timezone settings
+ */
+export interface ClockSettings {
+  timezone: string; // IANA timezone or 'auto'
+  autoDetect: boolean; // Auto-detect timezone
+  format: '12h' | '24h'; // Time format
+  showSeconds: boolean; // Show seconds
+}
+
+/**
  * Settings store state
  */
 interface SettingsState {
@@ -143,6 +153,7 @@ interface SettingsState {
   searchSettings: SearchSettings;
   viewSettings: ViewSettings;
   fontSettings: FontSettings;
+  clockSettings: ClockSettings;
   weatherSettings: WeatherSettings;
   widgetSettings: WidgetSettings;
 
@@ -171,6 +182,7 @@ interface SettingsActions {
   setSearchSettings: (settings: Partial<SearchSettings>) => void;
   setViewSettings: (settings: Partial<ViewSettings>) => void;
   setFontSettings: (settings: Partial<FontSettings>) => void;
+  setClockSettings: (settings: Partial<ClockSettings>) => void;
   setWeatherSettings: (settings: Partial<WeatherSettings>) => void;
   setWidgetSettings: (settings: Partial<WidgetSettings>) => void;
 
@@ -305,6 +317,12 @@ const defaultSettings: SettingsState = {
     shadowColor: 'rgba(0, 0, 0, 0.5)',
     weight: 'medium',
   },
+  clockSettings: {
+    timezone: 'auto',
+    autoDetect: true,
+    format: '24h',
+    showSeconds: false,
+  },
   weatherSettings: {
     location: {
       type: 'auto',
@@ -403,6 +421,12 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         }));
       },
 
+      setClockSettings: (settings) => {
+        set((state) => ({
+          clockSettings: { ...state.clockSettings, ...settings },
+        }));
+      },
+
       setWeatherSettings: (settings) => {
         set((state) => ({
           weatherSettings: { ...state.weatherSettings, ...settings },
@@ -487,6 +511,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         searchSettings: state.searchSettings,
         viewSettings: state.viewSettings,
         fontSettings: state.fontSettings,
+        clockSettings: state.clockSettings,
         weatherSettings: state.weatherSettings,
         widgetSettings: state.widgetSettings,
       }),
