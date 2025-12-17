@@ -385,6 +385,16 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'openinfinity-settings',
+      version: 2,  // Increment version to force migration
+      migrate: (persistedState: any, version: number) => {
+        // V2: Force update search engine icons from DuckDuckGo to Google Favicon API
+        if (version < 2) {
+          if (persistedState?.searchSettings?.engines) {
+            persistedState.searchSettings.engines = defaultSearchEngines;
+          }
+        }
+        return persistedState;
+      },
       partialize: (state) => ({
         theme: state.theme,
         language: state.language,
