@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import type { Icon } from '../../services/database';
-import { cn } from '../../utils';
+import { cn, getGoogleFaviconUrl } from '../../utils';
 
 interface FolderNameModalProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ export function FolderNameModal({
   previewIcons,
 }: FolderNameModalProps) {
   const [folderName, setFolderName] = useState('New Folder');
+  const [previewErrors, setPreviewErrors] = useState<Record<string, boolean>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +60,23 @@ export function FolderNameModal({
                     {icon.icon.value}
                   </div>
                 ) : (
-                  <img
-                    src={icon.icon.value}
-                    alt={icon.title}
-                    className="w-10 h-10 object-contain"
-                  />
+                  previewErrors[icon.id] ? (
+                    <div className="w-10 h-10 flex items-center justify-center text-lg font-bold bg-gray-400 text-white rounded">
+                      {(icon.title?.[0] || '?').toUpperCase()}
+                    </div>
+                  ) : (
+                    <img
+                      src={
+                        icon.icon.type === 'custom' || icon.icon.type === 'favicon'
+                          ? icon.icon.value
+                          : getGoogleFaviconUrl(icon.url, 64)
+                      }
+                      alt={icon.title}
+                      className="w-10 h-10 object-contain"
+                      loading="lazy"
+                      onError={() => setPreviewErrors(prev => ({ ...prev, [icon.id]: true }))}
+                    />
+                  )
                 )}
                 <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[60px]">
                   {icon.title}

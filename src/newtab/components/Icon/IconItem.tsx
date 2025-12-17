@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Icon } from '../../services/database';
+import { useShallow } from 'zustand/shallow';
 import { useSettingsStore } from '../../stores';
 import { cn, getFaviconUrl, getGoogleFaviconUrl } from '../../utils';
 import { openWebsite, isSafeUrl } from '../../utils/navigation';
@@ -17,7 +18,7 @@ interface IconItemProps {
 
 /**
  * IconItem Component
- * Renders a single website icon with drag-and-drop support
+ * Renders a single website icon with glassmorphism style and drag-and-drop support
  */
 export function IconItem({
   icon,
@@ -27,7 +28,13 @@ export function IconItem({
   onContextMenu,
   onClick,
 }: IconItemProps) {
-  const { iconStyle, openBehavior } = useSettingsStore();
+  const { iconStyle, openBehavior } = useSettingsStore(
+    useShallow((state) => ({
+      iconStyle: state.iconStyle,
+      openBehavior: state.openBehavior,
+    }))
+  );
+  const [imageFallback, setImageFallback] = useState<'none' | 'duckduckgo' | 'text'>('none');
 
   // dnd-kit sortable hook
   const {
@@ -47,13 +54,19 @@ export function IconItem({
 
   const isDragging = externalDragging || sortableDragging;
 
+  useEffect(() => {
+    // Reset image fallback state when icon changes
+    setImageFallback('none');
+  }, [icon.id, icon.url, icon.icon.type, icon.icon.value]);
+
   // Calculate transform style
   const style = useMemo(
     () => ({
       transform: CSS.Transform.toString(transform),
       transition: isOverlay ? undefined : transition,
+      borderRadius: `${iconStyle.borderRadius}%`,
     }),
-    [transform, transition, isOverlay]
+    [transform, transition, isOverlay, iconStyle.borderRadius]
   );
 
   // Get icon source URL (adapt to new icon structure)
@@ -68,6 +81,12 @@ export function IconItem({
     // Fallback to favicon service
     return getGoogleFaviconUrl(icon.url, 64);
   }, [icon.icon, icon.url]);
+
+  const resolvedIconSrc = useMemo(() => {
+    if (!iconSrc) return null;
+    if (imageFallback === 'duckduckgo') return getFaviconUrl(icon.url);
+    return iconSrc;
+  }, [iconSrc, imageFallback, icon.url]);
 
   // Handle click (P0-3: stop propagation to prevent background click)
   const handleClick = (e: React.MouseEvent) => {
@@ -93,97 +112,124 @@ export function IconItem({
     onContextMenu?.(e, icon);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Preserve dnd-kit keyboard behavior first
+    (listeners as any)?.onKeyDown?.(e);
+    if (e.defaultPrevented) return;
+
+    // Enter to activate (avoid Space to not conflict with dnd-kit keyboard dragging)
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Synthetic event: reuse click handler behavior without leaking the event
+      if (isDragging) return;
+      if (onClick) {
+        onClick(icon);
+        return;
+      }
+      if (isSafeUrl(icon.url)) {
+        openWebsite(icon.url, openBehavior);
+      } else {
+        console.error('Blocked unsafe URL:', icon.url);
+      }
+    }
+  };
+
+  // Sortable attributes (exclude if manually handling drag handle, but sticking to standard item drag here)
+  const sortableAttrs = { ...attributes, ...listeners };
+
   // Icon size based on settings
   const iconSizeClass =
     iconStyle.size === 'small'
-      ? 'w-12 h-12'
+      ? 'w-10 h-10'
       : iconStyle.size === 'large'
-        ? 'w-16 h-16'
-        : 'w-14 h-14';
+        ? 'w-14 h-14'
+        : 'w-12 h-12';
 
   // Container size
   const containerSize =
     iconStyle.size === 'small'
-      ? 'w-16 h-20'
+      ? 'w-20 h-24'
       : iconStyle.size === 'large'
-        ? 'w-24 h-28'
-        : 'w-20 h-24';
+        ? 'w-28 h-32'
+        : 'w-24 h-28';
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex flex-col items-center justify-center group',
+        'group relative flex flex-col items-center justify-center p-2',
         containerSize,
-        'rounded-xl cursor-pointer select-none',
-        'transition-all duration-200',
-        // Hover effect based on settings
-        iconStyle.animation === 'scale' && 'hover:scale-105',
-        iconStyle.animation === 'bounce' && 'hover:animate-bounce',
-        // Dragging state
-        isDragging && 'opacity-50 scale-105',
-        isOverlay && 'shadow-2xl',
-        // Selected state
-        isSelected && 'ring-2 ring-primary-500 ring-offset-2 ring-offset-transparent'
+        'transition-all duration-300 ease-out',
+        'cursor-pointer select-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
+
+        // Glassmorphism Base Styles
+        'bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl',
+        'border border-white/50 dark:border-white/5',
+        'shadow-glass',
+
+        // Hover Effects (Enhanced)
+        'hover:shadow-glass-hover hover:-translate-y-1 hover:shadow-glow-orange',
+        'hover:bg-white/80 dark:hover:bg-zinc-800/60',
+        'hover:border-white/70 dark:hover:border-white/10',
+
+        // Selected State
+        isSelected && 'ring-2 ring-brand-orange-500 bg-white/80 dark:bg-zinc-800/60',
+
+        // Dragging State
+        isDragging && 'opacity-60 blur-sm scale-105 z-50',
+
+        // Overlay State (for drag preview)
+        isOverlay && 'shadow-2xl scale-105 z-50 !opacity-90 !blur-none cursor-grabbing'
       )}
-      {...attributes}
-      {...listeners}
+      {...sortableAttrs}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
+      onKeyDown={handleKeyDown}
+      aria-label={icon.title}
     >
-      {/* Icon container */}
+      {/* Icon Content Container */}
       <div
         className={cn(
           iconSizeClass,
-          'flex items-center justify-center mb-1.5',
-          'bg-white/20 dark:bg-gray-700/40 backdrop-blur-sm',
-          'rounded-xl overflow-hidden',
-          'transition-all duration-200',
-          'group-hover:bg-white/30 dark:group-hover:bg-gray-600/50',
-          // Shadow based on settings
-          iconStyle.shadow && 'shadow-lg shadow-black/10'
+          'flex items-center justify-center mb-2',
+          'transition-transform duration-300',
+          'group-hover:scale-110' // Inner icon scale on hover
         )}
-        style={{
-          borderRadius: `${iconStyle.borderRadius}%`,
-          opacity: iconStyle.opacity / 100,
-        }}
       >
         {/* Icon image or text */}
         {icon.icon.type === 'text' ? (
           // Text icon
           <div
-            className="w-8 h-8 flex items-center justify-center text-2xl font-bold text-white rounded"
-            style={{ backgroundColor: icon.icon.color || '#3b82f6' }}
+            className="w-full h-full flex items-center justify-center text-2xl font-bold text-white shadow-sm"
+            style={{
+              backgroundColor: icon.icon.color || '#3b82f6',
+              borderRadius: `${iconStyle.borderRadius * 0.5}%` // Slightly softer radius for inner
+            }}
           >
             {icon.icon.value}
           </div>
         ) : (
-          // Image icon
-          <img
-            src={iconSrc || ''}
-            alt={icon.title}
-            className="w-8 h-8 object-contain"
-            loading="lazy"
-            onError={(e) => {
-              // Fallback to DuckDuckGo favicon service
-              const target = e.target as HTMLImageElement;
-              if (!target.src.includes('duckduckgo')) {
-                target.src = getFaviconUrl(icon.url);
-              } else {
-                // Final fallback: first letter
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  const fallback = document.createElement('span');
-                  fallback.className =
-                    'text-2xl font-bold text-white/80';
-                  fallback.textContent = icon.title.charAt(0).toUpperCase();
-                  parent.appendChild(fallback);
-                }
-              }
-            }}
-          />
+          // Image icon with safe React fallback (no DOM mutations)
+          imageFallback === 'text' ? (
+            <div className="w-full h-full flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 text-zinc-500 font-bold rounded-lg text-xl">
+              {icon.title.charAt(0).toUpperCase()}
+            </div>
+          ) : (
+            <img
+              src={resolvedIconSrc || ''}
+              alt={icon.title}
+              className="w-full h-full object-contain drop-shadow-sm"
+              loading="lazy"
+              onError={() => {
+                setImageFallback((prev) => {
+                  if (prev === 'none') return 'duckduckgo';
+                  return 'text';
+                });
+              }}
+            />
+          )
         )}
       </div>
 
@@ -191,15 +237,20 @@ export function IconItem({
       {iconStyle.showName && (
         <span
           className={cn(
-            'text-xs font-medium text-center px-1',
-            'line-clamp-1 max-w-full',
-            'text-white/90 dark:text-gray-200',
-            // Text shadow based on settings
-            iconStyle.shadow && 'drop-shadow-md'
+            'text-xs font-medium text-center px-1 w-full',
+            'truncate',
+            'text-zinc-700 dark:text-zinc-300',
+            'group-hover:text-zinc-900 dark:group-hover:text-zinc-100',
+            'transition-colors duration-200'
           )}
         >
           {icon.title}
         </span>
+      )}
+
+      {/* Selection/Hover Indicator Dot (Optional embellishment) */}
+      {isSelected && (
+        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-orange-500 shadow-glow-orange" />
       )}
     </div>
   );

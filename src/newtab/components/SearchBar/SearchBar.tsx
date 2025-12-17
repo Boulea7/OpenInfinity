@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
+import { Search, ChevronDown, Monitor, Image, Video, Map } from 'lucide-react';
+import { useShallow } from 'zustand/shallow';
 import { useSettingsStore } from '../../stores';
 import { useDebounce } from '../../hooks';
 import { cn } from '../../utils';
@@ -13,12 +14,76 @@ interface SearchSuggestion {
   type: 'suggestion' | 'history';
 }
 
+// Search type URLs for different engines
+const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
+  google: {
+    web: 'https://www.google.com/search?q=',
+    images: 'https://www.google.com/search?tbm=isch&q=',
+    videos: 'https://www.google.com/search?tbm=vid&q=',
+    maps: 'https://www.google.com/maps/search/',
+  },
+  bing: {
+    web: 'https://www.bing.com/search?q=',
+    images: 'https://www.bing.com/images/search?q=',
+    videos: 'https://www.bing.com/videos/search?q=',
+    maps: 'https://www.bing.com/maps?q=',
+  },
+  duckduckgo: {
+    web: 'https://duckduckgo.com/?q=',
+    images: 'https://duckduckgo.com/?iax=images&ia=images&q=',
+    videos: 'https://duckduckgo.com/?iax=videos&ia=videos&q=',
+    maps: 'https://www.openstreetmap.org/search?query=',
+  },
+  baidu: {
+    web: 'https://www.baidu.com/s?wd=',
+    images: 'https://image.baidu.com/search/index?tn=baiduimage&word=',
+    videos: 'https://www.baidu.com/sf/vsearch?pd=video&wd=',
+    maps: 'https://map.baidu.com/search/',
+  },
+  yahoo: {
+    web: 'https://search.yahoo.com/search?p=',
+    images: 'https://images.search.yahoo.com/search/images?p=',
+    videos: 'https://video.search.yahoo.com/search/video?p=',
+    maps: 'https://www.google.com/maps/search/',
+  },
+  yandex: {
+    web: 'https://yandex.com/search/?text=',
+    images: 'https://yandex.com/images/search?text=',
+    videos: 'https://yandex.com/video/search?text=',
+    maps: 'https://yandex.com/maps/?text=',
+  },
+  yandexru: {
+    web: 'https://yandex.ru/search/?text=',
+    images: 'https://yandex.ru/images/search?text=',
+    videos: 'https://yandex.ru/video/search?text=',
+    maps: 'https://yandex.ru/maps/?text=',
+  },
+  sogou: {
+    web: 'https://www.sogou.com/web?query=',
+    images: 'https://pic.sogou.com/pics?query=',
+    videos: 'https://v.sogou.com/v?query=',
+    maps: 'https://map.sogou.com/#city=%u5317%u4eac&query=',
+  },
+  '360': {
+    web: 'https://www.so.com/s?q=',
+    images: 'https://image.so.com/i?q=',
+    videos: 'https://www.so.com/s?q=',
+    maps: 'https://ditu.so.com/?k=',
+  },
+};
+
 /**
  * SearchBar Component
- * Multi-engine search with suggestions and keyboard navigation
+ * Redesigned with Modern Glassmorphism + Windows 11 Fluent Style
  */
 export function SearchBar({ className }: SearchBarProps) {
-  const { searchSettings, openBehavior, setSearchSettings } = useSettingsStore();
+  const { searchSettings, openBehavior, setSearchSettings } = useSettingsStore(
+    useShallow((state) => ({
+      searchSettings: state.searchSettings,
+      openBehavior: state.openBehavior,
+      setSearchSettings: state.setSearchSettings,
+    }))
+  );
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -29,69 +94,13 @@ export function SearchBar({ className }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Search type URLs for different engines
-  const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
-    google: {
-      web: 'https://www.google.com/search?q=',
-      images: 'https://www.google.com/search?tbm=isch&q=',
-      videos: 'https://www.google.com/search?tbm=vid&q=',
-      maps: 'https://www.google.com/maps/search/',
-    },
-    bing: {
-      web: 'https://www.bing.com/search?q=',
-      images: 'https://www.bing.com/images/search?q=',
-      videos: 'https://www.bing.com/videos/search?q=',
-      maps: 'https://www.bing.com/maps?q=',
-    },
-    duckduckgo: {
-      web: 'https://duckduckgo.com/?q=',
-      images: 'https://duckduckgo.com/?iax=images&ia=images&q=',
-      videos: 'https://duckduckgo.com/?iax=videos&ia=videos&q=',
-      maps: 'https://www.openstreetmap.org/search?query=',
-    },
-    baidu: {
-      web: 'https://www.baidu.com/s?wd=',
-      images: 'https://image.baidu.com/search/index?tn=baiduimage&word=',
-      videos: 'https://www.baidu.com/sf/vsearch?pd=video&wd=',
-      maps: 'https://map.baidu.com/search/',
-    },
-    yahoo: {
-      web: 'https://search.yahoo.com/search?p=',
-      images: 'https://images.search.yahoo.com/search/images?p=',
-      videos: 'https://video.search.yahoo.com/search/video?p=',
-      maps: 'https://www.google.com/maps/search/',  // Yahoo doesn't have maps, fallback to Google
-    },
-    yandex: {
-      web: 'https://yandex.com/search/?text=',
-      images: 'https://yandex.com/images/search?text=',
-      videos: 'https://yandex.com/video/search?text=',
-      maps: 'https://yandex.com/maps/?text=',
-    },
-    yandexru: {
-      web: 'https://yandex.ru/search/?text=',
-      images: 'https://yandex.ru/images/search?text=',
-      videos: 'https://yandex.ru/video/search?text=',
-      maps: 'https://yandex.ru/maps/?text=',
-    },
-    sogou: {
-      web: 'https://www.sogou.com/web?query=',
-      images: 'https://pic.sogou.com/pics?query=',
-      videos: 'https://v.sogou.com/v?query=',
-      maps: 'https://map.sogou.com/#city=%u5317%u4eac&query=',  // Sogou Maps
-    },
-    '360': {
-      web: 'https://www.so.com/s?q=',
-      images: 'https://image.so.com/i?q=',
-      videos: 'https://www.so.com/s?q=',  // 360 uses same URL for videos
-      maps: 'https://ditu.so.com/?k=',
-    },
-  };
-
   // Handle click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+        setSelectedIndex(-1);
+        setShowEngineSelector(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -101,46 +110,55 @@ export function SearchBar({ className }: SearchBarProps) {
   const debouncedQuery = useDebounce(query, 200);
 
   // Get current search engine
-  const currentEngine = searchSettings.engines.find(
-    (e) => e.id === searchSettings.defaultEngine
-  ) || searchSettings.engines[0];
+  const engines = searchSettings.engines ?? [];
+  const currentEngine =
+    engines.find((e) => e.id === searchSettings.defaultEngine) || engines[0];
 
-  // Fetch suggestions (disabled - CORS issues with all APIs)
+  // Fetch suggestions
   const fetchSuggestions = useCallback(async () => {
-    // Disabled due to CORS restrictions
-    // Google suggestions API does not support CORS even in Background Service Worker
+    // Placeholder for when we enable suggestions
     setSuggestions([]);
   }, []);
 
   // Fetch suggestions when debounced query changes
   useEffect(() => {
-    if (debouncedQuery) {
+    if (debouncedQuery && searchSettings.showSuggestions) {
       fetchSuggestions();
       setShowSuggestions(true);
+      setSelectedIndex(-1);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
+      setSelectedIndex(-1);
     }
-  }, [debouncedQuery, fetchSuggestions]);
+  }, [debouncedQuery, fetchSuggestions, searchSettings.showSuggestions]);
 
-  // Perform search with search type support
+  // Perform search
   const performSearch = useCallback(
     (searchQuery: string) => {
       if (!searchQuery.trim()) return;
+      if (!currentEngine) return;
 
       const searchType = searchSettings.searchType || 'web';
-      const engineUrls = SEARCH_TYPE_URLS[currentEngine.id] || SEARCH_TYPE_URLS.google;
-      const baseUrl = engineUrls[searchType] || engineUrls.web || currentEngine.url;
+      const engineUrls = SEARCH_TYPE_URLS[currentEngine.id];
+      const baseUrl = engineUrls
+        ? (engineUrls[searchType] || engineUrls.web || currentEngine.url)
+        : currentEngine.url;
 
       const url = baseUrl + encodeURIComponent(searchQuery);
-      const target = openBehavior.searchResults === 'new_tab' ? '_blank' : '_self';
-      window.open(url, target);
+      if (openBehavior.searchResults === 'new_tab') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = url;
+      }
 
       setQuery('');
       setSuggestions([]);
       setShowSuggestions(false);
+      setSelectedIndex(-1);
+      setShowEngineSelector(false);
     },
-    [currentEngine, openBehavior.searchResults, searchSettings.searchType, SEARCH_TYPE_URLS]
+    [currentEngine, openBehavior.searchResults, searchSettings.searchType]
   );
 
   // Handle keyboard navigation
@@ -167,122 +185,152 @@ export function SearchBar({ className }: SearchBarProps) {
       case 'Escape':
         setShowSuggestions(false);
         setSelectedIndex(-1);
+        setShowEngineSelector(false);
         break;
     }
   };
 
-  // Handle suggestion click
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
     performSearch(suggestion.text);
   };
 
-  // Handle engine change
   const handleEngineChange = (engineId: string) => {
-    useSettingsStore.getState().setSearchSettings({ defaultEngine: engineId });
+    setSearchSettings({ defaultEngine: engineId });
     setShowEngineSelector(false);
-    setIconLoadFailed(false); // Reset icon load state when engine changes
+    setIconLoadFailed(false);
     inputRef.current?.focus();
   };
 
-  // Hidden if setting enabled
   if (searchSettings.hidden) return null;
+  if (!currentEngine) return null;
 
-  // Size classes
-  const sizeClasses: Record<'small' | 'medium' | 'large', string> = {
-    small: 'max-w-md py-2 px-4',
-    medium: 'max-w-xl py-3 px-5',
-    large: 'max-w-2xl py-4 px-6',
-  };
-
-  // Get max-width classes for alignment
+  // Max-width classes for alignment based on settings
   const maxWidthClasses: Record<'small' | 'medium' | 'large', string> = {
     small: 'max-w-md',
     medium: 'max-w-xl',
     large: 'max-w-2xl',
   };
 
-  // Get size class safely
-  const currentSizeClass = sizeClasses[searchSettings.size as keyof typeof sizeClasses] || sizeClasses.medium;
   const currentMaxWidth = maxWidthClasses[searchSettings.size as keyof typeof maxWidthClasses] || maxWidthClasses.medium;
 
+  const SEARCH_TYPES = [
+    { id: 'web', label: '网页', icon: Monitor },
+    { id: 'images', label: '图片', icon: Image },
+    { id: 'videos', label: '视频', icon: Video },
+    { id: 'maps', label: '地图', icon: Map },
+  ] as const;
+
   return (
-    <div className={cn('relative w-full', className)} ref={suggestionsRef}>
-      {/* Search type tabs */}
+    <div
+      className={cn('relative w-full z-20 flex flex-col items-center gap-4', className)}
+      ref={suggestionsRef}
+      role="search"
+      aria-label="搜索"
+    >
+
+      {/* Search Type Tabs - Integrated Top Style */}
       <div className={cn(
-        'mx-auto mb-2 flex justify-start gap-3 text-sm',
-        currentMaxWidth  // Use dedicated max-width class for alignment
+        'flex justify-center gap-1 p-1 rounded-full',
+        'bg-white/20 dark:bg-black/10 backdrop-blur-xl',
+        'border border-white/20 dark:border-white/5',
+        'transition-all duration-300'
       )}>
-        {(['web', 'images', 'videos', 'maps'] as const).map((type) => (
-          <button
-            key={type}
-            onClick={() => setSearchSettings({ searchType: type })}
-            className={cn(
-              'px-3 py-1 rounded transition-colors duration-200',
-              searchSettings.searchType === type
-                ? 'bg-blue-600 text-white font-medium'
-                : 'bg-black/20 backdrop-blur-sm text-white/90 hover:bg-black/30 hover:text-white'
-            )}
-          >
-            {type === 'web' && '网页'}
-            {type === 'images' && '图片'}
-            {type === 'videos' && '视频'}
-            {type === 'maps' && '地图'}
-          </button>
-        ))}
+        {SEARCH_TYPES.map((type) => {
+          const isActive = searchSettings.searchType === type.id;
+          const Icon = type.icon;
+          return (
+            <button
+              type="button"
+              key={type.id}
+              onClick={() => setSearchSettings({ searchType: type.id })}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/30',
+                isActive
+                  ? 'bg-white text-brand-orange-600 shadow-sm dark:bg-zinc-800 dark:text-brand-orange-400'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-brand-orange-500 hover:bg-white/10'
+              )}
+              aria-pressed={isActive}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{type.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Search input container */}
+      {/* Main Search Input Container */}
       <div
         className={cn(
-          'mx-auto flex items-center gap-3',
-          'bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl',
-          'border border-white/20 dark:border-gray-700/50',
-          'shadow-lg shadow-black/5',
-          'transition-all duration-200',
-          currentSizeClass
+          'relative w-full h-14 pl-4 pr-4 flex items-center gap-3',
+          'rounded-full border border-white/40 dark:border-white/10',
+          'bg-white/70 dark:bg-black/40 backdrop-blur-2xl', // Stronger blur
+          'shadow-glass hover:shadow-glass-hover', // Glass shadow
+          'hover:bg-white/80 dark:hover:bg-black/50',
+          'transition-all duration-300 group',
+          'ring-1 ring-transparent focus-within:ring-brand-orange/50 focus-within:border-brand-orange/30', // Orange focus ring
+          currentMaxWidth
         )}
-        style={{
-          borderRadius: `${searchSettings.borderRadius}px`,
-          opacity: searchSettings.opacity / 100,
-        }}
       >
-        {/* Search engine selector */}
-        <div className="relative">
+        {/* Search Engine Selector */}
+        <div className="relative shrink-0">
           <button
+            type="button"
             onClick={() => setShowEngineSelector(!showEngineSelector)}
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-            aria-label="Select search engine"
-          >
-            {currentEngine.icon && !iconLoadFailed ? (
-              <img
-                src={currentEngine.icon}
-                alt={currentEngine.name}
-                className="w-5 h-5"
-                onError={() => setIconLoadFailed(true)}
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <Search className="w-5 h-5" />
+            className={cn(
+              "flex items-center gap-2 pl-2 pr-1 py-1.5 rounded-full transition-colors",
+              "hover:bg-black/5 dark:hover:bg-white/10",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/30"
             )}
-            <ChevronDown className="w-3 h-3" />
+            title="切换搜索引擎"
+            aria-label="切换搜索引擎"
+            aria-haspopup="menu"
+            aria-expanded={showEngineSelector}
+          >
+            <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center bg-white/50">
+              {currentEngine.icon && !iconLoadFailed ? (
+                <img
+                  src={currentEngine.icon}
+                  alt={currentEngine.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setIconLoadFailed(true)}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <Search className="w-4 h-4 text-zinc-500" />
+              )}
+            </div>
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
 
-          {/* Engine dropdown */}
+          {/* Engine Dropdown - Modern Glass Style */}
           {showEngineSelector && (
-            <div className="absolute top-full left-0 mt-2 py-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 min-w-[150px]">
+            <div
+              className="absolute top-full left-0 mt-3 py-2 w-48 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 dark:border-white/10 z-50 overflow-hidden animate-scale-in origin-top-left"
+              role="menu"
+              aria-label="搜索引擎"
+            >
+              <div className="px-3 py-1.5 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                选择引擎
+              </div>
               {searchSettings.engines.map((engine) => (
                 <button
+                  type="button"
                   key={engine.id}
                   onClick={() => handleEngineChange(engine.id)}
                   className={cn(
-                    'w-full px-3 py-2 flex items-center gap-2 text-sm text-left',
-                    'hover:bg-gray-100 dark:hover:bg-gray-700',
-                    engine.id === currentEngine.id &&
-                      'bg-primary-50 dark:bg-primary-900/20 text-primary-600'
+                    'w-full px-4 py-2.5 flex items-center gap-3 text-sm text-left transition-colors',
+                    'hover:bg-brand-orange/10 dark:hover:bg-brand-orange/20',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/30',
+                    engine.id === currentEngine.id
+                      ? 'text-brand-orange-600 dark:text-brand-orange-400 font-medium bg-brand-orange/5'
+                      : 'text-zinc-700 dark:text-zinc-300'
                   )}
+                  role="menuitemradio"
+                  aria-checked={engine.id === currentEngine.id}
                 >
                   {engine.icon ? (
-                    <img src={engine.icon} alt="" className="w-4 h-4" />
+                    <img src={engine.icon} alt="" className="w-4 h-4 rounded-sm" />
                   ) : (
                     <Search className="w-4 h-4" />
                   )}
@@ -293,58 +341,80 @@ export function SearchBar({ className }: SearchBarProps) {
           )}
         </div>
 
-        {/* Search input */}
+        {/* Divider */}
+        <div className="w-px h-6 bg-zinc-300/50 dark:bg-zinc-700/50" />
+
+        {/* Search Input */}
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-          placeholder={searchSettings.placeholder}
-          className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500"
+          onFocus={() => searchSettings.showSuggestions && suggestions.length > 0 && setShowSuggestions(true)}
+          placeholder={searchSettings.placeholder || `Search with ${currentEngine.name}...`}
+          className={cn(
+            'flex-1 bg-transparent border-none outline-none',
+            'text-zinc-800 dark:text-zinc-100 placeholder-zinc-400',
+            'text-lg font-medium tracking-wide',
+            'selection:bg-brand-orange/20 selection:text-brand-orange-700'
+          )}
+          aria-label="搜索"
           autoComplete="off"
           spellCheck={false}
         />
 
-        {/* Search button (optional) */}
-        {searchSettings.showButton && (
-          <button
-            onClick={() => performSearch(query)}
-            className="p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            aria-label="Search"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-        )}
+        {/* Action Button (Search Icon) */}
+        <button
+          type="button"
+          onClick={() => performSearch(query)}
+          className={cn(
+            'p-2.5 rounded-full transition-all duration-300',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
+            query.trim()
+              ? 'bg-brand-orange text-white shadow-glow-orange hover:bg-brand-orange-600 transform hover:scale-105'
+              : 'text-zinc-400 hover:text-brand-orange hover:bg-brand-orange/10'
+          )}
+          aria-label="搜索"
+        >
+          <Search className={cn("w-5 h-5", query.trim() && "stroke-[2.5px]")} />
+        </button>
       </div>
 
-      {/* Suggestions dropdown */}
+      {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div
           className={cn(
-            'absolute left-1/2 -translate-x-1/2 mt-2 w-full',
-            currentSizeClass.split(' ')[0], // max-width class
-            'bg-white dark:bg-gray-800 rounded-xl',
-            'shadow-xl border border-gray-200 dark:border-gray-700',
-            'overflow-hidden z-50'
+            'absolute top-full mt-2 w-full',
+            currentMaxWidth,
+            'bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl',
+            'rounded-2xl shadow-glass-hover border border-white/20 dark:border-white/5',
+            'overflow-hidden z-50 animate-slide-up origin-top'
           )}
+          role="listbox"
+          aria-label="搜索建议"
         >
           {suggestions.map((suggestion, index) => (
             <button
+              type="button"
               key={suggestion.text}
               onClick={() => handleSuggestionClick(suggestion)}
               className={cn(
-                'w-full px-4 py-2.5 flex items-center gap-3 text-left',
-                'text-gray-700 dark:text-gray-200',
-                'transition-colors duration-100',
+                'w-full px-5 py-3 flex items-center gap-3 text-left',
+                'text-zinc-700 dark:text-zinc-200',
+                'transition-all duration-200',
                 index === selectedIndex
-                  ? 'bg-gray-100 dark:bg-gray-700'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  ? 'bg-brand-orange/10 dark:bg-brand-orange/20 text-brand-orange-700 dark:text-brand-orange-300 pl-7'
+                  : 'hover:bg-white/50 dark:hover:bg-white/5 pl-5 hover:pl-6'
               )}
+              role="option"
+              aria-selected={index === selectedIndex}
             >
-              <Search className="w-4 h-4 text-gray-400" />
-              <span className="flex-1 truncate">{suggestion.text}</span>
+              <Search className={cn(
+                "w-4 h-4 transition-colors",
+                index === selectedIndex ? "text-brand-orange-500" : "text-zinc-400"
+              )} />
+              <span className="flex-1 truncate font-medium">{suggestion.text}</span>
             </button>
           ))}
         </div>

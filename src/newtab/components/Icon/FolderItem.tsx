@@ -29,6 +29,7 @@ export function FolderItem({
   const { icons } = useIconStore();
   const { iconStyle } = useSettingsStore();
   const [isHovered, setIsHovered] = useState(false);
+  const [previewErrors, setPreviewErrors] = useState<Record<string, boolean>>({});
 
   // P1-2: Use useSortable (includes droppable functionality)
   const {
@@ -150,6 +151,7 @@ export function FolderItem({
                 : validUrl
                   ? getFaviconUrl(validUrl)
                   : '';
+            const showImage = Boolean(iconSrc) && !previewErrors[icon.id];
 
             return (
               <div
@@ -165,24 +167,22 @@ export function FolderItem({
                     {icon.icon.value}
                   </div>
                 ) : (
-                  // Image icon
-                  <img
-                    src={iconSrc}
-                    alt=""
-                    className="w-4 h-4 object-contain"
-                    onError={(e) => {
-                      // Fallback to letter on error
-                      const target = e.currentTarget;
-                      const parent = target.parentElement;
-                      if (parent) {
-                        parent.innerHTML = `
-                          <div class="w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-gray-400 text-white rounded">
-                            ${icon.title[0]?.toUpperCase() || '?'}
-                          </div>
-                        `;
-                      }
-                    }}
-                  />
+                  // Image icon with safe React fallback (no DOM mutations)
+                  showImage ? (
+                    <img
+                      src={iconSrc}
+                      alt=""
+                      className="w-4 h-4 object-contain"
+                      loading="lazy"
+                      onError={() => {
+                        setPreviewErrors(prev => ({ ...prev, [icon.id]: true }));
+                      }}
+                    />
+                  ) : (
+                    <div className="w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-gray-400 text-white rounded">
+                      {icon.title[0]?.toUpperCase() || '?'}
+                    </div>
+                  )
                 )}
               </div>
             );

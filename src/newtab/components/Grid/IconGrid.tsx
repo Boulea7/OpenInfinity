@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/shallow';
 import {
   DndContext,
   DragOverlay,
@@ -26,7 +27,7 @@ import { FolderItem } from '../Icon/FolderItem';
 import { FolderNameModal } from '../Icon/FolderNameModal';
 import { ContextMenu, type ContextMenuItem } from '../ui/ContextMenu';
 import { cn } from '../../utils';
-import { openWebsite, isSafeUrl } from '../../utils/navigation';
+import { openUrlSafe } from '../../utils/navigation';
 
 interface IconGridProps {
   className?: string;
@@ -58,9 +59,28 @@ export function IconGrid({
     deleteIcon,
     deleteFolder,
     createFolderWithIcons,
-  } = useIconStore();
+  } = useIconStore(
+    useShallow((state) => ({
+      icons: state.icons,
+      folders: state.folders,
+      currentPage: state.currentPage,
+      selectedItems: state.selectedItems,
+      reorderItems: state.reorderItems,
+      addToFolder: state.addToFolder,
+      selectItem: state.selectItem,
+      clearSelection: state.clearSelection,
+      deleteIcon: state.deleteIcon,
+      deleteFolder: state.deleteFolder,
+      createFolderWithIcons: state.createFolderWithIcons,
+    }))
+  );
 
-  const { viewSettings, openBehavior } = useSettingsStore();
+  const { viewSettings, openBehavior } = useSettingsStore(
+    useShallow((state) => ({
+      viewSettings: state.viewSettings,
+      openBehavior: state.openBehavior,
+    }))
+  );
 
   // Drag state
   const [activeItem, setActiveItem] = useState<GridItem | null>(null);
@@ -74,6 +94,14 @@ export function IconGrid({
     position: { x: number; y: number };
   } | null>(null);
   const [showMergeModal, setShowMergeModal] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+      }
+    };
+  }, [hoverTimer]);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -147,6 +175,9 @@ export function IconGrid({
         setHoverTimer(null);
         setHoverTarget(null);
       }
+      if (pendingMerge) {
+        setPendingMerge(null);
+      }
       return;
     }
 
@@ -160,23 +191,25 @@ export function IconGrid({
       !activeItemData.folderId && // Only for root-level icons
       !overItem.folderId
     ) {
-      if (hoverTarget !== over.id) {
+      const nextHoverTarget = String(over.id);
+      if (hoverTarget !== nextHoverTarget) {
         // Clear previous timer
         if (hoverTimer) clearTimeout(hoverTimer);
+        if (pendingMerge) setPendingMerge(null);
 
         // Start new timer
         const timer = setTimeout(() => {
           console.info('Hover merge triggered after 500ms');
           // Set pending merge instead of creating immediately
           setPendingMerge({
-            icon1Id: active.id as string,
-            icon2Id: over.id as string,
+            icon1Id: String(active.id),
+            icon2Id: String(over.id),
             position: overItem.position,
           });
         }, 500);
 
         setHoverTimer(timer);
-        setHoverTarget(over.id as string);
+        setHoverTarget(nextHoverTarget);
       }
     } else {
       // Not icon-over-icon case, clear timer
@@ -185,8 +218,11 @@ export function IconGrid({
         setHoverTimer(null);
         setHoverTarget(null);
       }
+      if (pendingMerge) {
+        setPendingMerge(null);
+      }
     }
-  }, [pageItems, hoverTimer, hoverTarget]);
+  }, [pageItems, hoverTimer, hoverTarget, pendingMerge]);
 
   // Handle drag end
   const handleDragEnd = useCallback(
@@ -204,10 +240,22 @@ export function IconGrid({
 
       // P1-2: Check if pending merge (hover 500ms completed)
       if (pendingMerge) {
-        // Show naming modal
-        setShowMergeModal(true);
+        const activeId = String(active.id);
+        const overId = over ? String(over.id) : null;
+        const shouldMerge = Boolean(
+          overId &&
+            pendingMerge.icon1Id === activeId &&
+            pendingMerge.icon2Id === overId
+        );
+
+        if (shouldMerge) {
+          // Show naming modal
+          setShowMergeModal(true);
+          return;
+        }
+
+        // Not dropped on the merge target; clear stale merge intent
         setPendingMerge(null);
-        return;
       }
 
       if (!over || active.id === over.id) return;
@@ -253,9 +301,8 @@ export function IconGrid({
             label: 'Open',
             onClick: () => {
               // P1-5: Safe URL check before opening
-              if (isSafeUrl(icon.url)) {
-                openWebsite(icon.url, openBehavior);
-              } else {
+              const opened = openUrlSafe(icon.url, 'current', openBehavior);
+              if (!opened) {
                 console.error('Blocked unsafe URL:', icon.url);
               }
             },
@@ -410,6 +457,10 @@ export function IconGrid({
                   onClick={(icon) => {
                     // P0-3: Select item (propagation already stopped in IconItem)
                     selectItem(icon.id);
+                    const opened = openUrlSafe(icon.url, 'current', openBehavior);
+                    if (!opened) {
+                      console.error('Blocked unsafe URL:', icon.url);
+                    }
                   }}
                 />
               );
@@ -418,6 +469,7 @@ export function IconGrid({
             {/* Add new icon button */}
             {pageItems.length < itemsPerPage && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAddIcon?.();
@@ -428,8 +480,10 @@ export function IconGrid({
                   'border-white/30 hover:border-white/50',
                   'text-white/50 hover:text-white/70',
                   'transition-all duration-200',
-                  'hover:bg-white/10'
+                  'hover:bg-white/10',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40'
                 )}
+                aria-label="添加网站"
               >
                 <Plus className="w-8 h-8 mb-1" />
                 <span className="text-xs">Add</span>
@@ -455,27 +509,52 @@ export function IconGrid({
 
       {/* Empty state */}
       {pageItems.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-white/60">
-          <svg
-            className="w-16 h-16 mb-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-            />
-          </svg>
-          <p className="text-lg font-medium mb-2">{t('iconGrid.emptyTitle')}</p>
-          <p className="text-sm mb-4">{t('iconGrid.emptyDescription')}</p>
+        <div className="flex flex-col items-center justify-center py-24 animate-fade-in">
+          {/* Decorative Background Glow */}
+          <div className="relative mb-8 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+
+            {/* Glass Icon Container */}
+            <div className="relative bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-full p-8 shadow-glass group-hover:shadow-glass-hover transition-all duration-500 group-hover:-translate-y-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-16 h-16 text-zinc-400 dark:text-zinc-600 group-hover:text-brand-orange-500/80 transition-colors duration-500"
+              >
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M3 9h18" />
+                <path d="M3 15h18" />
+                <path d="M9 3v18" />
+                <path d="M15 3v18" />
+              </svg>
+            </div>
+          </div>
+
+          <p className="text-xl font-semibold mb-2 text-zinc-800 dark:text-zinc-100 tracking-tight">
+            {t('iconGrid.emptyTitle')}
+          </p>
+          <p className="text-sm mb-8 text-zinc-500 dark:text-zinc-400 max-w-xs text-center leading-relaxed">
+            {t('iconGrid.emptyDescription')}
+          </p>
+
+          {/* Orange CTA Button */}
           <button
+            type="button"
             onClick={onAddIcon}
-            className="btn-primary flex items-center gap-2"
+            className={cn(
+              "flex items-center gap-2 px-6 py-2.5 rounded-full font-medium text-white transition-all duration-300",
+              "bg-gradient-to-br from-brand-orange to-brand-orange-600 hover:to-brand-orange-500",
+              "shadow-glow-orange hover:shadow-glow-orange-lg hover:-translate-y-0.5 active:scale-95 active:shadow-inner",
+              "border border-white/20",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40"
+            )}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             {t('iconGrid.addIcon')}
           </button>
         </div>
