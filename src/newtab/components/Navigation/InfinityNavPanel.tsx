@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { X } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { SidePanel } from '../ui/SidePanel';
 import { useNavigationStore, type NavigationTab } from '../../stores/navigationStore';
@@ -13,6 +12,7 @@ import { cn } from '../../utils';
  * Main navigation panel container featuring a top glassmorphism tab bar.
  */
 export function InfinityNavPanel() {
+    // Force HMR update
     const { isPanelOpen, activeTab, setActiveTab, closePanel } = useNavigationStore(
         useShallow((state) => ({
             isPanelOpen: state.isPanelOpen,
@@ -44,7 +44,7 @@ export function InfinityNavPanel() {
                 return <MyTab />;
             case 'settings':
                 // Render SettingsPanel in embedded mode (no SidePanel wrapper)
-                return <SettingsPanel isOpen={true} onClose={() => {}} embedded={true} />;
+                return <SettingsPanel isOpen={true} onClose={() => { }} embedded={true} />;
             default:
                 return null;
         }
@@ -55,73 +55,53 @@ export function InfinityNavPanel() {
             isOpen={isPanelOpen}
             onClose={closePanel}
             showCloseButton={false}
-            className="w-[780px] max-w-[90vw] overflow-hidden rounded-l-2xl border-l border-white/20 dark:border-white/5 shadow-2xl"
-            contentClassName="p-0 h-full flex flex-col bg-white/90 dark:bg-zinc-950/90 backdrop-blur-3xl"
+            className="w-[420px] max-w-[90vw] overflow-hidden border-l border-zinc-200 dark:border-zinc-800 shadow-xl"
+            contentClassName="p-0 h-full flex flex-col bg-zinc-50 dark:bg-zinc-950"
         >
-            {/* Top Sticky Glass Tab Bar */}
+            {/* Minimalist Top Tab Bar */}
             <div
                 className={cn(
                     'sticky top-0 z-20',
-                    'bg-white/80 dark:bg-zinc-900/80',
-                    'backdrop-blur-xl',
-                    'border-b border-zinc-200/50 dark:border-zinc-800/50',
-                    'shadow-sm'
+                    'bg-white dark:bg-zinc-950',
+                    'border-b border-zinc-100 dark:border-zinc-900',
                 )}
             >
-                <div className="flex items-center justify-between px-6 py-4">
-                    {/* Tab Group */}
-                    <div
-                        role="tablist"
-                        aria-label="Infinity navigation tabs"
-                        className="flex items-center gap-1.5 p-1 bg-zinc-100/50 dark:bg-zinc-800/50 rounded-xl"
-                    >
-                        {TABS.map((tab) => (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                role="tab"
-                                id={`infinity-tab-${tab.id}`}
-                                aria-controls={`infinity-panel-${tab.id}`}
-                                aria-selected={activeTab === tab.id}
-                                onClick={() => handleTabClick(tab.id)}
-                                className={cn(
-                                    'px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out',
-                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
-                                    activeTab === tab.id
-                                        ? 'bg-brand-orange-500 text-white shadow-glow-orange scale-100'
-                                        : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-700/50'
-                                )}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                <div className="flex flex-col">
+                    {/* Header with Close */}
+                    <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                        <div className="flex items-center gap-4 flex-1 justify-center">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => handleTabClick(tab.id)}
+                                    className={cn(
+                                        'flex flex-col items-center gap-1 min-w-[3rem]',
+                                        'text-xs font-medium transition-colors duration-200',
+                                        activeTab === tab.id
+                                            ? 'text-zinc-900 dark:text-white'
+                                            : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+                                    )}
+                                >
+                                    {/* Icon Placeholder or just text */}
+                                    <span className="text-lg leading-none">
+                                        {/* You could add icons here later if needed, but text is fine for minimal */}
+                                        {tab.id === 'add' && '+'}
+                                        {tab.id === 'my' && '👤'}
+                                        {tab.id === 'settings' && '⚙️'}
+                                    </span>
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
-
-                    {/* Close Button */}
-                    <button
-                        type="button"
-                        onClick={closePanel}
-                        className={cn(
-                            'group p-2 rounded-full',
-                            'bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800',
-                            'text-zinc-400 hover:text-red-500 dark:hover:text-red-400',
-                            'transition-all duration-200',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40'
-                        )}
-                        aria-label="Close navigation panel"
-                        title="Close"
-                    >
-                        <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                    </button>
                 </div>
             </div>
 
             {/* Scrollable Content Area */}
             <div
-                className="flex-1 overflow-y-auto no-scrollbar"
+                className="flex-1 overflow-y-auto no-scrollbar bg-zinc-50/50 dark:bg-zinc-900/50"
                 role="tabpanel"
-                id={`infinity-panel-${activeTab}`}
-                aria-labelledby={`infinity-tab-${activeTab}`}
             >
                 {renderTabContent()}
             </div>

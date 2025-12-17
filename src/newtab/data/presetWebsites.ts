@@ -16,21 +16,22 @@ export interface PresetCategory {
 }
 
 export const PRESET_CATEGORIES: PresetCategory[] = [
-  { id: 'popular', name: '受欢迎的', nameEn: 'Popular', icon: 'TrendingUp' },
-  { id: 'shared', name: '用户分享', nameEn: 'User Shared', icon: 'Users' },
+  { id: 'popular', name: '受欢迎的', nameEn: 'Popular', icon: 'Flame' },
+  { id: 'shared', name: '用户分享', nameEn: 'User Shared', icon: 'Share2' },
   { id: 'apps', name: '应用', nameEn: 'Apps', icon: 'AppWindow' },
   { id: 'news', name: '新闻', nameEn: 'News', icon: 'Newspaper' },
-  { id: 'entertainment', name: '娱乐', nameEn: 'Entertainment', icon: 'Sparkles' },
-  { id: 'shopping', name: '购物与团购', nameEn: 'Shopping', icon: 'ShoppingCart' },
-  { id: 'social', name: '社交与博客', nameEn: 'Social', icon: 'MessageCircle' },
-  { id: 'video', name: '音乐视频', nameEn: 'Video & Music', icon: 'Video' },
+  { id: 'video', name: '音乐视频', nameEn: 'Music & Video', icon: 'Clapperboard' },
   { id: 'images', name: '图片', nameEn: 'Images', icon: 'Image' },
+  { id: 'shopping', name: '购物与团购', nameEn: 'Shopping', icon: 'ShoppingBag' },
+  { id: 'social', name: '社交与博客', nameEn: 'Social', icon: 'MessageCircle' },
   { id: 'travel', name: '体育与旅行', nameEn: 'Sports & Travel', icon: 'Plane' },
-  { id: 'lifestyle', name: '生活方式', nameEn: 'Lifestyle', icon: 'Home' },
+  { id: 'lifestyle', name: '生活方式', nameEn: 'Lifestyle', icon: 'Coffee' },
   { id: 'gaming', name: '游戏与娱乐', nameEn: 'Gaming', icon: 'Gamepad2' },
-  { id: 'education', name: '教育与招聘', nameEn: 'Education & Jobs', icon: 'GraduationCap' },
+  { id: 'education', name: '教育与招聘', nameEn: 'Education', icon: 'GraduationCap' },
   { id: 'tech', name: '数码科技', nameEn: 'Tech', icon: 'Cpu' },
-  { id: 'finance', name: '金融', nameEn: 'Finance', icon: 'DollarSign' },
+  { id: 'finance', name: '金融', nameEn: 'Finance', icon: 'TrendingUp' },
+  { id: 'reading', name: '阅读', nameEn: 'Reading', icon: 'BookOpen' },
+  { id: 'other', name: '其他', nameEn: 'Other', icon: 'MoreHorizontal' },
 ];
 
 /**

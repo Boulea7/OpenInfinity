@@ -8,35 +8,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Legacy primary (keep for backward compatibility)
+        // Monochrome Primary Scale (Zinc)
         primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+          50: '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#71717a',
+          600: '#52525b',
+          700: '#3f3f46',
+          800: '#27272a',
+          900: '#18181b',
+          950: '#09090b',
         },
-        // Modern Brand Colors
+        // Minimalist Brand (Black/White)
         brand: {
-          orange: {
-            DEFAULT: '#FF6B35',
-            50: '#FFF3EB',
-            100: '#FFE6D6',
-            200: '#FFCCAD',
-            300: '#FFB385',
-            400: '#FF995C',
-            500: '#FF6B35', // Main Brand
-            600: '#E6521C',
-            700: '#BF3D0F',
-            800: '#992E0A',
-            900: '#732006',
-            950: '#4D1403',
+          black: '#000000',
+          white: '#ffffff',
+          gray: {
+            50: '#f9f9f9',
+            100: '#f0f0f0',
+            200: '#e0e0e0',
+            300: '#c0c0c0',
+            400: '#a0a0a0',
+            500: '#808080',
+            600: '#606060',
+            700: '#404040',
+            800: '#202020',
+            900: '#101010',
           },
+          // Keep a subtle accent if absolutely needed
+          accent: '#f59e0b',
         },
       },
       fontFamily: {
@@ -52,11 +55,11 @@ export default {
       },
       boxShadow: {
         // Glass shadows for modern glassmorphism effect
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        'glass-hover': '0 12px 40px 0 rgba(0, 0, 0, 0.12), 0 2px 4px 0 rgba(0, 0, 0, 0.08)',
-        // Orange glow for CTA buttons and emphasis
-        'glow-orange': '0 0 20px -5px rgba(255, 107, 53, 0.4)',
-        'glow-orange-lg': '0 0 30px -5px rgba(255, 107, 53, 0.6)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02)',
+        'glass-hover': '0 12px 40px 0 rgba(0, 0, 0, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.04)',
+        // Neutral subtle glow/shadow
+        'glow': '0 0 20px -5px rgba(0, 0, 0, 0.1)',
+        'glow-lg': '0 0 30px -5px rgba(0, 0, 0, 0.15)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',

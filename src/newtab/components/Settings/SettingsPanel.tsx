@@ -137,8 +137,8 @@ export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPan
                       'w-full flex items-center gap-3 px-4 py-2.5 text-sm',
                       'transition-colors duration-200',
                       activeTab === tab.id
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-r-2 border-primary-500'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
                     )}
                   >
                     <Icon className="w-4 h-4" />
@@ -211,8 +211,8 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
                 'px-4 py-2 rounded-lg text-sm capitalize',
                 'transition-colors duration-200',
                 theme === t
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
               )}
             >
               {t}
@@ -233,8 +233,8 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
               'px-4 py-2 rounded-lg text-sm',
               'transition-colors duration-200',
               i18n.language === 'zh' || language === 'zh'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
             )}
           >
             中文
@@ -245,8 +245,8 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
               'px-4 py-2 rounded-lg text-sm',
               'transition-colors duration-200',
               i18n.language === 'en' || language === 'en'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
             )}
           >
             English
@@ -298,8 +298,8 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
                 'px-3 py-2 rounded-lg text-sm',
                 'transition-colors duration-200',
                 activeSource === source.id
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
               )}
             >
               {source.label}
@@ -411,7 +411,7 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
             }}
             className={cn(
               'w-11 h-6 rounded-full transition-colors duration-200',
-              autoChange.enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+              autoChange.enabled ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-700'
             )}
           >
             <span
@@ -438,8 +438,8 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
                     'px-4 py-2 rounded-lg text-sm capitalize',
                     'transition-colors duration-200',
                     autoChange.interval === interval
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                   )}
                 >
                   {interval === 'hourly' && 'Every Hour'}
@@ -456,8 +456,8 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
           onClick={() => void fetchRandomWallpaper()}
           className={cn(
             'w-full px-4 py-2 rounded-lg text-sm',
-            'bg-primary-600 text-white',
-            'hover:bg-primary-700',
+            'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900',
+            'hover:bg-zinc-800 dark:hover:bg-zinc-200',
             'transition-colors duration-200'
           )}
         >
@@ -488,7 +488,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
           onClick={() => setIconStyle({ showName: !iconStyle.showName })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            iconStyle.showName ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            iconStyle.showName ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-700'
           )}
         >
           <span
@@ -509,7 +509,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
           onClick={() => setIconStyle({ shadow: !iconStyle.shadow })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            iconStyle.shadow ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            iconStyle.shadow ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-700'
           )}
         >
           <span
@@ -535,8 +535,8 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
                 'px-3 py-1.5 rounded-lg text-sm capitalize',
                 'transition-colors duration-200',
                 iconStyle.animation === anim
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                  : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
               )}
             >
               {anim}
@@ -551,7 +551,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
           <label htmlFor="border-radius-slider" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             圆角弧度 / Border Radius
           </label>
-          <span className="text-sm font-semibold text-primary-600" aria-live="polite">
+          <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400" aria-live="polite">
             {iconStyle.borderRadius}%
           </span>
         </div>
@@ -563,7 +563,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
           step="1"
           value={iconStyle.borderRadius}
           onChange={(e) => setIconStyle({ borderRadius: Number(e.target.value) })}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600 dark:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-white dark:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
           aria-label="Icon border radius"
           aria-valuemin={0}
           aria-valuemax={50}
@@ -579,7 +579,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
         {/* Preview */}
         <div className="mt-3 flex items-center justify-center" aria-hidden="true">
           <div
-            className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 transition-all duration-200"
+            className="w-16 h-16 bg-gradient-to-br from-zinc-500 to-zinc-700 transition-all duration-200"
             style={{ borderRadius: `${iconStyle.borderRadius}%` }}
           />
         </div>
@@ -599,8 +599,8 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
                 'px-4 py-2 rounded-lg text-sm capitalize',
                 'transition-colors duration-200',
                 iconStyle.size === size
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
               )}
             >
               {size}
@@ -636,8 +636,8 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                 clockSettings.format === format
-                  ? 'bg-brand-orange-500 text-white shadow-md'
-                  : 'bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-brand-orange-50 dark:hover:bg-gray-600'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                  : 'bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-zinc-100 dark:hover:bg-zinc-600'
               )}
             >
               {format === '12h' ? '12-Hour (am/pm)' : '24-Hour'}
@@ -658,8 +658,8 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
           <button
             onClick={() => setClockSettings({ showSeconds: !clockSettings.showSeconds })}
             className={cn(
-              'w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/50',
-              clockSettings.showSeconds ? 'bg-brand-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+              'w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500/50',
+              clockSettings.showSeconds ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
             )}
           >
             <span
@@ -684,8 +684,8 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
           <button
             onClick={() => setClockSettings({ autoDetect: !clockSettings.autoDetect })}
             className={cn(
-              'w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/50',
-              clockSettings.autoDetect ? 'bg-brand-orange-500' : 'bg-gray-300 dark:bg-gray-600'
+              'w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-zinc-500/50',
+              clockSettings.autoDetect ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
             )}
           >
             <span
@@ -714,7 +714,7 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
               'bg-white/50 dark:bg-gray-700/50',
               'border border-gray-200 dark:border-gray-600',
               'text-gray-900 dark:text-gray-100',
-              'focus:outline-none focus:ring-2 focus:ring-brand-orange-500',
+              'focus:outline-none focus:ring-2 focus:ring-zinc-500',
               'transition-all duration-200'
             )}
           >
@@ -725,7 +725,7 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
             ))}
           </select>
           {clockSettings.autoDetect && (
-            <p className="mt-1.5 text-xs text-brand-orange-500">
+            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
               Using system timezone
             </p>
           )}
@@ -755,7 +755,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
           onClick={() => setSearchSettings({ hidden: !searchSettings.hidden })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            searchSettings.hidden ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            searchSettings.hidden ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
           )}
         >
           <span
@@ -776,7 +776,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
           onClick={() => setSearchSettings({ showSuggestions: !searchSettings.showSuggestions })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            searchSettings.showSuggestions ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            searchSettings.showSuggestions ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
           )}
         >
           <span
@@ -802,7 +802,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
             'bg-gray-50 dark:bg-gray-700',
             'border border-gray-300 dark:border-gray-600',
             'text-gray-900 dark:text-gray-100',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500'
+            'focus:outline-none focus:ring-2 focus:ring-zinc-500'
           )}
         />
       </div>
@@ -821,7 +821,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
                 'px-4 py-2 rounded-lg text-sm capitalize',
                 'transition-colors duration-200',
                 searchSettings.size === size
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               )}
             >
@@ -918,7 +918,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
           onClick={() => setViewSettings({ showClock: !viewSettings.showClock })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            viewSettings.showClock ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            viewSettings.showClock ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
           )}
         >
           <span
@@ -939,7 +939,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
           onClick={() => setViewSettings({ showPagination: !viewSettings.showPagination })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            viewSettings.showPagination ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            viewSettings.showPagination ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
           )}
         >
           <span
@@ -966,7 +966,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
             onClick={() => setViewSettings({ showWidgetSidebar: !viewSettings.showWidgetSidebar })}
             className={cn(
               'w-11 h-6 rounded-full transition-colors duration-200',
-              viewSettings.showWidgetSidebar ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+              viewSettings.showWidgetSidebar ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
             )}
           >
             <span
@@ -990,7 +990,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
                 onClick={() => setViewSettings({ showTodoWidget: !viewSettings.showTodoWidget })}
                 className={cn(
                   'w-11 h-6 rounded-full transition-colors duration-200',
-                  viewSettings.showTodoWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                  viewSettings.showTodoWidget ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
                 )}
               >
                 <span
@@ -1011,7 +1011,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
                 onClick={() => setViewSettings({ showNotesWidget: !viewSettings.showNotesWidget })}
                 className={cn(
                   'w-11 h-6 rounded-full transition-colors duration-200',
-                  viewSettings.showNotesWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                  viewSettings.showNotesWidget ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
                 )}
               >
                 <span
@@ -1032,7 +1032,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
                 onClick={() => setViewSettings({ showWeather: !viewSettings.showWeather })}
                 className={cn(
                   'w-11 h-6 rounded-full transition-colors duration-200',
-                  viewSettings.showWeather ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                  viewSettings.showWeather ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
                 )}
               >
                 <span
@@ -1053,7 +1053,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
                 onClick={() => setViewSettings({ showBookmarksWidget: !viewSettings.showBookmarksWidget })}
                 className={cn(
                   'w-11 h-6 rounded-full transition-colors duration-200',
-                  viewSettings.showBookmarksWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                  viewSettings.showBookmarksWidget ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
                 )}
               >
                 <span
@@ -1074,7 +1074,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
                 onClick={() => setViewSettings({ showHistoryWidget: !viewSettings.showHistoryWidget })}
                 className={cn(
                   'w-11 h-6 rounded-full transition-colors duration-200',
-                  viewSettings.showHistoryWidget ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                  viewSettings.showHistoryWidget ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
                 )}
               >
                 <span
@@ -1132,7 +1132,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
             'bg-gray-50 dark:bg-gray-700',
             'border border-gray-300 dark:border-gray-600',
             'text-gray-900 dark:text-gray-100',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500'
+            'focus:outline-none focus:ring-2 focus:ring-zinc-500'
           )}
         >
           <option value="system-ui">System Default</option>
@@ -1181,7 +1181,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
           onClick={() => setFontSettings({ shadow: !fontSettings.shadow })}
           className={cn(
             'w-11 h-6 rounded-full transition-colors duration-200',
-            fontSettings.shadow ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+            fontSettings.shadow ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
           )}
         >
           <span
@@ -1207,7 +1207,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
                 'px-4 py-2 rounded-lg text-sm capitalize',
                 'transition-colors duration-200',
                 fontSettings.weight === weight
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               )}
             >
@@ -1315,8 +1315,8 @@ function BackupSettings() {
           disabled={isExporting}
           className={cn(
             'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg',
-            'bg-primary-600 text-white',
-            'hover:bg-primary-700',
+            'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900',
+            'hover:bg-zinc-800 dark:hover:bg-zinc-200',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'transition-colors duration-200'
           )}
@@ -1374,8 +1374,8 @@ function AboutSettings() {
 
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">∞</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-zinc-800 to-black dark:from-white dark:to-zinc-200 rounded-2xl flex items-center justify-center">
+            <span className="text-2xl font-bold text-white dark:text-black">∞</span>
           </div>
           <div>
             <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
