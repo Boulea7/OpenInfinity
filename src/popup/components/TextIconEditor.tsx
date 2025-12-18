@@ -9,7 +9,7 @@ const PRESET_COLORS = [
 ];
 
 interface Props {
-  onIconChange: (iconData: IconDraft | null) => void;
+  onIconChange: (data: IconDraft | null) => void;
   websiteName?: string;
 }
 
@@ -91,14 +91,14 @@ export default function TextIconEditor({ onIconChange, websiteName }: Props) {
 
       <div>
         <label className="block text-xs font-medium text-zinc-400 mb-2">背景颜色</label>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
           {PRESET_COLORS.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setColor(c)}
               className={`
-                w-8 h-8 rounded-full border-2 transition-all duration-200
+                flex-shrink-0 w-8 h-8 rounded-full border-2 transition-all duration-200
                 ${color === c ? 'border-white scale-110 shadow-lg shadow-white/20' : 'border-transparent hover:scale-110'}
               `}
               style={{ backgroundColor: c }}
@@ -106,7 +106,7 @@ export default function TextIconEditor({ onIconChange, websiteName }: Props) {
           ))}
           <label
             className={`
-              w-8 h-8 rounded-full cursor-pointer border-2 transition-all duration-200 relative overflow-hidden flex items-center justify-center
+              flex-shrink-0 w-8 h-8 rounded-full cursor-pointer border-2 transition-all duration-200 relative overflow-hidden flex items-center justify-center
               ${!PRESET_COLORS.includes(color) ? 'border-white scale-110 shadow-lg shadow-white/20' : 'border-zinc-700 hover:border-zinc-500'}
             `}
             style={{

@@ -5,7 +5,7 @@ import IconTypeSelector from './IconTypeSelector';
 import IconEditPage from './IconEditPage';
 import IconPreview from './IconPreview';
 import type { EditRequest, IconDraft } from '../types/iconDraft';
-import { GlassButton, GlassInput } from './UI/GlassComponents';
+import { GlassButton } from './UI/GlassComponents';
 import PopupLayout from './PopupLayout';
 
 export default function AddIconForm() {
@@ -13,7 +13,7 @@ export default function AddIconForm() {
   const { addIcon, isAdding } = useAddIcon();
 
   const [title, setTitle] = useState('');
-  const [iconType, setIconType] = useState<'text' | 'favicon' | 'upload'>('text');
+  const [iconType, setIconType] = useState<'text' | 'favicon' | 'upload' | 'custom'>('text');
   const [iconData, setIconData] = useState<IconDraft | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
@@ -112,38 +112,27 @@ export default function AddIconForm() {
 
         {/* Website Info */}
         <div className="space-y-3">
-          <GlassInput
-            label="网站名称"
+          <input
+            type="text"
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
               setIsDirty(true);
             }}
-            placeholder="输入网站名称"
-            fullWidth
-            required
+            className="w-full bg-transparent border-b border-white/20 px-0 py-2 text-base focus:outline-none focus:border-brand-orange-500 transition-colors placeholder-zinc-600 font-medium"
+            placeholder="网站名称"
           />
-          {/* URL Input could be added here if editable, requirement says "Enter URL (auto fetch)". 
-              Usually readonly or editable. Let's make it editable for flexibility but pre-filled. */}
-          <div className="opacity-60 hover:opacity-100 transition-opacity">
-            <GlassInput
-              label="网址"
-              value={tabInfo?.url || ''}
-              disabled
-              fullWidth
-              className="text-zinc-500 cursor-not-allowed bg-black/20 border-transparent"
-            />
-          </div>
         </div>
 
         {/* Icon Type Selection */}
-        <div>
-          <label className="block text-xs font-medium text-zinc-400 mb-2 ml-1">图标样式</label>
+        <div className="flex-1 min-h-0 pt-2">
+          <label className="block text-sm font-semibold mb-3">选择图标</label>
           <IconTypeSelector
             type={iconType}
             onTypeChange={setIconType}
             url={tabInfo?.url || ''}
             websiteName={title}
+            iconData={iconData}
             onIconChange={setIconData}
             onEditRequest={(imageUrl) => {
               setIconData(null);
@@ -151,6 +140,8 @@ export default function AddIconForm() {
             }}
           />
         </div>
+
+
 
         {/* Spacing for bottom actions */}
         <div className="h-4"></div>
