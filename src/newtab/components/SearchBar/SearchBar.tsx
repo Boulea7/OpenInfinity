@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { Search, ChevronDown, Monitor, Image, Video, Map } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
@@ -79,7 +79,7 @@ const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
  * Redesigned with Modern Glassmorphism + Windows 11 Fluent Style
  */
 export function SearchBar({ className }: SearchBarProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { searchSettings, openBehavior, setSearchSettings } = useSettingsStore(
     useShallow((state) => ({
       searchSettings: state.searchSettings,
@@ -97,6 +97,10 @@ export function SearchBar({ className }: SearchBarProps) {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
+  const indicatorBaseWidth = 100;
 
   // Preload and cache engine icons
   useEffect(() => {
@@ -228,11 +232,69 @@ export function SearchBar({ className }: SearchBarProps) {
   const currentMaxWidth = maxWidthClasses[searchSettings.size as keyof typeof maxWidthClasses] || maxWidthClasses.medium;
 
   const SEARCH_TYPES = [
-    { id: 'web', label: '网页', icon: Monitor },
-    { id: 'images', label: '图片', icon: Image },
-    { id: 'videos', label: '视频', icon: Video },
-    { id: 'maps', label: '地图', icon: Map },
+    { id: 'web', label: t('searchBar.types.web'), icon: Monitor },
+    { id: 'images', label: t('searchBar.types.images'), icon: Image },
+    { id: 'videos', label: t('searchBar.types.videos'), icon: Video },
+    { id: 'maps', label: t('searchBar.types.maps'), icon: Map },
   ] as const;
+
+  const searchTypeToIndex: Record<string, number> = {
+    web: 0,
+    images: 1,
+    videos: 2,
+    maps: 3,
+  };
+
+  const [activeTabIndex, setActiveTabIndex] = useState(
+    searchTypeToIndex[searchSettings.searchType] ?? 0
+  );
+
+  useEffect(() => {
+    setActiveTabIndex(searchTypeToIndex[searchSettings.searchType] ?? 0);
+  }, [searchSettings.searchType]);
+
+  const updateIndicator = useCallback(() => {
+    const container = tabsContainerRef.current;
+    const activeButton = tabRefs.current[activeTabIndex];
+    if (!container || !activeButton) {
+      setIndicatorStyle({ width: 0, left: 0 });
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+
+    setIndicatorStyle({
+      width: buttonRect.width,
+      left: buttonRect.left - containerRect.left,
+    });
+  }, [activeTabIndex]);
+
+  useLayoutEffect(() => {
+    updateIndicator();
+  }, [updateIndicator, i18n.language]);
+
+  useEffect(() => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateIndicator);
+    };
+
+    window.addEventListener('resize', schedule);
+
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
+    ro?.observe(container);
+
+    return () => {
+      window.removeEventListener('resize', schedule);
+      ro?.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [updateIndicator]);
 
   return (
     <div
@@ -244,25 +306,40 @@ export function SearchBar({ className }: SearchBarProps) {
 
       {/* Search Type Tabs - Integrated Top Style */}
       <div className={cn(
-        'flex justify-center gap-1 p-1 rounded-full',
+        'relative flex justify-center gap-1 p-1 rounded-full',
         'bg-white/20 dark:bg-black/10 backdrop-blur-xl',
         'border border-white/20 dark:border-white/5',
         'transition-all duration-300'
-      )}>
-        {SEARCH_TYPES.map((type) => {
+      )} ref={tabsContainerRef}>
+        <div
+          className="absolute inset-y-1 left-0 bg-black dark:bg-white rounded-full transition-transform duration-300 ease-out"
+          style={{
+            width: `${indicatorBaseWidth}px`,
+            transformOrigin: 'left center',
+            transform: `translateX(${indicatorStyle.left}px) scaleX(${indicatorStyle.width ? indicatorStyle.width / indicatorBaseWidth : 0})`,
+          }}
+          aria-hidden="true"
+        />
+        {SEARCH_TYPES.map((type, index) => {
           const isActive = searchSettings.searchType === type.id;
           const Icon = type.icon;
           return (
             <button
               type="button"
               key={type.id}
-              onClick={() => setSearchSettings({ searchType: type.id })}
+              onClick={() => {
+                setActiveTabIndex(index);
+                setSearchSettings({ searchType: type.id });
+              }}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300',
+                'relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/30',
                 isActive
-                  ? 'bg-white text-brand-orange-600 shadow-sm dark:bg-zinc-800 dark:text-brand-orange-400'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-brand-orange-500 hover:bg-white/10'
+                  ? 'text-white dark:text-black'
+                  : 'text-zinc-700 dark:text-zinc-300 hover:text-white/90 dark:hover:text-black/80'
               )}
               aria-pressed={isActive}
             >

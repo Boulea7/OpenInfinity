@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import type { Icon, Folder } from './services/database';
+import { clearExpiredIconCache } from './utils/iconCache';
 import {
   WallpaperBackground,
   SearchBar,
@@ -37,6 +38,7 @@ function App() {
 
   // P1-9: Initialize settings and load icons on mount
   useEffect(() => {
+    clearExpiredIconCache();
     initializeSettings();
     loadIcons();
   }, [initializeSettings, loadIcons]);

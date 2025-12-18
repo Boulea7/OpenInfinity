@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Home, Cloud, CheckSquare, FileText, Bookmark, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Home, Cloud, CheckSquare, FileText, Bookmark, Clock } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
 import { TodoWidget } from './TodoWidget';
@@ -234,7 +234,11 @@ export function WidgetContainer({
                     <span className="font-medium">{widget.title}</span>
                   </div>
                   <div className="text-white/60">
-                    {expandedWidgets.has(widget.id) ? '▼' : '▶'}
+                    {expandedWidgets.has(widget.id) ? (
+                      <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                    )}
                   </div>
                 </button>
 

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import ReactCrop, { type PercentCrop } from 'react-image-crop';
+import { Palette } from 'lucide-react';
 import 'react-image-crop/dist/ReactCrop.css';
 
 const PRESET_COLORS = [
@@ -156,7 +157,7 @@ export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm,
               className="w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
               title="自定义颜色"
             >
-              🎨
+              <Palette className="w-4 h-4 text-gray-700" aria-hidden="true" />
               <input
                 type="color"
                 value={backgroundColor}

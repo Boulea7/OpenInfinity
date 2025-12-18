@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/shallow';
+import { Plus, User, Settings } from 'lucide-react';
 import { SidePanel } from '../ui/SidePanel';
 import { useNavigationStore, type NavigationTab } from '../../stores/navigationStore';
 import { SettingsPanel } from '../Settings/SettingsPanel';
@@ -29,10 +30,10 @@ export function InfinityNavPanel() {
         [setActiveTab]
     );
 
-    const TABS: ReadonlyArray<{ id: NavigationTab; label: string }> = [
-        { id: 'add', label: '添加' },
-        { id: 'my', label: '我的' },
-        { id: 'settings', label: '设置' },
+    const TABS: ReadonlyArray<{ id: NavigationTab; label: string; icon: typeof Plus }> = [
+        { id: 'add', label: '添加', icon: Plus },
+        { id: 'my', label: '我的', icon: User },
+        { id: 'settings', label: '设置', icon: Settings },
     ];
 
     // Render dummy content for now, to be replaced in subsequent steps
@@ -83,13 +84,7 @@ export function InfinityNavPanel() {
                                             : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
                                     )}
                                 >
-                                    {/* Icon Placeholder or just text */}
-                                    <span className="text-lg leading-none">
-                                        {/* You could add icons here later if needed, but text is fine for minimal */}
-                                        {tab.id === 'add' && '+'}
-                                        {tab.id === 'my' && '👤'}
-                                        {tab.id === 'settings' && '⚙️'}
-                                    </span>
+                                    <tab.icon className="w-5 h-5" />
                                     <span>{tab.label}</span>
                                 </button>
                             ))}

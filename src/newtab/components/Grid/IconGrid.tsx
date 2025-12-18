@@ -475,18 +475,18 @@ export function IconGrid({
                   onAddIcon?.();
                 }}
                 className={cn(
-                  'w-20 h-24 flex flex-col items-center justify-center',
-                  'rounded-xl border-2 border-dashed',
+                  'w-20 h-20 flex items-center justify-center',
+                  'rounded-full border-2 border-dashed',
                   'border-white/30 hover:border-white/50',
                   'text-white/50 hover:text-white/70',
                   'transition-all duration-200',
                   'hover:bg-white/10',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40'
                 )}
-                aria-label="添加网站"
+                aria-label={t('iconGrid.addIcon')}
               >
-                <Plus className="w-8 h-8 mb-1" />
-                <span className="text-xs">Add</span>
+                <Plus className="w-8 h-8" />
+                <span className="sr-only">{t('iconGrid.addIcon')}</span>
               </button>
             )}
           </div>
@@ -534,29 +534,6 @@ export function IconGrid({
               </svg>
             </div>
           </div>
-
-          <p className="text-xl font-semibold mb-2 text-zinc-800 dark:text-zinc-100 tracking-tight">
-            {t('iconGrid.emptyTitle')}
-          </p>
-          <p className="text-sm mb-8 text-zinc-500 dark:text-zinc-400 max-w-xs text-center leading-relaxed">
-            {t('iconGrid.emptyDescription')}
-          </p>
-
-          {/* Orange CTA Button */}
-          <button
-            type="button"
-            onClick={onAddIcon}
-            className={cn(
-              "flex items-center gap-2 px-6 py-2.5 rounded-full font-medium text-white transition-all duration-300",
-              "bg-gradient-to-br from-brand-orange to-brand-orange-600 hover:to-brand-orange-500",
-              "shadow-glow-orange hover:shadow-glow-orange-lg hover:-translate-y-0.5 active:scale-95 active:shadow-inner",
-              "border border-white/20",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40"
-            )}
-          >
-            <Plus className="w-5 h-5" />
-            {t('iconGrid.addIcon')}
-          </button>
         </div>
       )}
 

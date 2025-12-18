@@ -1,4 +1,4 @@
-import { Minus } from 'lucide-react';
+import { Minus, Users } from 'lucide-react';
 import { cn, copyToClipboard } from '../../../utils';
 
 export function SupportSection() {
@@ -28,7 +28,7 @@ export function SupportSection() {
                 )}
             >
                 <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                    <span className="text-[10px]">🐧</span>
+                    <Users className="w-3.5 h-3.5 text-white" aria-hidden="true" />
                 </div>
                 <span>QQ群</span>
             </button>

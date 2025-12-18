@@ -1,4 +1,4 @@
-import { Minus, QrCode } from 'lucide-react';
+import { Minus, QrCode, Star } from 'lucide-react';
 import { cn } from '../../../utils';
 
 export function FollowUsSection() {
@@ -39,7 +39,7 @@ export function FollowUsSection() {
                 <div className="flex gap-4">
                     <button className="w-12 h-12 rounded-lg bg-yellow-400 text-white flex items-center justify-center hover:opacity-90 transition-opacity">
                         {/* Star icon typically */}
-                        <span className="font-bold text-xl">★</span>
+                        <Star className="w-6 h-6" fill="currentColor" aria-hidden="true" />
                     </button>
                     <button className="w-12 h-12 rounded-lg bg-green-600 text-white flex items-center justify-center hover:opacity-90 transition-opacity">
                         {/* Douban or similar */}

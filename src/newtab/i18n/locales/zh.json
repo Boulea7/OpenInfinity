@@ -37,6 +37,7 @@
   "settings": {
     "title": "设置",
     "resetAll": "重置所有设置",
+    "resetAllConfirm": "确定要重置所有设置吗?",
     "tabs": {
       "general": "通用",
       "clock": "时钟",
@@ -52,12 +53,46 @@
     "general": {
       "title": "通用设置",
       "theme": "主题",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统",
       "themeLight": "浅色",
       "themeDark": "深色",
       "themeSystem": "跟随系统",
       "language": "语言",
       "chinese": "中文",
       "english": "English"
+    },
+    "wallpaper": {
+      "title": "壁纸设置",
+      "source": "壁纸来源",
+      "sources": {
+        "local": "本地",
+        "custom": "URL",
+        "solid": "纯色",
+        "gradient": "渐变",
+        "bing": "必应每日",
+        "unsplash": "Unsplash"
+      },
+      "effects": "效果",
+      "blur": "模糊",
+      "maskOpacity": "遮罩不透明度",
+      "brightness": "亮度",
+      "searchPreferences": "搜索偏好",
+      "searchQuery": "壁纸搜索关键词",
+      "searchQueryPlaceholder": "自然, 风景, 城市...",
+      "searchQueryHint": "用于从 Unsplash / Pexels / Bing 获取壁纸时的关键词",
+      "autoChange": {
+        "title": "自动切换壁纸",
+        "enable": "开启自动切换",
+        "interval": "切换频率",
+        "intervals": {
+          "hourly": "每小时",
+          "daily": "每天",
+          "weekly": "每周"
+        }
+      },
+      "refreshNow": "立即刷新壁纸"
     },
     "clock": {
       "title": "时钟设置",
@@ -67,7 +102,9 @@
       "format": "时间格式",
       "format12h": "12小时制",
       "format24h": "24小时制",
-      "showSeconds": "显示秒数"
+      "showSeconds": "显示秒数",
+      "displayOptions": "显示选项",
+      "systemTimezone": "使用系统时区"
     },
     "icons": {
       "title": "图标设置",
@@ -79,6 +116,7 @@
       "animationBounce": "弹跳",
       "animationShake": "抖动",
       "borderRadius": "圆角弧度",
+      "borderRadiusValue": "{{value}}% 圆角",
       "square": "方形",
       "rounded": "圆角",
       "circle": "圆形",
@@ -92,26 +130,45 @@
       "title": "搜索设置",
       "hideSearchBar": "隐藏搜索栏",
       "showSuggestions": "显示搜索建议",
+      "placeholderText": "占位提示文字",
       "keepContent": "保留搜索栏内容",
       "hideTypeSelector": "隐藏搜索类型选择器",
       "hideButton": "隐藏搜索按钮",
       "size": "搜索栏大小",
-      "borderRadius": "搜索栏圆角"
+      "sizeSmall": "小",
+      "sizeMedium": "中",
+      "sizeLarge": "大",
+      "borderRadius": "搜索栏圆角",
+      "opacity": "不透明度"
     },
     "layout": {
       "title": "布局设置",
       "zoom": "屏幕缩放",
+      "gridColumns": "网格列数",
+      "gridRows": "网格行数",
       "columns": "列数",
       "rows": "行数",
       "showTopSites": "显示常用网站",
       "showBookmarks": "显示书签",
       "showPagination": "显示翻页按钮",
       "showClock": "显示时钟",
-      "showWeather": "显示天气"
+      "showWeather": "显示天气",
+      "widgetSidebar": {
+        "title": "小组件侧边栏",
+        "show": "显示小组件侧边栏",
+        "widgets": {
+          "todo": "待办",
+          "notes": "笔记",
+          "weather": "天气",
+          "bookmarks": "书签",
+          "history": "历史"
+        }
+      }
     },
     "fonts": {
       "title": "字体设置",
       "family": "字体系列",
+      "systemDefault": "系统默认",
       "size": "字体大小",
       "color": "字体颜色",
       "shadow": "字体阴影",
@@ -122,6 +179,21 @@
     },
     "backup": {
       "title": "备份与恢复",
+      "exportAllData": "导出所有数据",
+      "exporting": "导出中...",
+      "importAllData": "导入所有数据",
+      "importing": "导入中...",
+      "exportFailed": "导出失败：",
+      "importFailed": "导入失败：",
+      "unknownError": "未知错误",
+      "importConfirm": "这将覆盖所有现有数据，确定继续吗？",
+      "warningTitle": "警告",
+      "warningText": "导入会覆盖你现有的所有数据，请先导出备份。",
+      "description": "将你的所有数据（设置、图标、文件夹、待办、笔记、壁纸等）导出为 JSON 文件，之后可通过导入恢复。",
+      "importFromChrome": {
+        "title": "从 Chrome 导入",
+        "description": "将 Chrome 书签导入为新图标，不会删除现有数据。同一 URL 会自动跳过。"
+      },
       "export": "导出所有数据",
       "import": "导入数据",
       "importBookmarks": "导入Chrome书签",
@@ -131,7 +203,14 @@
     "about": {
       "title": "关于 OpenInfinity",
       "version": "版本",
-      "description": "安全、透明、高性能的新标签页扩展"
+      "description": "OpenInfinity 是一款美观且可自定义的新标签页扩展，帮助你整理常用网站、个性化壁纸并提升效率。",
+      "builtWith": "基于 React、TypeScript 和 Tailwind CSS 构建。",
+      "copyright": "© 2024 OpenInfinity。基于 MIT License 开源。"
+    },
+    "marketplace": {
+      "title": "快捷方式市场",
+      "description": "浏览并添加热门网站快捷方式到你的新标签页。",
+      "comingSoon": "市场即将上线..."
     }
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Cloud, RefreshCw, Droplets, Wind, Thermometer, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
+import { Cloud, RefreshCw, Droplets, Wind, Thermometer, ChevronDown, ChevronRight, AlertCircle, MapPin } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
 import { useWeather } from '../../hooks';
 import { cn } from '../../utils';
@@ -57,6 +57,11 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
   const formatTemp = (temp: number) => {
     const unit = weatherSettings.unit === 'celsius' ? '°C' : '°F';
     return `${temp}${unit}`;
+  };
+
+  const renderConditionIcon = (code: number, className: string) => {
+    const Icon = getWeatherIcon(code);
+    return <Icon className={className} aria-hidden="true" />;
   };
 
   return (
@@ -146,9 +151,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
                 {/* Main Display */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="text-4xl">
-                      {getWeatherIcon(weather.current.conditionCode)}
-                    </div>
+                    {renderConditionIcon(weather.current.conditionCode, 'w-10 h-10 text-white/90')}
                     <div>
                       <button
                         onClick={toggleUnit}
@@ -163,8 +166,9 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
                 </div>
 
                 {/* Location */}
-                <div className="text-xs text-white/50">
-                  📍 {weather.location.name}
+                <div className="flex items-center gap-1.5 text-xs text-white/50">
+                  <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="truncate">{weather.location.name}</span>
                 </div>
 
                 {/* Weather Details */}
@@ -208,9 +212,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
                           className="flex items-center justify-between p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="text-lg">
-                              {getWeatherIcon(day.conditionCode)}
-                            </span>
+                            {renderConditionIcon(day.conditionCode, 'w-5 h-5 text-white/80')}
                             <div className="flex flex-col min-w-0">
                               <span className="text-xs text-white/80 truncate">
                                 {day.dayOfWeek}

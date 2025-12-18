@@ -4,55 +4,57 @@
  */
 
 import type { WeatherCache } from './database';
+import type { LucideIcon } from 'lucide-react';
+import { Sun, Cloud, CloudSun, CloudFog, CloudRain, CloudSnow, CloudLightning, HelpCircle } from 'lucide-react';
 
 /**
  * WMO Weather Code mapping
  * Reference: https://open-meteo.com/en/docs
  */
-export const WMO_CODES: Record<number, { condition: string; icon: string }> = {
+export const WMO_CODES: Record<number, { condition: string; icon: LucideIcon }> = {
   // Clear sky
-  0: { condition: 'Clear', icon: '☀️' },
+  0: { condition: 'Clear', icon: Sun },
 
   // Mainly clear, partly cloudy, and overcast
-  1: { condition: 'Mainly Clear', icon: '🌤️' },
-  2: { condition: 'Partly Cloudy', icon: '⛅' },
-  3: { condition: 'Overcast', icon: '☁️' },
+  1: { condition: 'Mainly Clear', icon: CloudSun },
+  2: { condition: 'Partly Cloudy', icon: CloudSun },
+  3: { condition: 'Overcast', icon: Cloud },
 
   // Fog
-  45: { condition: 'Fog', icon: '🌫️' },
-  48: { condition: 'Depositing Rime Fog', icon: '🌫️' },
+  45: { condition: 'Fog', icon: CloudFog },
+  48: { condition: 'Depositing Rime Fog', icon: CloudFog },
 
   // Drizzle
-  51: { condition: 'Light Drizzle', icon: '🌦️' },
-  53: { condition: 'Moderate Drizzle', icon: '🌦️' },
-  55: { condition: 'Dense Drizzle', icon: '🌦️' },
-  56: { condition: 'Light Freezing Drizzle', icon: '🌦️' },
-  57: { condition: 'Dense Freezing Drizzle', icon: '🌦️' },
+  51: { condition: 'Light Drizzle', icon: CloudRain },
+  53: { condition: 'Moderate Drizzle', icon: CloudRain },
+  55: { condition: 'Dense Drizzle', icon: CloudRain },
+  56: { condition: 'Light Freezing Drizzle', icon: CloudRain },
+  57: { condition: 'Dense Freezing Drizzle', icon: CloudRain },
 
   // Rain
-  61: { condition: 'Slight Rain', icon: '🌧️' },
-  63: { condition: 'Moderate Rain', icon: '🌧️' },
-  65: { condition: 'Heavy Rain', icon: '🌧️' },
-  66: { condition: 'Light Freezing Rain', icon: '🌧️' },
-  67: { condition: 'Heavy Freezing Rain', icon: '🌧️' },
+  61: { condition: 'Slight Rain', icon: CloudRain },
+  63: { condition: 'Moderate Rain', icon: CloudRain },
+  65: { condition: 'Heavy Rain', icon: CloudRain },
+  66: { condition: 'Light Freezing Rain', icon: CloudRain },
+  67: { condition: 'Heavy Freezing Rain', icon: CloudRain },
 
   // Snow
-  71: { condition: 'Slight Snow', icon: '🌨️' },
-  73: { condition: 'Moderate Snow', icon: '🌨️' },
-  75: { condition: 'Heavy Snow', icon: '🌨️' },
-  77: { condition: 'Snow Grains', icon: '🌨️' },
+  71: { condition: 'Slight Snow', icon: CloudSnow },
+  73: { condition: 'Moderate Snow', icon: CloudSnow },
+  75: { condition: 'Heavy Snow', icon: CloudSnow },
+  77: { condition: 'Snow Grains', icon: CloudSnow },
 
   // Showers
-  80: { condition: 'Slight Rain Showers', icon: '🌦️' },
-  81: { condition: 'Moderate Rain Showers', icon: '🌦️' },
-  82: { condition: 'Violent Rain Showers', icon: '🌦️' },
-  85: { condition: 'Slight Snow Showers', icon: '🌨️' },
-  86: { condition: 'Heavy Snow Showers', icon: '🌨️' },
+  80: { condition: 'Slight Rain Showers', icon: CloudRain },
+  81: { condition: 'Moderate Rain Showers', icon: CloudRain },
+  82: { condition: 'Violent Rain Showers', icon: CloudRain },
+  85: { condition: 'Slight Snow Showers', icon: CloudSnow },
+  86: { condition: 'Heavy Snow Showers', icon: CloudSnow },
 
   // Thunderstorm
-  95: { condition: 'Thunderstorm', icon: '⛈️' },
-  96: { condition: 'Thunderstorm with Slight Hail', icon: '⛈️' },
-  99: { condition: 'Thunderstorm with Heavy Hail', icon: '⛈️' },
+  95: { condition: 'Thunderstorm', icon: CloudLightning },
+  96: { condition: 'Thunderstorm with Slight Hail', icon: CloudLightning },
+  99: { condition: 'Thunderstorm with Heavy Hail', icon: CloudLightning },
 };
 
 /**
@@ -65,8 +67,8 @@ export function getWeatherCondition(code: number): string {
 /**
  * Get weather icon from WMO code
  */
-export function getWeatherIcon(code: number): string {
-  return WMO_CODES[code]?.icon || '❓';
+export function getWeatherIcon(code: number): LucideIcon {
+  return WMO_CODES[code]?.icon || HelpCircle;
 }
 
 /**

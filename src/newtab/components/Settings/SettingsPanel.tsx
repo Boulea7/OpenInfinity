@@ -17,6 +17,7 @@ import { COMMON_TIMEZONES } from '../../data/timezones';
 import { useSettingsStore, useWallpaperStore } from '../../stores';
 import type { WallpaperSource, AutoChangeInterval } from '../../stores/wallpaperStore';
 import type { IconStyle, SearchSettings, ViewSettings, FontSettings } from '../../stores/settingsStore';
+import { APP_VERSION } from '../../constants/version';
 import { SidePanel } from '../ui/SidePanel';
 import { cn } from '../../utils';
 import { ImportBookmarksButton } from './ImportBookmarksButton';
@@ -72,7 +73,7 @@ export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPan
 
   // Handle reset all settings
   const handleResetAll = useCallback(() => {
-    if (window.confirm(t('settings.resetAll') + '?')) {
+    if (window.confirm(t('settings.resetAllConfirm'))) {
       resetToDefaults();
     }
   }, [resetToDefaults, t]);
@@ -170,7 +171,7 @@ export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPan
     <SidePanel
       isOpen={isOpen}
       onClose={onClose}
-      title="Settings"
+      title={t('settings.title')}
     >
       {settingsContent}
     </SidePanel>
@@ -186,7 +187,7 @@ interface GeneralSettingsProps {
 }
 
 function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSettingsProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleLanguageChange = (lng: string) => {
     setLanguage(lng);
@@ -197,27 +198,29 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">General Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.general.title')}</h3>
 
       {/* Theme */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Theme
+          {t('settings.general.theme')}
         </label>
         <div className="flex gap-2">
-          {(['light', 'dark', 'system'] as const).map((t) => (
+          {(['light', 'dark', 'system'] as const).map((themeOption) => (
             <button
-              key={t}
-              onClick={() => setTheme(t)}
+              key={themeOption}
+              onClick={() => setTheme(themeOption)}
               className={cn(
                 'px-4 py-2 rounded-lg text-sm capitalize',
                 'transition-colors duration-200',
-                theme === t
+                theme === themeOption
                   ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
                   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
               )}
             >
-              {t}
+              {themeOption === 'light' && t('settings.general.light')}
+              {themeOption === 'dark' && t('settings.general.dark')}
+              {themeOption === 'system' && t('settings.general.system')}
             </button>
           ))}
         </div>
@@ -226,7 +229,7 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
       {/* Language */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          语言 / Language
+          {t('settings.general.language')}
         </label>
         <div className="flex gap-2">
           <button
@@ -239,7 +242,7 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
                 : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
             )}
           >
-            中文
+            {t('settings.general.chinese')}
           </button>
           <button
             onClick={() => handleLanguageChange('en')}
@@ -251,7 +254,7 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
                 : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
             )}
           >
-            English
+            {t('settings.general.english')}
           </button>
         </div>
       </div>
@@ -273,23 +276,24 @@ interface WallpaperSettingsProps {
 }
 
 function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects, autoChange, setAutoChange, searchQuery, setSearchQuery, fetchRandomWallpaper }: WallpaperSettingsProps) {
+  const { t } = useTranslation();
   const wallpaperSources: { id: WallpaperSource; label: string }[] = [
-    { id: 'local', label: 'Local' },
-    { id: 'custom', label: 'URL' },
-    { id: 'solid', label: 'Solid' },
-    { id: 'gradient', label: 'Gradient' },
-    { id: 'bing', label: 'Bing Daily' },
-    { id: 'unsplash', label: 'Unsplash' },
+    { id: 'local', label: t('settings.wallpaper.sources.local') },
+    { id: 'custom', label: t('settings.wallpaper.sources.custom') },
+    { id: 'solid', label: t('settings.wallpaper.sources.solid') },
+    { id: 'gradient', label: t('settings.wallpaper.sources.gradient') },
+    { id: 'bing', label: t('settings.wallpaper.sources.bing') },
+    { id: 'unsplash', label: t('settings.wallpaper.sources.unsplash') },
   ];
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Wallpaper Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.wallpaper.title')}</h3>
 
       {/* Wallpaper Source */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Wallpaper Source
+          {t('settings.wallpaper.source')}
         </label>
         <div className="grid grid-cols-3 gap-2">
           {wallpaperSources.map((source) => (
@@ -313,13 +317,13 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
       {/* Effects */}
       <div className="space-y-4">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Effects
+          {t('settings.wallpaper.effects')}
         </label>
 
         {/* Blur */}
         <div className="space-y-1">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Blur</span>
+            <span>{t('settings.wallpaper.blur')}</span>
             <span>{effects.blur}%</span>
           </div>
           <input
@@ -335,7 +339,7 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
         {/* Mask Opacity */}
         <div className="space-y-1">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Mask Opacity</span>
+            <span>{t('settings.wallpaper.maskOpacity')}</span>
             <span>{effects.maskOpacity}%</span>
           </div>
           <input
@@ -351,7 +355,7 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
         {/* Brightness */}
         <div className="space-y-1">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Brightness</span>
+            <span>{t('settings.wallpaper.brightness')}</span>
             <span>{effects.brightness}%</span>
           </div>
           <input
@@ -368,18 +372,18 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
       {/* Search Query Settings */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
         <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
-          Search Preferences
+          {t('settings.wallpaper.searchPreferences')}
         </h4>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Wallpaper Search Query
+            {t('settings.wallpaper.searchQuery')}
           </label>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="nature, landscape, city..."
+            placeholder={t('settings.wallpaper.searchQueryPlaceholder')}
             className={cn(
               'w-full px-3 py-2 rounded-lg',
               'bg-gray-50 dark:bg-gray-700',
@@ -390,7 +394,7 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
             )}
           />
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Keywords used when fetching wallpapers from Unsplash, Pexels, or Bing
+            {t('settings.wallpaper.searchQueryHint')}
           </p>
         </div>
       </div>
@@ -398,13 +402,13 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
       {/* Auto-Change Settings */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
         <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Auto-Change Wallpaper
+          {t('settings.wallpaper.autoChange.title')}
         </h4>
 
         {/* Enable Toggle */}
         <div className="flex items-center justify-between mb-4">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Enable Auto-Change
+            {t('settings.wallpaper.autoChange.enable')}
           </label>
           <button
             onClick={() => {
@@ -429,7 +433,7 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
         {autoChange.enabled && (
           <div className="space-y-2 mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Change Interval
+              {t('settings.wallpaper.autoChange.interval')}
             </label>
             <div className="flex gap-2">
               {(['hourly', 'daily', 'weekly'] as const).map((interval) => (
@@ -442,11 +446,11 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
                     autoChange.interval === interval
                       ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
                       : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                  )}
-                >
-                  {interval === 'hourly' && 'Every Hour'}
-                  {interval === 'daily' && 'Daily'}
-                  {interval === 'weekly' && 'Weekly'}
+                )}
+              >
+                  {interval === 'hourly' && t('settings.wallpaper.autoChange.intervals.hourly')}
+                  {interval === 'daily' && t('settings.wallpaper.autoChange.intervals.daily')}
+                  {interval === 'weekly' && t('settings.wallpaper.autoChange.intervals.weekly')}
                 </button>
               ))}
             </div>
@@ -463,7 +467,7 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
             'transition-colors duration-200'
           )}
         >
-          Refresh Wallpaper Now
+          {t('settings.wallpaper.refreshNow')}
         </button>
       </div>
     </div>
@@ -477,14 +481,15 @@ interface IconSettingsProps {
 }
 
 function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Icon Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.icons.title')}</h3>
 
       {/* Show Name Toggle */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Show Icon Names
+          {t('settings.icons.showName')}
         </label>
         <button
           onClick={() => setIconStyle({ showName: !iconStyle.showName })}
@@ -505,7 +510,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
       {/* Shadow Toggle */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Icon Shadow
+          {t('settings.icons.shadow')}
         </label>
         <button
           onClick={() => setIconStyle({ shadow: !iconStyle.shadow })}
@@ -526,7 +531,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
       {/* Animation */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Hover Animation
+          {t('settings.icons.animation')}
         </label>
         <div className="flex gap-2">
           {(['none', 'scale', 'bounce', 'shake'] as const).map((anim) => (
@@ -541,7 +546,10 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
                   : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
               )}
             >
-              {anim}
+              {anim === 'none' && t('settings.icons.animationNone')}
+              {anim === 'scale' && t('settings.icons.animationScale')}
+              {anim === 'bounce' && t('settings.icons.animationBounce')}
+              {anim === 'shake' && t('settings.icons.animationShake')}
             </button>
           ))}
         </div>
@@ -551,7 +559,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label htmlFor="border-radius-slider" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            圆角弧度 / Border Radius
+            {t('settings.icons.borderRadius')}
           </label>
           <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400" aria-live="polite">
             {iconStyle.borderRadius}%
@@ -566,16 +574,16 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
           value={iconStyle.borderRadius}
           onChange={(e) => setIconStyle({ borderRadius: Number(e.target.value) })}
           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-zinc-900 dark:accent-white dark:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
-          aria-label="Icon border radius"
+          aria-label={t('settings.icons.borderRadius')}
           aria-valuemin={0}
           aria-valuemax={50}
           aria-valuenow={iconStyle.borderRadius}
-          aria-valuetext={`${iconStyle.borderRadius}% border radius`}
+          aria-valuetext={t('settings.icons.borderRadiusValue', { value: iconStyle.borderRadius })}
         />
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400" id="border-radius-description">
-          <span>方形</span>
-          <span className="text-center">圆角</span>
-          <span>圆形</span>
+          <span>{t('settings.icons.square')}</span>
+          <span className="text-center">{t('settings.icons.rounded')}</span>
+          <span>{t('settings.icons.circle')}</span>
         </div>
 
         {/* Preview */}
@@ -590,7 +598,7 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
       {/* Size */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Icon Size
+          {t('settings.icons.size')}
         </label>
         <div className="flex gap-2">
           {(['small', 'medium', 'large'] as const).map((size) => (
@@ -605,7 +613,9 @@ function IconSettings({ iconStyle, setIconStyle }: IconSettingsProps) {
                   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
               )}
             >
-              {size}
+              {size === 'small' && t('settings.icons.sizeSmall')}
+              {size === 'medium' && t('settings.icons.sizeMedium')}
+              {size === 'large' && t('settings.icons.sizeLarge')}
             </button>
           ))}
         </div>
@@ -621,14 +631,15 @@ interface ClockSettingsProps {
 }
 
 function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Clock Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.clock.title')}</h3>
 
       {/* Time Format Card */}
       <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 space-y-4 shadow-sm">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Time Format
+          {t('settings.clock.format')}
         </label>
         <div className="grid grid-cols-2 gap-2">
           {(['12h', '24h'] as const).map((format) => (
@@ -642,7 +653,7 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
                   : 'bg-white/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-zinc-100 dark:hover:bg-zinc-600'
               )}
             >
-              {format === '12h' ? '12-Hour (am/pm)' : '24-Hour'}
+              {format === '12h' ? t('settings.clock.format12h') : t('settings.clock.format24h')}
             </button>
           ))}
         </div>
@@ -650,12 +661,12 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
 
       {/* Display Options Card */}
       <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 space-y-4 shadow-sm">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Display Options</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.clock.displayOptions')}</h4>
 
         {/* Show Seconds Toggle */}
         <div className="flex items-center justify-between">
           <label className="text-sm text-gray-600 dark:text-gray-400">
-            Show Seconds
+            {t('settings.clock.showSeconds')}
           </label>
           <button
             onClick={() => setClockSettings({ showSeconds: !clockSettings.showSeconds })}
@@ -676,12 +687,12 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
 
       {/* Timezone Settings Card */}
       <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 space-y-4 shadow-sm">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Timezone</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.clock.timezone')}</h4>
 
         {/* Auto Detect Toggle */}
         <div className="flex items-center justify-between">
           <label className="text-sm text-gray-600 dark:text-gray-400">
-            Auto Detect Timezone
+            {t('settings.clock.autoDetect')}
           </label>
           <button
             onClick={() => setClockSettings({ autoDetect: !clockSettings.autoDetect })}
@@ -705,7 +716,7 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
           clockSettings.autoDetect ? "opacity-50 pointer-events-none" : "opacity-100"
         )}>
           <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-            Select Timezone
+            {t('settings.clock.manualSelect')}
           </label>
           <select
             value={clockSettings.timezone}
@@ -728,7 +739,7 @@ function ClockSettings({ clockSettings, setClockSettings }: ClockSettingsProps) 
           </select>
           {clockSettings.autoDetect && (
             <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-              Using system timezone
+              {t('settings.clock.systemTimezone')}
             </p>
           )}
         </div>
@@ -744,14 +755,15 @@ interface SearchSettingsTabProps {
 }
 
 function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettingsTabProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Search Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.search.title')}</h3>
 
       {/* Hidden Toggle */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Hide Search Bar
+          {t('settings.search.hideSearchBar')}
         </label>
         <button
           onClick={() => setSearchSettings({ hidden: !searchSettings.hidden })}
@@ -772,7 +784,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
       {/* Show Suggestions Toggle */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Show Search Suggestions
+          {t('settings.search.showSuggestions')}
         </label>
         <button
           onClick={() => setSearchSettings({ showSuggestions: !searchSettings.showSuggestions })}
@@ -793,7 +805,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
       {/* Placeholder */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Placeholder Text
+          {t('settings.search.placeholderText')}
         </label>
         <input
           type="text"
@@ -812,7 +824,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
       {/* Size */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Search Bar Size
+          {t('settings.search.size')}
         </label>
         <div className="flex gap-2">
           {(['small', 'medium', 'large'] as const).map((size) => (
@@ -827,7 +839,9 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               )}
             >
-              {size}
+              {size === 'small' && t('settings.search.sizeSmall')}
+              {size === 'medium' && t('settings.search.sizeMedium')}
+              {size === 'large' && t('settings.search.sizeLarge')}
             </button>
           ))}
         </div>
@@ -836,7 +850,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
       {/* Border Radius */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Border Radius</span>
+          <span>{t('settings.search.borderRadius')}</span>
           <span>{searchSettings.borderRadius}px</span>
         </div>
         <input
@@ -852,7 +866,7 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
       {/* Opacity */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Opacity</span>
+          <span>{t('settings.search.opacity')}</span>
           <span>{searchSettings.opacity}%</span>
         </div>
         <input
@@ -875,14 +889,15 @@ interface LayoutSettingsProps {
 }
 
 function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Layout Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.layout.title')}</h3>
 
       {/* Grid Columns */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Grid Columns</span>
+          <span>{t('settings.layout.gridColumns')}</span>
           <span>{viewSettings.columns}</span>
         </div>
         <input
@@ -898,7 +913,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
       {/* Grid Rows */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Grid Rows</span>
+          <span>{t('settings.layout.gridRows')}</span>
           <span>{viewSettings.rows}</span>
         </div>
         <input
@@ -914,7 +929,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
       {/* Show Clock */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Show Clock
+          {t('settings.layout.showClock')}
         </label>
         <button
           onClick={() => setViewSettings({ showClock: !viewSettings.showClock })}
@@ -935,7 +950,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
       {/* Show Pagination */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Show Pagination
+          {t('settings.layout.showPagination')}
         </label>
         <button
           onClick={() => setViewSettings({ showPagination: !viewSettings.showPagination })}
@@ -956,13 +971,13 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
       {/* Widget Sidebar Section */}
       <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
         <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
-          Widget Sidebar
+          {t('settings.layout.widgetSidebar.title')}
         </h4>
 
         {/* Show Widget Sidebar */}
         <div className="flex items-center justify-between mb-3">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Show Widget Sidebar
+            {t('settings.layout.widgetSidebar.show')}
           </label>
           <button
             onClick={() => setViewSettings({ showWidgetSidebar: !viewSettings.showWidgetSidebar })}
@@ -986,7 +1001,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
             {/* Todo Widget */}
             <div className="flex items-center justify-between">
               <label className="text-sm text-gray-600 dark:text-gray-400">
-                Todo List
+                {t('settings.layout.widgetSidebar.widgets.todo')}
               </label>
               <button
                 onClick={() => setViewSettings({ showTodoWidget: !viewSettings.showTodoWidget })}
@@ -1007,7 +1022,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
             {/* Notes Widget */}
             <div className="flex items-center justify-between">
               <label className="text-sm text-gray-600 dark:text-gray-400">
-                Notes
+                {t('settings.layout.widgetSidebar.widgets.notes')}
               </label>
               <button
                 onClick={() => setViewSettings({ showNotesWidget: !viewSettings.showNotesWidget })}
@@ -1028,7 +1043,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
             {/* Weather Widget */}
             <div className="flex items-center justify-between">
               <label className="text-sm text-gray-600 dark:text-gray-400">
-                Weather
+                {t('settings.layout.widgetSidebar.widgets.weather')}
               </label>
               <button
                 onClick={() => setViewSettings({ showWeather: !viewSettings.showWeather })}
@@ -1049,7 +1064,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
             {/* Bookmarks Widget */}
             <div className="flex items-center justify-between">
               <label className="text-sm text-gray-600 dark:text-gray-400">
-                Bookmarks
+                {t('settings.layout.widgetSidebar.widgets.bookmarks')}
               </label>
               <button
                 onClick={() => setViewSettings({ showBookmarksWidget: !viewSettings.showBookmarksWidget })}
@@ -1070,7 +1085,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
             {/* History Widget */}
             <div className="flex items-center justify-between">
               <label className="text-sm text-gray-600 dark:text-gray-400">
-                History
+                {t('settings.layout.widgetSidebar.widgets.history')}
               </label>
               <button
                 onClick={() => setViewSettings({ showHistoryWidget: !viewSettings.showHistoryWidget })}
@@ -1094,7 +1109,7 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
       {/* Zoom */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Zoom</span>
+          <span>{t('settings.layout.zoom')}</span>
           <span>{viewSettings.zoom}%</span>
         </div>
         <input
@@ -1117,14 +1132,15 @@ interface FontSettingsTabProps {
 }
 
 function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Font Settings</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.fonts.title')}</h3>
 
       {/* Font Family */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Font Family
+          {t('settings.fonts.family')}
         </label>
         <select
           value={fontSettings.family}
@@ -1137,7 +1153,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
             'focus:outline-none focus:ring-2 focus:ring-zinc-500'
           )}
         >
-          <option value="system-ui">System Default</option>
+          <option value="system-ui">{t('settings.fonts.systemDefault')}</option>
           <option value="Inter">Inter</option>
           <option value="Roboto">Roboto</option>
           <option value="Open Sans">Open Sans</option>
@@ -1148,7 +1164,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
       {/* Font Size */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-          <span>Font Size</span>
+          <span>{t('settings.fonts.size')}</span>
           <span>{fontSettings.size}px</span>
         </div>
         <input
@@ -1164,7 +1180,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
       {/* Font Color */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Font Color
+          {t('settings.fonts.color')}
         </label>
         <input
           type="color"
@@ -1177,7 +1193,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
       {/* Text Shadow */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Text Shadow
+          {t('settings.fonts.shadow')}
         </label>
         <button
           onClick={() => setFontSettings({ shadow: !fontSettings.shadow })}
@@ -1198,7 +1214,7 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
       {/* Font Weight */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Font Weight
+          {t('settings.fonts.weight')}
         </label>
         <div className="flex gap-2">
           {(['normal', 'medium', 'bold'] as const).map((weight) => (
@@ -1213,7 +1229,9 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
               )}
             >
-              {weight}
+              {weight === 'normal' && t('settings.fonts.weightNormal')}
+              {weight === 'medium' && t('settings.fonts.weightMedium')}
+              {weight === 'bold' && t('settings.fonts.weightBold')}
             </button>
           ))}
         </div>
@@ -1224,16 +1242,17 @@ function FontSettingsTab({ fontSettings, setFontSettings }: FontSettingsTabProps
 
 // Marketplace Settings Section (placeholder)
 function MarketplaceSettings() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Shortcut Marketplace</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.marketplace.title')}</h3>
       <p className="text-gray-600 dark:text-gray-400">
-        Browse and add popular website shortcuts to your new tab page.
+        {t('settings.marketplace.description')}
       </p>
       <div className="p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center">
         <Store className="w-12 h-12 mx-auto mb-4 text-gray-400" />
         <p className="text-gray-500 dark:text-gray-400">
-          Marketplace coming soon...
+          {t('settings.marketplace.comingSoon')}
         </p>
       </div>
     </div>
@@ -1242,6 +1261,7 @@ function MarketplaceSettings() {
 
 // Backup Settings Section
 function BackupSettings() {
+  const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1268,7 +1288,7 @@ function BackupSettings() {
       console.info('Backup exported successfully');
     } catch (error) {
       console.error('Export failed:', error);
-      alert('导出失败：' + (error instanceof Error ? error.message : '未知错误'));
+      alert(t('settings.backup.exportFailed') + (error instanceof Error ? error.message : t('settings.backup.unknownError')));
     } finally {
       setIsExporting(false);
     }
@@ -1288,7 +1308,7 @@ function BackupSettings() {
       validateBackupFile(text);
 
       // Confirm with user
-      if (!confirm('This will replace all existing data. Continue?')) {
+      if (!confirm(t('settings.backup.importConfirm'))) {
         setIsImporting(false);
         return;
       }
@@ -1297,7 +1317,7 @@ function BackupSettings() {
       // Page will reload automatically
     } catch (error) {
       console.error('Import failed:', error);
-      alert('导入失败：' + (error instanceof Error ? error.message : '未知错误'));
+      alert(t('settings.backup.importFailed') + (error instanceof Error ? error.message : t('settings.backup.unknownError')));
       setIsImporting(false);
     }
 
@@ -1309,7 +1329,7 @@ function BackupSettings() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Data Backup</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.backup.title')}</h3>
 
       <div className="space-y-4">
         <button
@@ -1324,7 +1344,7 @@ function BackupSettings() {
           )}
         >
           <Download className="w-5 h-5" />
-          {isExporting ? 'Exporting...' : 'Export All Data'}
+          {isExporting ? t('settings.backup.exporting') : t('settings.backup.exportAllData')}
         </button>
 
         <div>
@@ -1349,30 +1369,29 @@ function BackupSettings() {
             )}
           >
             <Download className="w-5 h-5 rotate-180" />
-            {isImporting ? 'Importing...' : 'Import All Data'}
+            {isImporting ? t('settings.backup.importing') : t('settings.backup.importAllData')}
           </button>
         </div>
       </div>
 
       <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
         <p className="text-sm text-yellow-800 dark:text-yellow-200">
-          <strong>Warning:</strong> Import All Data will replace your existing data. Make sure to export a backup first.
+          <strong>{t('settings.backup.warningTitle')}:</strong> {t('settings.backup.warningText')}
         </p>
       </div>
 
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Export all your data (settings, icons, folders, todos, notes, wallpapers) to a JSON file.
-        You can import this file later to restore your complete configuration.
+        {t('settings.backup.description')}
       </p>
 
       {/* Import from Chrome Bookmarks Section */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
         <h4 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
-          Import from Chrome
+          {t('settings.backup.importFromChrome.title')}
         </h4>
         <ImportBookmarksButton />
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-          Import your Chrome bookmarks as new icons without deleting existing data. Duplicates will be automatically skipped.
+          {t('settings.backup.importFromChrome.description')}
         </p>
       </div>
     </div>
@@ -1381,9 +1400,10 @@ function BackupSettings() {
 
 // About Settings Section
 function AboutSettings() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">About OpenInfinity</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('settings.about.title')}</h3>
 
       <div className="space-y-4">
         <div className="flex items-center gap-4">
@@ -1395,22 +1415,21 @@ function AboutSettings() {
               OpenInfinity
             </h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Version 1.0.0
+              {t('settings.about.version')} {APP_VERSION}
             </p>
           </div>
         </div>
 
         <p className="text-gray-600 dark:text-gray-400">
-          OpenInfinity is a beautiful and customizable new tab page for your browser.
-          Organize your favorite websites, customize your wallpaper, and boost your productivity.
+          {t('settings.about.description')}
         </p>
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Built with React, TypeScript, and Tailwind CSS.
+            {t('settings.about.builtWith')}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            © 2024 OpenInfinity. Open source under MIT License.
+            {t('settings.about.copyright')}
           </p>
         </div>
       </div>
