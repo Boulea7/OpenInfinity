@@ -381,7 +381,7 @@ export function SearchBar({ className }: SearchBarProps) {
             <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center bg-white/50">
               {currentEngine.icon && !iconLoadFailed ? (
                 <img
-                  src={currentEngine.icon}
+                  src={iconCache[currentEngine.id] || currentEngine.icon}
                   alt={currentEngine.name}
                   className="w-full h-full object-cover"
                   onError={() => setIconLoadFailed(true)}
