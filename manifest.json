@@ -50,7 +50,11 @@
     "https://peapix.com/*",
     "https://pixabay.com/*",
     "https://www.google.com/*",
-    "https://icons.duckduckgo.com/*"
+    "https://icons.duckduckgo.com/*",
+    "https://api.open-meteo.com/*",
+    "https://devapi.qweather.com/*",
+    "https://api.openweathermap.org/*",
+    "https://*.gstatic.com/*"
   ],
   "background": {
     "service_worker": "src/background/index.ts",

@@ -66,36 +66,25 @@ export async function getCachedEngineIcon(
 
 /**
  * Convert image URL to Base64 data URL
+ * Uses background service worker to avoid CORS issues
  */
 async function fetchAndConvertToBase64(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'image/*',
-    },
-    credentials: 'omit',
-    referrerPolicy: 'no-referrer',
-  });
+  try {
+    // Use background service worker to fetch (avoids CORS)
+    const response = await chrome.runtime.sendMessage({
+      type: 'FETCH_FAVICON',
+      payload: { url },
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch icon: ${response.status} ${response.statusText}`);
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error || 'Failed to fetch icon');
+  } catch (error) {
+    console.error('Failed to fetch icon via background:', error);
+    throw error;
   }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.toLowerCase().startsWith('image/')) {
-    throw new Error(`Invalid icon content-type: ${contentType || 'unknown'}`);
-  }
-
-  const blob = await response.blob();
-  if (blob.type && !blob.type.toLowerCase().startsWith('image/')) {
-    throw new Error(`Invalid icon mime type: ${blob.type}`);
-  }
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 /**

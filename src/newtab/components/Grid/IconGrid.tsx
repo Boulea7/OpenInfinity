@@ -507,35 +507,7 @@ export function IconGrid({
         />
       )}
 
-      {/* Empty state */}
-      {pageItems.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 animate-fade-in">
-          {/* Decorative Background Glow */}
-          <div className="relative mb-8 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
-
-            {/* Glass Icon Container */}
-            <div className="relative bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-full p-8 shadow-glass group-hover:shadow-glass-hover transition-all duration-500 group-hover:-translate-y-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-16 h-16 text-zinc-400 dark:text-zinc-600 group-hover:text-brand-orange-500/80 transition-colors duration-500"
-              >
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M3 9h18" />
-                <path d="M3 15h18" />
-                <path d="M9 3v18" />
-                <path d="M15 3v18" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Empty state - intentionally blank, user will see the dashed circle add button */}
 
       {/* Folder Name Modal for hover merge */}
       <FolderNameModal
