@@ -55,7 +55,7 @@
     "https://devapi.qweather.com/*",
     "https://api.openweathermap.org/*",
     "https://*.gstatic.com/*",
-    "https://nominatim.openstreetmap.org/*"
+    "https://api.bigdatacloud.net/*"
   ],
   "background": {
     "service_worker": "src/background/index.ts",
