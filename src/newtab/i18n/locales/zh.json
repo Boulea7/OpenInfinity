@@ -200,6 +200,20 @@
       "exportDescription": "导出配置和图标到JSON文件",
       "importDescription": "从备份文件恢复数据"
     },
+    "cache": {
+      "title": "缓存管理",
+      "description": "清除不同类型的缓存以释放空间或刷新数据。清除后相关数据会重新获取。",
+      "weatherCache": "天气缓存",
+      "geocodeCache": "城市名缓存",
+      "searchEngineIconCache": "搜索引擎图标",
+      "allCaches": "所有缓存",
+      "clearWeather": "清除天气",
+      "clearGeocode": "清除城市名",
+      "clearSearchIcons": "清除搜索图标",
+      "clearAll": "清除全部",
+      "cleared": "已清除",
+      "geocodeCount": "位置缓存"
+    },
     "about": {
       "title": "关于 OpenInfinity",
       "version": "版本",

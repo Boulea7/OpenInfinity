@@ -21,6 +21,7 @@ import { APP_VERSION } from '../../constants/version';
 import { SidePanel } from '../ui/SidePanel';
 import { cn } from '../../utils';
 import { ImportBookmarksButton } from './ImportBookmarksButton';
+import { ClearCacheSection } from './ClearCacheSection';
 
 // Settings tab definitions
 const SETTINGS_TABS = [
@@ -1401,6 +1402,11 @@ function BackupSettings() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
           {t('settings.backup.importFromChrome.description')}
         </p>
+      </div>
+
+      {/* Cache Management Section */}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <ClearCacheSection />
       </div>
     </div>
   );

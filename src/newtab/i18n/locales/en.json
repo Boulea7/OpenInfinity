@@ -200,6 +200,20 @@
       "exportDescription": "Export settings and icons to JSON file",
       "importDescription": "Restore data from backup file"
     },
+    "cache": {
+      "title": "Cache Management",
+      "description": "Clear different types of cache to free up space or refresh data. Cleared data will be re-fetched when needed.",
+      "weatherCache": "Weather Cache",
+      "geocodeCache": "City Name Cache",
+      "searchEngineIconCache": "Search Engine Icons",
+      "allCaches": "All Caches",
+      "clearWeather": "Clear Weather",
+      "clearGeocode": "Clear City Names",
+      "clearSearchIcons": "Clear Search Icons",
+      "clearAll": "Clear All",
+      "cleared": "Cleared",
+      "geocodeCount": "Location Cache"
+    },
     "about": {
       "title": "About OpenInfinity",
       "version": "Version",
