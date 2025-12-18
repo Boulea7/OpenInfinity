@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Cloud, RefreshCw, Droplets, Wind, Thermometer, ChevronDown, ChevronRight, AlertCircle, MapPin } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
 import { useWeather } from '../../hooks';
 import { cn } from '../../utils';
 import { getWeatherIcon } from '../../services/weather';
+import { getWeatherConditionI18n, getDayNameI18n } from '../../utils/weatherI18n';
 import type { BaseWidgetProps } from '../../types';
 
 /**
@@ -11,8 +13,9 @@ import type { BaseWidgetProps } from '../../types';
  * Displays current weather and forecast data
  */
 export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
-  const { weatherSettings, setWeatherSettings } = useSettingsStore();
-  const { weather, isLoading, error, forceRefresh } = useWeather(); // P0-7: Use forceRefresh instead of refetch
+  const { t } = useTranslation();
+  const { weatherSettings, setWeatherSettings, language } = useSettingsStore();
+  const { weather, isLoading, error, forceRefresh } = useWeather();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -81,7 +84,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
       >
         <div className="flex items-center gap-2">
           <Cloud className="w-5 h-5 text-white/80" />
-          <span className="font-medium text-white">天气</span>
+          <span className="font-medium text-white">{t('settings.layout.widgetSidebar.widgets.weather')}</span>
           {weather && !isLoading && (
             <span className="text-sm text-white/80 ml-1">
               {formatTemp(weather.current.temperature)}
@@ -96,7 +99,8 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
               'p-1 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors disabled:opacity-50',
               isRefreshing && 'animate-spin'
             )}
-            title="刷新天气"
+            title={t('weather.refresh')}
+            aria-label={t('weather.refresh')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -156,11 +160,11 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
                       <button
                         onClick={toggleUnit}
                         className="text-3xl font-bold text-white hover:text-white/80 transition-colors cursor-pointer"
-                        title="切换单位"
+                        title={t('settings.clock.format')}
                       >
                         {formatTemp(weather.current.temperature)}
                       </button>
-                      <p className="text-sm text-white/60">{weather.current.condition}</p>
+                      <p className="text-sm text-white/60">{getWeatherConditionI18n(weather.current.conditionCode, t)}</p>
                     </div>
                   </div>
                 </div>
@@ -168,28 +172,28 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
                 {/* Location */}
                 <div className="flex items-center gap-1.5 text-xs text-white/50">
                   <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span className="truncate">{weather.location.name}</span>
+                  <span className="truncate">{weather.location.name || t('weather.currentLocation')}</span>
                 </div>
 
                 {/* Weather Details */}
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
+                <div className="grid grid-cols-3 gap-2 pt-2 border-white/10">
                   <div className="flex flex-col items-center p-2 bg-white/5 rounded-lg">
                     <Thermometer className="w-4 h-4 text-white/60 mb-1" />
-                    <span className="text-xs text-white/50">体感</span>
+                    <span className="text-xs text-white/50">{t('weather.feelsLike')}</span>
                     <span className="text-sm text-white font-medium">
                       {formatTemp(weather.current.feelsLike)}
                     </span>
                   </div>
                   <div className="flex flex-col items-center p-2 bg-white/5 rounded-lg">
                     <Droplets className="w-4 h-4 text-white/60 mb-1" />
-                    <span className="text-xs text-white/50">湿度</span>
+                    <span className="text-xs text-white/50">{t('weather.humidity')}</span>
                     <span className="text-sm text-white font-medium">
                       {weather.current.humidity}%
                     </span>
                   </div>
                   <div className="flex flex-col items-center p-2 bg-white/5 rounded-lg">
                     <Wind className="w-4 h-4 text-white/60 mb-1" />
-                    <span className="text-xs text-white/50">风速</span>
+                    <span className="text-xs text-white/50">{t('weather.wind')}</span>
                     <span className="text-sm text-white font-medium">
                       {weather.current.windSpeed} km/h
                     </span>
@@ -200,36 +204,22 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
               {/* Forecast */}
               {weatherSettings.showForecast && forecastDays.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-white/10">
-                  <div className="text-xs text-white/60 font-medium mb-2">未来预报</div>
+                  <div className="text-xs text-white/60 font-medium mb-2">{t('weather.forecast')}</div>
                   <div className="space-y-1">
-                    {forecastDays.map((day, index) => {
-                      // Skip today (index 0)
-                      if (index === 0) return null;
-
+                    {forecastDays.map((day) => {
+                      const dayName = getDayNameI18n(day.dayIndex || 0, t);
+                      const condition = getWeatherConditionI18n(day.conditionCode, t);
                       return (
-                        <div
-                          key={day.date}
-                          className="flex items-center justify-between p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {renderConditionIcon(day.conditionCode, 'w-5 h-5 text-white/80')}
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-xs text-white/80 truncate">
-                                {day.dayOfWeek}
-                              </span>
-                              <span className="text-xs text-white/50 truncate">
-                                {day.date}
-                              </span>
-                            </div>
+                        <div key={day.date} className="flex items-center justify-between text-sm py-1">
+                          <div className="flex items-center gap-2 flex-1">
+                            {renderConditionIcon(day.conditionCode, 'w-4 h-4 text-white/70')}
+                            <span className="text-white/70 min-w-[4rem]">{dayName}</span>
+                            <span className="text-white/40 text-xs flex-1 truncate">{condition}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-white/60">
-                              {formatTemp(day.low)}
-                            </span>
-                            <span className="text-white/40">-</span>
-                            <span className="text-white font-medium">
-                              {formatTemp(day.high)}
-                            </span>
+                          <div className="flex items-center gap-2 text-white/80 font-medium">
+                            <span className="text-white/60">{day.low}°</span>
+                            <span>/</span>
+                            <span>{day.high}°</span>
                           </div>
                         </div>
                       );
@@ -240,7 +230,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className }: BaseWid
 
               {/* Last Updated */}
               <div className="text-xs text-white/40 text-center pt-2 border-t border-white/10">
-                最后更新: {new Date(weather.fetchedAt).toLocaleTimeString('zh-CN', {
+                {t('weather.lastUpdated')}: {new Date(weather.fetchedAt).toLocaleTimeString(language === 'zh' ? 'zh-CN' : 'en-US', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

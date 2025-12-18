@@ -212,5 +212,55 @@
       "description": "浏览并添加热门网站快捷方式到你的新标签页。",
       "comingSoon": "市场即将上线..."
     }
+  },
+  "weather": {
+    "currentLocation": "当前位置",
+    "feelsLike": "体感温度",
+    "humidity": "湿度",
+    "wind": "风速",
+    "lastUpdated": "最后更新",
+    "refresh": "刷新",
+    "updatedAt": "更新于",
+    "forecast": "未来预报",
+    "days": {
+      "sunday": "星期日",
+      "monday": "星期一",
+      "tuesday": "星期二",
+      "wednesday": "星期三",
+      "thursday": "星期四",
+      "friday": "星期五",
+      "saturday": "星期六"
+    },
+    "conditions": {
+      "clear": "晴天",
+      "mainlyClear": "基本晴朗",
+      "partlyCloudy": "多云",
+      "overcast": "阴天",
+      "fog": "雾",
+      "depositingRimeFog": "冰雾",
+      "lightDrizzle": "小雨",
+      "moderateDrizzle": "中雨",
+      "denseDrizzle": "大雨",
+      "lightFreezingDrizzle": "冻小雨",
+      "denseFreezingDrizzle": "冻大雨",
+      "slightRain": "小雨",
+      "moderateRain": "中雨",
+      "heavyRain": "大雨",
+      "lightFreezingRain": "冻小雨",
+      "heavyFreezingRain": "冻大雨",
+      "slightSnow": "小雪",
+      "moderateSnow": "中雪",
+      "heavySnow": "大雪",
+      "snowGrains": "米雪",
+      "slightRainShowers": "阵雨",
+      "moderateRainShowers": "中阵雨",
+      "violentRainShowers": "强阵雨",
+      "slightSnowShowers": "阵雪",
+      "heavySnowShowers": "强阵雪",
+      "thunderstorm": "雷暴",
+      "thunderstormWithSlightHail": "雷暴伴冰雹",
+      "thunderstormWithHeavyHail": "雷暴伴强冰雹",
+      "unknown": "未知"
+    }
   }
 }

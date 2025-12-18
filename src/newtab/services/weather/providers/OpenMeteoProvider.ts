@@ -91,9 +91,11 @@ export class OpenMeteoProvider implements IWeatherProvider {
 
       const forecast = data.daily.time.map((date, index) => {
         const code = data.daily.weather_code[index];
+        const dayDate = new Date(`${date}T00:00:00`);
         return {
           date,
           dayOfWeek: getDayOfWeek(date),
+          dayIndex: dayDate.getDay(), // 0-6 for i18n
           high: Math.round(data.daily.temperature_2m_max[index]),
           low: Math.round(data.daily.temperature_2m_min[index]),
           condition: getWeatherCondition(code),

@@ -212,5 +212,55 @@
       "description": "Browse and add popular website shortcuts to your new tab page.",
       "comingSoon": "Marketplace coming soon..."
     }
+  },
+  "weather": {
+    "currentLocation": "Current Location",
+    "feelsLike": "Feels like",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "lastUpdated": "Last updated",
+    "refresh": "Refresh",
+    "updatedAt": "Updated at",
+    "forecast": "Forecast",
+    "days": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday"
+    },
+    "conditions": {
+      "clear": "Clear",
+      "mainlyClear": "Mainly Clear",
+      "partlyCloudy": "Partly Cloudy",
+      "overcast": "Overcast",
+      "fog": "Fog",
+      "depositingRimeFog": "Depositing Rime Fog",
+      "lightDrizzle": "Light Drizzle",
+      "moderateDrizzle": "Moderate Drizzle",
+      "denseDrizzle": "Dense Drizzle",
+      "lightFreezingDrizzle": "Light Freezing Drizzle",
+      "denseFreezingDrizzle": "Dense Freezing Drizzle",
+      "slightRain": "Slight Rain",
+      "moderateRain": "Moderate Rain",
+      "heavyRain": "Heavy Rain",
+      "lightFreezingRain": "Light Freezing Rain",
+      "heavyFreezingRain": "Heavy Freezing Rain",
+      "slightSnow": "Slight Snow",
+      "moderateSnow": "Moderate Snow",
+      "heavySnow": "Heavy Snow",
+      "snowGrains": "Snow Grains",
+      "slightRainShowers": "Slight Rain Showers",
+      "moderateRainShowers": "Moderate Rain Showers",
+      "violentRainShowers": "Violent Rain Showers",
+      "slightSnowShowers": "Slight Snow Showers",
+      "heavySnowShowers": "Heavy Snow Showers",
+      "thunderstorm": "Thunderstorm",
+      "thunderstormWithSlightHail": "Thunderstorm with Slight Hail",
+      "thunderstormWithHeavyHail": "Thunderstorm with Heavy Hail",
+      "unknown": "Unknown"
+    }
   }
 }

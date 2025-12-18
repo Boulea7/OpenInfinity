@@ -263,9 +263,11 @@ export class QWeatherProvider implements IWeatherProvider {
 
       const forecast = dailyData.daily.map((day) => {
         const wmoCode = mapQWeatherIconToWmoCode(day.iconDay);
+        const dayDate = new Date(`${day.fxDate}T00:00:00`);
         return {
           date: day.fxDate,
           dayOfWeek: getDayOfWeek(day.fxDate),
+          dayIndex: dayDate.getDay(), // 0-6 for i18n
           high: Math.round(toNumber(day.tempMax, 'tempMax')),
           low: Math.round(toNumber(day.tempMin, 'tempMin')),
           condition: getWeatherCondition(wmoCode),

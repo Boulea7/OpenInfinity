@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useTranslation } from 'react-i18next';
 import { db, type WeatherCache } from '../services/database';
 import { useSettingsStore } from '../stores';
 import { getLocation } from '../services/location';
@@ -107,6 +108,7 @@ export interface UseWeatherReturn {
  */
 export function useWeather(): UseWeatherReturn {
   const { weatherSettings } = useSettingsStore();
+  const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
@@ -175,7 +177,8 @@ export function useWeather(): UseWeatherReturn {
         const weatherData = await weatherManager.fetchWeather(
           location.latitude,
           location.longitude,
-          weatherSettings.unit
+          weatherSettings.unit,
+          i18n.language === 'zh' ? 'zh-CN' : 'en-US'
         );
         await upsertWeatherCache(location, weatherSettings.unit, weatherData);
       } catch (err) {
@@ -256,7 +259,8 @@ export function useWeather(): UseWeatherReturn {
         const weatherData = await weatherManager.fetchWeather(
           location.latitude,
           location.longitude,
-          weatherSettings.unit
+          weatherSettings.unit,
+          i18n.language === 'zh' ? 'zh-CN' : 'en-US'
         );
         await upsertWeatherCache(location, weatherSettings.unit, weatherData);
       } catch (err) {

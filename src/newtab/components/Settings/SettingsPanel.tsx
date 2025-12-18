@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Settings,
@@ -42,15 +42,23 @@ interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   embedded?: boolean; // If true, render content only without SidePanel wrapper
+  initialTab?: SettingsTab; // Initial active tab when panel opens
 }
 
 /**
  * SettingsPanel Component
  * Full settings interface with categorized tabs
  */
-export function SettingsPanel({ isOpen, onClose, embedded = false }: SettingsPanelProps) {
+export function SettingsPanel({ isOpen, onClose, embedded = false, initialTab }: SettingsPanelProps) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || 'general');
+
+  // Update activeTab when initialTab changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const {
     theme,
     setTheme,

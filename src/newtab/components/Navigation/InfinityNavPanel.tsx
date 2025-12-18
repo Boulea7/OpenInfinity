@@ -14,10 +14,11 @@ import { cn } from '../../utils';
  */
 export function InfinityNavPanel() {
     // Force HMR update
-    const { isPanelOpen, activeTab, setActiveTab, closePanel } = useNavigationStore(
+    const { isPanelOpen, activeTab, settingsInitialTab, setActiveTab, closePanel } = useNavigationStore(
         useShallow((state) => ({
             isPanelOpen: state.isPanelOpen,
             activeTab: state.activeTab,
+            settingsInitialTab: state.settingsInitialTab,
             setActiveTab: state.setActiveTab,
             closePanel: state.closePanel,
         }))
@@ -45,7 +46,7 @@ export function InfinityNavPanel() {
                 return <MyTab />;
             case 'settings':
                 // Render SettingsPanel in embedded mode (no SidePanel wrapper)
-                return <SettingsPanel isOpen={true} onClose={() => { }} embedded={true} />;
+                return <SettingsPanel isOpen={true} onClose={() => { }} embedded={true} initialTab={settingsInitialTab || undefined} />;
             default:
                 return null;
         }

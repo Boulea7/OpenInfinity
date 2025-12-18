@@ -9,25 +9,26 @@ export interface IWeatherProvider {
 
 export interface WeatherData {
   location: {
-    name: string;
+    name: string; // City name from geocoding or fallback
     latitude: number;
     longitude: number;
   };
   current: {
     temperature: number;
-    condition: string;
-    conditionCode: number;
+    condition: string; // English condition (for backward compatibility)
+    conditionCode: number; // WMO code for icon and i18n
     humidity: number;
     windSpeed: number;
     feelsLike: number;
   };
   forecast: Array<{
-    date: string;
-    dayOfWeek: string;
+    date: string; // YYYY-MM-DD format
+    dayOfWeek: string; // DEPRECATED: Use dayIndex instead
+    dayIndex: number; // Day index 0-6 for i18n
     high: number;
     low: number;
-    condition: string;
-    conditionCode: number;
+    condition: string; // English condition (for backward compatibility)
+    conditionCode: number; // WMO code for icon and i18n
   }>;
   provider: string;
   fetchedAt: number;

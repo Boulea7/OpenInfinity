@@ -7,13 +7,15 @@ import { cn } from '../../utils';
 interface ClockWidgetProps {
   className?: string;
   showDate?: boolean;
+  onClick?: () => void; // Callback when clock is clicked
 }
 
 /**
  * ClockWidget Component
  * Displays current time and optionally date
+ * Click to open clock settings
  */
-export function ClockWidget({ className, showDate = false }: ClockWidgetProps) {
+export function ClockWidget({ className, showDate = false, onClick }: ClockWidgetProps) {
   const { i18n } = useTranslation();
   const { viewSettings, fontSettings, clockSettings } = useSettingsStore();
   const [time, setTime] = useState(new Date());
@@ -52,7 +54,11 @@ export function ClockWidget({ className, showDate = false }: ClockWidgetProps) {
 
   return (
     <div
-      className={cn('flex flex-col items-start', className)}
+      className={cn(
+        'flex flex-col items-start',
+        onClick && 'cursor-pointer hover:opacity-80 transition-opacity',
+        className
+      )}
       style={{
         fontFamily: fontSettings.family,
         color: fontSettings.color,
@@ -60,6 +66,16 @@ export function ClockWidget({ className, showDate = false }: ClockWidgetProps) {
           ? `0 2px 4px ${fontSettings.shadowColor}`
           : 'none',
       }}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `${timeString}. Click to open clock settings` : undefined}
     >
       {/* Time */}
       <div

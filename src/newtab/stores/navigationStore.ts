@@ -6,11 +6,13 @@ import type { PresetWebsite } from '../services/database';
  */
 
 export type NavigationTab = 'add' | 'my' | 'settings';
+export type SettingsTab = 'general' | 'clock' | 'wallpaper' | 'icons' | 'search' | 'layout' | 'fonts' | 'marketplace' | 'backup' | 'about';
 
 interface NavigationState {
   // Panel state
   isPanelOpen: boolean;
   activeTab: NavigationTab;
+  settingsInitialTab: SettingsTab | null; // Initial tab for settings panel
 
   // Add tab state
   selectedCategory: string | null;
@@ -25,9 +27,10 @@ interface NavigationState {
 
 interface NavigationActions {
   // Panel actions
-  openPanel: (tab?: NavigationTab) => void;
+  openPanel: (tab?: NavigationTab, settingsTab?: SettingsTab) => void;
   closePanel: () => void;
   setActiveTab: (tab: NavigationTab) => void;
+  setSettingsInitialTab: (tab: SettingsTab | null) => void;
 
   // Add tab actions
   setCategory: (categoryId: string | null) => void;
@@ -44,6 +47,7 @@ const initialState: NavigationState = {
   // Panel state
   isPanelOpen: false,
   activeTab: 'add',
+  settingsInitialTab: null,
 
   // Add tab state
   selectedCategory: null,
@@ -60,20 +64,27 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
   ...initialState,
 
   // Panel actions
-  openPanel: (tab = 'add') =>
+  openPanel: (tab = 'add', settingsTab) =>
     set({
       isPanelOpen: true,
       activeTab: tab,
+      settingsInitialTab: settingsTab || null,
     }),
 
   closePanel: () =>
     set({
       isPanelOpen: false,
+      settingsInitialTab: null, // Reset settings tab on close
     }),
 
   setActiveTab: (tab) =>
     set({
       activeTab: tab,
+    }),
+
+  setSettingsInitialTab: (tab) =>
+    set({
+      settingsInitialTab: tab,
     }),
 
   // Add tab actions

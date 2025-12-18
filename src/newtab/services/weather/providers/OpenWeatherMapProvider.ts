@@ -194,10 +194,12 @@ export class OpenWeatherMapProvider implements IWeatherProvider {
         const date = formatDateFromUnix(day.dt, data.timezone);
         const weatherId = day.weather?.[0]?.id;
         const wmoCode = typeof weatherId === 'number' ? mapOwmWeatherIdToWmoCode(weatherId) : 999;
+        const dayDate = new Date(`${date}T00:00:00`);
 
         return {
           date,
           dayOfWeek: getDayOfWeek(date),
+          dayIndex: dayDate.getDay(), // 0-6 for i18n
           high: Math.round(toNumber(day.temp.max, 'temp.max')),
           low: Math.round(toNumber(day.temp.min, 'temp.min')),
           condition: getWeatherCondition(wmoCode),

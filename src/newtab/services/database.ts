@@ -246,7 +246,8 @@ export interface WeatherCache {
   };
   forecast: Array<{
     date: string; // YYYY-MM-DD
-    dayOfWeek: string;
+    dayOfWeek: string; // DEPRECATED: Use dayIndex
+    dayIndex?: number; // Day index 0-6 for i18n
     high: number;
     low: number;
     condition: string;

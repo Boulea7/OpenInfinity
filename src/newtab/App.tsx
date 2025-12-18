@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
+import { useNavigationStore } from './stores/navigationStore';
 import type { Icon, Folder } from './services/database';
 import { clearExpiredIconCache } from './utils/iconCache';
 import {
@@ -25,6 +26,7 @@ function App() {
   const { i18n } = useTranslation();
   const { theme, language, initializeSettings, viewSettings } = useSettingsStore();
   const { loadIcons, isLoading } = useIconStore();
+  const { openPanel } = useNavigationStore();
 
   // P0-9: Sidebar width state (lifted up for proper layout coordination)
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
@@ -35,6 +37,11 @@ function App() {
   const [editingIcon, setEditingIcon] = useState<Icon | null>(null);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [openedFolder, setOpenedFolder] = useState<Folder | null>(null);
+
+  // Handle clock click - open settings panel to clock tab
+  const handleClockClick = useCallback(() => {
+    openPanel('settings', 'clock');
+  }, [openPanel]);
 
   // P1-9: Initialize settings and load icons on mount
   useEffect(() => {
@@ -189,7 +196,7 @@ function App() {
           {/* Left: Clock widget (P1-8: conditional render) */}
           {viewSettings.showClock && (
             <div className="flex items-center gap-6">
-              <ClockWidget showDate />
+              <ClockWidget showDate onClick={handleClockClick} />
               <CompactWeather />
             </div>
           )}

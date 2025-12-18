@@ -7,6 +7,7 @@ import type { IWeatherProvider, WeatherData } from './types';
 import { OpenMeteoProvider } from './providers/OpenMeteoProvider';
 import { OpenWeatherMapProvider } from './providers/OpenWeatherMapProvider';
 import { QWeatherProvider } from './providers/QWeatherProvider';
+import { getCityName } from '../geocoding';
 
 function isInChinaRegion(latitude: number, longitude: number): boolean {
   return latitude >= 18 && latitude <= 54 && longitude >= 73 && longitude <= 135;
@@ -49,14 +50,28 @@ export class WeatherManager {
   async fetchWeather(
     latitude: number,
     longitude: number,
-    unit: 'celsius' | 'fahrenheit'
+    unit: 'celsius' | 'fahrenheit',
+    language: string = 'zh-CN'
   ): Promise<WeatherData> {
     const providers = this.getProviderChain(latitude, longitude);
     const errors: Array<{ provider: string; message: string }> = [];
 
     for (const provider of providers) {
       try {
-        return await provider.fetchWeather(latitude, longitude, unit);
+        const weatherData = await provider.fetchWeather(latitude, longitude, unit);
+
+        // Fetch city name via reverse geocoding (async, don't block)
+        getCityName(latitude, longitude, language)
+          .then((cityName) => {
+            if (cityName) {
+              weatherData.location.name = cityName;
+            }
+          })
+          .catch(() => {
+            // Silent fail, keep "Current Location"
+          });
+
+        return weatherData;
       } catch (error) {
         const message = toErrorMessage(error);
         errors.push({ provider: provider.name, message });
