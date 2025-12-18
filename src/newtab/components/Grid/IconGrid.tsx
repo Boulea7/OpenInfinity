@@ -415,6 +415,31 @@ export function IconGrid({
       className={cn('relative', className)}
       onClick={handleBackgroundClick}
     >
+      {/* Add new icon button - positioned at top-left corner */}
+      {pageItems.length < itemsPerPage && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddIcon?.();
+          }}
+          className={cn(
+            'absolute top-0 left-0 z-10',
+            'w-20 h-20 flex items-center justify-center',
+            'rounded-full border-2 border-dashed',
+            'border-white/30 hover:border-white/50',
+            'text-white/50 hover:text-white/70',
+            'transition-all duration-200',
+            'hover:bg-white/10 hover:scale-105',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40'
+          )}
+          aria-label={t('iconGrid.addIcon')}
+        >
+          <Plus className="w-8 h-8" />
+          <span className="sr-only">{t('iconGrid.addIcon')}</span>
+        </button>
+      )}
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -465,30 +490,6 @@ export function IconGrid({
                 />
               );
             })}
-
-            {/* Add new icon button */}
-            {pageItems.length < itemsPerPage && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddIcon?.();
-                }}
-                className={cn(
-                  'w-20 h-20 flex items-center justify-center',
-                  'rounded-full border-2 border-dashed',
-                  'border-white/30 hover:border-white/50',
-                  'text-white/50 hover:text-white/70',
-                  'transition-all duration-200',
-                  'hover:bg-white/10',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40'
-                )}
-                aria-label={t('iconGrid.addIcon')}
-              >
-                <Plus className="w-8 h-8" />
-                <span className="sr-only">{t('iconGrid.addIcon')}</span>
-              </button>
-            )}
           </div>
         </SortableContext>
 

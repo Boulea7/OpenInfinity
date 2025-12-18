@@ -78,6 +78,7 @@ export default {
         'fade-in': 'fadeIn 0.3s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'weather-expand': 'weatherExpand 0.4s cubic-bezier(0.16, 1, 0.3, 1)', // Smooth ease-out
       },
       keyframes: {
         fadeIn: {
@@ -91,6 +92,10 @@ export default {
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        weatherExpand: {
+          '0%': { transform: 'translateY(-10px) scale(0.96)', opacity: '0' },
+          '100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
         },
       },
     },
