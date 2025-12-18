@@ -1,6 +1,8 @@
 import { AccountSection } from './AccountSection';
 import { BackupSection } from './BackupSection';
-import { CloudSyncSection } from './CloudSyncSection';
+import { FeedbackSection } from './FeedbackSection';
+import { DonateSection } from './DonateSection';
+import { FollowUsSection } from './FollowUsSection';
 import { SupportSection } from './SupportSection';
 import { AboutSection } from './AboutSection';
 
@@ -11,12 +13,16 @@ import { AboutSection } from './AboutSection';
  */
 export function MyTab() {
     return (
-        <div className="flex flex-col gap-6 animate-fade-in pb-4">
+        <div className="flex flex-col gap-4 animate-fade-in pb-4">
             <AccountSection />
 
             <BackupSection />
 
-            <CloudSyncSection />
+            <FeedbackSection />
+
+            <DonateSection />
+
+            <FollowUsSection />
 
             <SupportSection />
 
