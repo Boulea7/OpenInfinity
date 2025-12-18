@@ -8,6 +8,7 @@ import {
   IconGrid,
   PageDots,
   ClockWidget,
+  CompactWeather,
   IconEditor,
   FolderModal,
   WidgetContainer,
@@ -185,8 +186,9 @@ function App() {
         <header className="flex items-center justify-between p-4">
           {/* Left: Clock widget (P1-8: conditional render) */}
           {viewSettings.showClock && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <ClockWidget showDate />
+              <CompactWeather />
             </div>
           )}
 

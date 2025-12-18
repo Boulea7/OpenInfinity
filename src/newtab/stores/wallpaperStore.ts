@@ -2,10 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db, generateId, type Wallpaper } from '../services/database';
 import { compressImage, validateImageFile } from '../utils/imageCompression';
-import { wallpaperManager } from '../services/wallpaper';
+import { wallpaperManager, type WallpaperMetadata as ProviderWallpaperMetadata } from '../services/wallpaper';
 
 // Module-level auto-change timer management
 let autoChangeTimer: ReturnType<typeof setInterval> | null = null;
+
+// Module-level next-wallpaper preloading state (avoid duplicate work across rapid triggers)
+let nextPreloadToken = 0;
 
 /**
  * Stop auto-change timer safely
@@ -29,6 +32,34 @@ function getIntervalMs(interval: AutoChangeInterval): number {
     never: 0,
   };
   return intervals[interval];
+}
+
+/**
+ * Best-effort image preloader (warms browser cache and validates URL).
+ */
+function preloadImageUrl(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!url) {
+      reject(new Error('Missing image URL'));
+      return;
+    }
+
+    if (typeof Image === 'undefined') {
+      // Non-browser environment (e.g. SSR/tests). Skip preloading.
+      resolve();
+      return;
+    }
+
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Failed to preload image'));
+    img.src = url;
+  });
+}
+
+function isPreloadableWallpaperSource(source: WallpaperSource): boolean {
+  return source === 'unsplash' || source === 'pexels' || source === 'bing' || source === 'preset';
 }
 
 /**
@@ -120,6 +151,17 @@ interface WallpaperState {
   // Loading state
   isLoading: boolean;
   error: string | null;
+
+  // Next wallpaper preloading (in-memory, not persisted)
+  preloadedNext: {
+    url: string;
+    metadata: ProviderWallpaperMetadata;
+    actualSource: WallpaperSource;
+    requestedSource: WallpaperSource;
+    searchQuery: string;
+    preloadedAt: number;
+  } | null;
+  isPreloadingNext: boolean;
 }
 
 /**
@@ -161,6 +203,7 @@ interface WallpaperActions {
 
   // Random
   fetchRandomWallpaper: (source?: WallpaperSource) => Promise<void>;
+  preloadNextWallpaper: (source?: WallpaperSource) => Promise<void>;
 
   // Reset
   resetWallpaper: () => void;
@@ -207,6 +250,8 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       favorites: [],
       isLoading: false,
       error: null,
+      preloadedNext: null,
+      isPreloadingNext: false,
 
       loadWallpaper: async () => {
         set({ isLoading: true, error: null });
@@ -245,6 +290,12 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
           // Load favorites
           const favorites = await db.wallpapers.toArray();
           set({ favorites, isLoading: false });
+
+          // Warm up "next" wallpaper in background for API/preset sources
+          const sourceToPreload = get().activeSource;
+          if (isPreloadableWallpaperSource(sourceToPreload)) {
+            void get().preloadNextWallpaper(sourceToPreload);
+          }
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to load wallpaper',
@@ -256,6 +307,9 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       setWallpaperFromUrl: async (url, metadata = {}) => {
         set({ isLoading: true, error: null });
         try {
+          // Validate URL is loadable before switching (prevents setting a broken wallpaper).
+          await preloadImageUrl(url);
+
           // P1-12: Release old ObjectURL
           const oldUrl = get().currentUrl;
           if (oldUrl && oldUrl.startsWith('blob:')) {
@@ -448,12 +502,43 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Use WallpaperManager for all API sources
-          const result = await wallpaperManager.getRandomWallpaper(preferredSource, {
-            query: get().searchQuery || 'nature',
-            orientation: 'landscape',
-            safeMode: true,
-          });
+          const query = get().searchQuery || 'nature';
+
+          // If we already have a compatible preloaded wallpaper, use it immediately.
+          const preloaded = get().preloadedNext;
+          const isPreloadedCompatible =
+            !!preloaded &&
+            preloaded.requestedSource === preferredSource &&
+            preloaded.searchQuery === query &&
+            Date.now() - preloaded.preloadedAt < 30 * 60 * 1000; // 30 min TTL
+
+          const result = isPreloadedCompatible
+            ? {
+              url: preloaded!.url,
+              metadata: preloaded!.metadata,
+              actualSource: preloaded!.actualSource,
+            }
+            : await (async () => {
+              // Use WallpaperManager for all API sources
+              const fetched = await wallpaperManager.getRandomWallpaper(preferredSource, {
+                query,
+                orientation: 'landscape',
+                safeMode: true,
+              });
+
+              // Ensure the image is loaded (cache-warmed) before switching currentUrl.
+              await preloadImageUrl(fetched.url);
+
+              return {
+                url: fetched.url,
+                metadata: fetched.metadata,
+                actualSource: fetched.actualSource as WallpaperSource,
+              };
+            })();
+
+          if (isPreloadedCompatible) {
+            set({ preloadedNext: null });
+          }
 
           const wallpaper: Wallpaper = {
             id: generateId(),
@@ -486,11 +571,55 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
               result.metadata.downloadLocation
             ).catch(console.warn);
           }
+
+          // Preload next wallpaper in background for a smoother next switch.
+          if (isPreloadableWallpaperSource(preferredSource)) {
+            void get().preloadNextWallpaper(preferredSource);
+          }
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to fetch wallpaper',
             isLoading: false,
           });
+        }
+      },
+
+      preloadNextWallpaper: async (source) => {
+        const requestedSource = source || get().activeSource;
+        if (!isPreloadableWallpaperSource(requestedSource)) return;
+
+        const token = ++nextPreloadToken;
+        const query = get().searchQuery || 'nature';
+
+        set({ isPreloadingNext: true });
+
+        try {
+          const fetched = await wallpaperManager.getRandomWallpaper(requestedSource, {
+            query,
+            orientation: 'landscape',
+            safeMode: true,
+          });
+
+          await preloadImageUrl(fetched.url);
+
+          // Ignore outdated preloads (e.g. rapid user-triggered refresh).
+          if (token !== nextPreloadToken) return;
+
+          set({
+            preloadedNext: {
+              url: fetched.url,
+              metadata: fetched.metadata,
+              actualSource: fetched.actualSource as WallpaperSource,
+              requestedSource,
+              searchQuery: query,
+              preloadedAt: Date.now(),
+            },
+            isPreloadingNext: false,
+          });
+        } catch (error) {
+          if (token !== nextPreloadToken) return;
+          console.warn('[Wallpaper] Failed to preload next wallpaper:', error);
+          set({ isPreloadingNext: false });
         }
       },
 

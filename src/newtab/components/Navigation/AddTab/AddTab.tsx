@@ -104,10 +104,7 @@ export function AddTab() {
                 <div className="w-[120px] flex-shrink-0 overflow-y-auto no-scrollbar py-2 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
                     <div className="flex flex-col gap-1 px-2">
                         <button
-                            onClick={() => setCategory('all' as any)} // Assuming 'all' clears it or we handle it
-                            // Actually user might want "All" button. Let's assume if category is empty/null it is "All".
-                            // But presetWebsites types might be strict. Let's check store type later.
-                            // For now let's iterate categories.
+                            onClick={() => setCategory(null)}
                             className={cn(
                                 "flex flex-col items-center justify-center p-2 rounded-xl gap-1 transition-all",
                                 !selectedCategory

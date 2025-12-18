@@ -19,6 +19,9 @@ export { IconGrid, PageDots } from './Grid';
 // Search
 export { SearchBar } from './SearchBar';
 
+// Weather (Header)
+export { CompactWeather } from './CompactWeather';
+
 // Widgets
 export { ClockWidget, WidgetContainer } from './Widgets';
 

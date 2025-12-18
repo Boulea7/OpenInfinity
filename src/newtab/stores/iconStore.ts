@@ -580,6 +580,10 @@ listenForSync((message: SyncMessage) => {
       store.loadIcons(); // Reload to get new icon
       break;
 
+    case 'BOOKMARKS_IMPORTED':
+      store.loadIcons(); // Reload once after batch import
+      break;
+
     case 'ICON_UPDATED':
       if (message.payload.id) {
         useIconStore.setState(state => ({
@@ -628,4 +632,3 @@ listenForSync((message: SyncMessage) => {
       break;
   }
 });
-

@@ -10,6 +10,7 @@ export type SyncMessage =
   | { type: 'ICON_ADDED'; payload: Icon; timestamp: number; tabId: string }
   | { type: 'ICON_UPDATED'; payload: Partial<Icon> & { id: string }; timestamp: number; tabId: string }
   | { type: 'ICON_DELETED'; payload: { id: string }; timestamp: number; tabId: string }
+  | { type: 'BOOKMARKS_IMPORTED'; payload: { imported: number }; timestamp: number; tabId: string }
   | { type: 'FOLDER_ADDED'; payload: Folder; timestamp: number; tabId: string }
   | { type: 'FOLDER_UPDATED'; payload: Partial<Folder> & { id: string }; timestamp: number; tabId: string }
   | { type: 'FOLDER_DELETED'; payload: { id: string }; timestamp: number; tabId: string }
@@ -75,6 +76,13 @@ export const syncIcon = {
   added: (icon: Icon) => broadcastSync('ICON_ADDED', icon),
   updated: (icon: Partial<Icon> & { id: string }) => broadcastSync('ICON_UPDATED', icon),
   deleted: (id: string) => broadcastSync('ICON_DELETED', { id }),
+};
+
+/**
+ * Broadcast bookmark import completion (batch sync)
+ */
+export const syncBookmarks = {
+  imported: (imported: number) => broadcastSync('BOOKMARKS_IMPORTED', { imported }),
 };
 
 /**

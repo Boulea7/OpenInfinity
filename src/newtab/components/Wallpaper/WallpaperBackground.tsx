@@ -6,6 +6,12 @@ interface WallpaperBackgroundProps {
   className?: string;
 }
 
+interface ImageLayerState {
+  url: string | null;
+  loaded: boolean;
+  error: boolean;
+}
+
 /**
  * WallpaperBackground Component
  * Renders the wallpaper background with effects (blur, mask, brightness)
@@ -21,32 +27,55 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
     loadWallpaper,
   } = useWallpaperStore();
 
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [layer1, setLayer1] = useState<ImageLayerState>({ url: null, loaded: false, error: false });
+  const [layer2, setLayer2] = useState<ImageLayerState>({ url: null, loaded: false, error: false });
+  const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
 
   // Load wallpaper on mount
   useEffect(() => {
     loadWallpaper();
   }, [loadWallpaper]);
 
-  // Reset states when URL changes
+  // Double-buffer strategy:
+  // - Keep currently visible layer as-is (avoid flicker)
+  // - Load new URL into the inactive layer
+  // - Swap active layer only after the new image has loaded
   useEffect(() => {
-    if (currentUrl) {
-      setImageLoaded(false);
-      setImageError(false);
-    }
-  }, [currentUrl]);
+    if (!currentUrl) return;
+    if (activeSource === 'solid' || activeSource === 'gradient') return;
 
-  // Handle image load success
-  const handleImageLoad = useCallback(() => {
-    setImageLoaded(true);
-    setImageError(false);
+    const layer1Url = layer1.url;
+    const layer2Url = layer2.url;
+
+    const activeUrl = activeLayer === 1 ? layer1Url : layer2Url;
+    if (activeUrl === currentUrl) return;
+
+    const nextLayer: 1 | 2 = activeLayer === 1 ? 2 : 1;
+    const nextUrl = nextLayer === 1 ? layer1Url : layer2Url;
+    if (nextUrl === currentUrl) return;
+
+    if (nextLayer === 1) {
+      setLayer1({ url: currentUrl, loaded: false, error: false });
+    } else {
+      setLayer2({ url: currentUrl, loaded: false, error: false });
+    }
+  }, [activeLayer, activeSource, currentUrl, layer1.url, layer2.url]);
+
+  const handleLayerLoad = useCallback((layer: 1 | 2) => {
+    if (layer === 1) {
+      setLayer1((prev) => ({ ...prev, loaded: true, error: false }));
+    } else {
+      setLayer2((prev) => ({ ...prev, loaded: true, error: false }));
+    }
+    setActiveLayer(layer);
   }, []);
 
-  // Handle image load error
-  const handleImageError = useCallback(() => {
-    setImageError(true);
-    setImageLoaded(false);
+  const handleLayerError = useCallback((layer: 1 | 2) => {
+    if (layer === 1) {
+      setLayer1((prev) => ({ ...prev, loaded: false, error: true }));
+    } else {
+      setLayer2((prev) => ({ ...prev, loaded: false, error: true }));
+    }
   }, []);
 
   // Calculate CSS filter based on effects
@@ -104,37 +133,57 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
     }
 
     // Image-based sources (local, url, unsplash, bing, etc.)
-    if (currentUrl && !imageError) {
+    if (currentUrl || layer1.url || layer2.url) {
+      const imageStyle = {
+        ...filterStyle,
+        // Slight scale to hide edges when blurred
+        transform: effects.blur > 0 ? 'scale(1.1)' : 'none',
+      };
+
       return (
         <>
-          {/* Preload image */}
-          <img
-            src={currentUrl}
-            alt=""
-            className="hidden"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
-
-          {/* Actual background */}
+          {/* Fallback background (always behind images) */}
           <div
-            className={cn(
-              'absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700',
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            )}
+            className="absolute inset-0"
             style={{
-              backgroundImage: `url(${currentUrl})`,
+              backgroundColor: '#1a1a1a',
               ...filterStyle,
-              // Slight scale to hide edges when blurred
-              transform: effects.blur > 0 ? 'scale(1.1)' : 'none',
             }}
           />
 
-          {/* Loading placeholder gradient while image loads */}
-          {!imageLoaded && (
-            <div
-              className="absolute inset-0 transition-opacity duration-500"
-              style={renderGradient()}
+          {/* Layer 1 */}
+          {layer1.url && !layer1.error && (
+            <img
+              src={layer1.url}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              className={cn(
+                'absolute inset-0 h-full w-full select-none object-cover object-center',
+                'pointer-events-none transition duration-700',
+                activeLayer === 1 ? 'opacity-100' : 'opacity-0'
+              )}
+              style={imageStyle}
+              onLoad={() => handleLayerLoad(1)}
+              onError={() => handleLayerError(1)}
+            />
+          )}
+
+          {/* Layer 2 */}
+          {layer2.url && !layer2.error && (
+            <img
+              src={layer2.url}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              className={cn(
+                'absolute inset-0 h-full w-full select-none object-cover object-center',
+                'pointer-events-none transition duration-700',
+                activeLayer === 2 ? 'opacity-100' : 'opacity-0'
+              )}
+              style={imageStyle}
+              onLoad={() => handleLayerLoad(2)}
+              onError={() => handleLayerError(2)}
             />
           )}
         </>
@@ -146,7 +195,7 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(to bottom right, #8b5cf6, #6366f1, #3b82f6)',
+          backgroundColor: '#1a1a1a',
           ...filterStyle,
         }}
       />

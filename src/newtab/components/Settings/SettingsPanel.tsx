@@ -19,6 +19,7 @@ import type { WallpaperSource, AutoChangeInterval } from '../../stores/wallpaper
 import type { IconStyle, SearchSettings, ViewSettings, FontSettings } from '../../stores/settingsStore';
 import { SidePanel } from '../ui/SidePanel';
 import { cn } from '../../utils';
+import { ImportBookmarksButton } from './ImportBookmarksButton';
 
 // Settings tab definitions
 const SETTINGS_TABS = [
@@ -1353,14 +1354,25 @@ function BackupSettings() {
         </div>
       </div>
 
+      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+          <strong>Warning:</strong> Import All Data will replace your existing data. Make sure to export a backup first.
+        </p>
+      </div>
+
       <p className="text-sm text-gray-500 dark:text-gray-400">
         Export all your data (settings, icons, folders, todos, notes, wallpapers) to a JSON file.
         You can import this file later to restore your complete configuration.
       </p>
 
-      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-        <p className="text-sm text-yellow-800 dark:text-yellow-200">
-          <strong>Warning:</strong> Importing will replace all existing data. Make sure to export your current data first.
+      {/* Import from Chrome Bookmarks Section */}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h4 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Import from Chrome
+        </h4>
+        <ImportBookmarksButton />
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+          Import your Chrome bookmarks as new icons without deleting existing data. Duplicates will be automatically skipped.
         </p>
       </div>
     </div>

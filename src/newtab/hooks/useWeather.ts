@@ -8,8 +8,86 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type WeatherCache } from '../services/database';
 import { useSettingsStore } from '../stores';
 import { getLocation } from '../services/location';
-import { getWeatherWithCache, clearAllCaches, fetchAndCacheWeather } from '../services/weatherCache';
+import { weatherManager } from '../services/weather/WeatherManager';
+import type { WeatherData } from '../services/weather/types';
 import type { LocationData } from '../types';
+
+/**
+ * Cache expiration time: 1 hour in milliseconds
+ */
+const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Module-level single-flight lock to prevent concurrent location/API requests
+ * across multiple useWeather hook instances.
+ */
+let weatherFetchInFlight: Promise<void> | null = null;
+
+/**
+ * Generate cache key from location coordinates and temperature unit
+ * Includes unit to prevent cache mismatches when switching between celsius/fahrenheit
+ */
+function getCacheKey(latitude: number, longitude: number, unit: 'celsius' | 'fahrenheit'): string {
+  const lat = latitude.toFixed(2);
+  const lon = longitude.toFixed(2);
+  return `${lat}_${lon}_${unit}`;
+}
+
+/**
+ * Check if cache entry is expired
+ */
+function isCacheExpired(cache: WeatherCache): boolean {
+  return Date.now() > cache.expiresAt;
+}
+
+async function getCachedWeather(
+  location: LocationData,
+  unit: 'celsius' | 'fahrenheit'
+): Promise<WeatherCache | null> {
+  try {
+    const cacheKey = getCacheKey(location.latitude, location.longitude, unit);
+    const cached = await db.weatherCache.get(cacheKey);
+
+    if (!cached) {
+      return null;
+    }
+
+    if (isCacheExpired(cached)) {
+      await db.weatherCache.delete(cacheKey);
+      return null;
+    }
+
+    return cached;
+  } catch (error) {
+    console.error('Failed to get cached weather:', error);
+    return null;
+  }
+}
+
+async function upsertWeatherCache(
+  location: LocationData,
+  unit: 'celsius' | 'fahrenheit',
+  weatherData: WeatherData
+): Promise<WeatherCache> {
+  const now = weatherData.fetchedAt;
+  const cacheKey = getCacheKey(location.latitude, location.longitude, unit);
+
+  const cacheEntry: WeatherCache = {
+    id: cacheKey,
+    location: {
+      name: location.name,
+      latitude: location.latitude,
+      longitude: location.longitude,
+    },
+    current: weatherData.current,
+    forecast: weatherData.forecast,
+    fetchedAt: now,
+    expiresAt: now + CACHE_EXPIRATION_MS,
+  };
+
+  await db.weatherCache.put(cacheEntry);
+  return cacheEntry;
+}
 
 /**
  * Weather hook return interface
@@ -52,44 +130,69 @@ export function useWeather(): UseWeatherReturn {
    * Fetch weather data
    */
   const fetchWeatherData = useCallback(async () => {
+    if (weatherFetchInFlight) {
+      await weatherFetchInFlight;
+      return;
+    }
+
     // Prevent concurrent fetches
     if (isFetchingRef.current) {
       return;
     }
 
-    isFetchingRef.current = true;
-    setIsLoading(true);
-    setError(null);
+    const task = (async () => {
+      isFetchingRef.current = true;
+      setError(null);
 
-    try {
-      // Get location (manual or auto)
-      let location: LocationData;
+      try {
+        // Get location (manual or auto)
+        let location: LocationData;
 
-      // Use != null to allow 0 values for equator/prime meridian
-      if (weatherSettings.location.type === 'manual' &&
-          weatherSettings.location.latitude != null &&
-          weatherSettings.location.longitude != null) {
-        // Use manual location from settings
-        location = {
-          type: 'manual' as const,
-          name: weatherSettings.location.name,
-          latitude: weatherSettings.location.latitude,
-          longitude: weatherSettings.location.longitude,
-        };
-      } else {
-        // Auto-detect location
-        location = await getLocation();
+        // Use != null to allow 0 values for equator/prime meridian
+        if (weatherSettings.location.type === 'manual' &&
+            weatherSettings.location.latitude != null &&
+            weatherSettings.location.longitude != null) {
+          // Use manual location from settings
+          location = {
+            type: 'manual' as const,
+            name: weatherSettings.location.name,
+            latitude: weatherSettings.location.latitude,
+            longitude: weatherSettings.location.longitude,
+          };
+        } else {
+          // Auto-detect location
+          location = await getLocation();
+        }
+
+        // Use cached data when available, otherwise fetch via WeatherManager
+        const cached = await getCachedWeather(location, weatherSettings.unit);
+
+        if (cached) {
+          return;
+        }
+
+        setIsLoading(true);
+        const weatherData = await weatherManager.fetchWeather(
+          location.latitude,
+          location.longitude,
+          weatherSettings.unit
+        );
+        await upsertWeatherCache(location, weatherSettings.unit, weatherData);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch weather data';
+        console.error('Weather fetch error:', err);
+        setError(message);
+      } finally {
+        setIsLoading(false);
+        isFetchingRef.current = false;
       }
+    })();
 
-      // Fetch weather with caching
-      await getWeatherWithCache(location, weatherSettings.unit);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch weather data';
-      console.error('Weather fetch error:', err);
-      setError(message);
+    weatherFetchInFlight = task;
+    try {
+      await task;
     } finally {
-      setIsLoading(false);
-      isFetchingRef.current = false;
+      weatherFetchInFlight = null;
     }
   }, [weatherSettings]);
 
@@ -105,7 +208,7 @@ export function useWeather(): UseWeatherReturn {
    */
   const clearCache = useCallback(async () => {
     try {
-      await clearAllCaches();
+      await db.weatherCache.clear();
       setError(null);
       // Fetch fresh data after clearing cache
       await fetchWeatherData();
@@ -119,38 +222,57 @@ export function useWeather(): UseWeatherReturn {
    * Force refresh weather data (ignore cache)
    */
   const forceRefresh = useCallback(async () => {
+    if (weatherFetchInFlight) {
+      await weatherFetchInFlight;
+      return;
+    }
+
     if (isFetchingRef.current) return;
 
-    isFetchingRef.current = true;
-    setIsLoading(true);
-    setError(null);
+    const task = (async () => {
+      isFetchingRef.current = true;
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      // Get location
-      let location: LocationData;
+      try {
+        // Get location
+        let location: LocationData;
 
-      // Use != null to allow 0 values for equator/prime meridian
-      if (weatherSettings.location.type === 'manual' &&
-          weatherSettings.location.latitude != null &&
-          weatherSettings.location.longitude != null) {
-        location = {
-          type: 'manual' as const,
-          name: weatherSettings.location.name,
-          latitude: weatherSettings.location.latitude,
-          longitude: weatherSettings.location.longitude,
-        };
-      } else {
-        location = await getLocation();
+        // Use != null to allow 0 values for equator/prime meridian
+        if (weatherSettings.location.type === 'manual' &&
+            weatherSettings.location.latitude != null &&
+            weatherSettings.location.longitude != null) {
+          location = {
+            type: 'manual' as const,
+            name: weatherSettings.location.name,
+            latitude: weatherSettings.location.latitude,
+            longitude: weatherSettings.location.longitude,
+          };
+        } else {
+          location = await getLocation();
+        }
+
+        // Force fetch (bypass cache)
+        const weatherData = await weatherManager.fetchWeather(
+          location.latitude,
+          location.longitude,
+          weatherSettings.unit
+        );
+        await upsertWeatherCache(location, weatherSettings.unit, weatherData);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to refresh weather data';
+        setError(message);
+      } finally {
+        setIsLoading(false);
+        isFetchingRef.current = false;
       }
+    })();
 
-      // Force fetch (bypass cache)
-      await fetchAndCacheWeather(location, weatherSettings.unit);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to refresh weather data';
-      setError(message);
+    weatherFetchInFlight = task;
+    try {
+      await task;
     } finally {
-      setIsLoading(false);
-      isFetchingRef.current = false;
+      weatherFetchInFlight = null;
     }
   }, [weatherSettings]);
 
