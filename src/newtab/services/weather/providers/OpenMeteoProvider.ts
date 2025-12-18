@@ -105,7 +105,7 @@ export class OpenMeteoProvider implements IWeatherProvider {
 
       return {
         location: {
-          name: 'Current Location',
+          name: '', // Will be updated by WeatherManager with geocoded name
           latitude,
           longitude,
         },

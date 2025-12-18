@@ -66,22 +66,36 @@ export async function getCityName(
 
     const data = await response.json();
 
-    // Extract city name from address
-    const cityName =
+    // Extract city and country name from address
+    const city =
       data.address?.city ||
       data.address?.town ||
       data.address?.village ||
       data.address?.county ||
       data.address?.state ||
-      data.display_name?.split(',')[0] ||
       '';
 
-    if (cityName) {
+    const country = data.address?.country || '';
+
+    // Format: "Country, City" or just "City" if no country
+    let locationName = '';
+    if (city && country) {
+      locationName = language.startsWith('zh') ? `${country} ${city}` : `${city}, ${country}`;
+    } else if (city) {
+      locationName = city;
+    } else if (country) {
+      locationName = country;
+    } else {
+      // Fallback to first part of display_name
+      locationName = data.display_name?.split(',')[0] || '';
+    }
+
+    if (locationName) {
       // Cache the result
       try {
         const cache: GeocodeCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
         cache[cacheKey] = {
-          cityName,
+          cityName: locationName,
           cachedAt: Date.now(),
         };
         localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
@@ -89,7 +103,7 @@ export async function getCityName(
         console.warn('Failed to cache geocode result:', error);
       }
 
-      return cityName;
+      return locationName;
     }
 
     throw new Error('No city name found in response');

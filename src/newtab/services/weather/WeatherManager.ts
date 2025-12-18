@@ -60,16 +60,16 @@ export class WeatherManager {
       try {
         const weatherData = await provider.fetchWeather(latitude, longitude, unit);
 
-        // Fetch city name via reverse geocoding (async, don't block)
-        getCityName(latitude, longitude, language)
-          .then((cityName) => {
-            if (cityName) {
-              weatherData.location.name = cityName;
-            }
-          })
-          .catch(() => {
-            // Silent fail, keep "Current Location"
-          });
+        // Fetch city name via reverse geocoding (await to ensure it updates before return)
+        try {
+          const cityName = await getCityName(latitude, longitude, language);
+          if (cityName) {
+            weatherData.location.name = cityName;
+          }
+        } catch (error) {
+          console.warn('[WeatherManager] Failed to get city name:', error);
+          // Keep "Current Location" as fallback
+        }
 
         return weatherData;
       } catch (error) {
