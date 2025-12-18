@@ -1,25 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useCurrentTab } from '../hooks/useCurrentTab';
 import { useAddIcon } from '../hooks/useAddIcon';
-import IconSelectionGrid from './IconSelectionGrid';
+import IconTypeSelector from './IconTypeSelector';
 import IconEditPage from './IconEditPage';
+import IconPreview from './IconPreview';
 import type { EditRequest, IconDraft } from '../types/iconDraft';
+import { GlassButton, GlassInput } from './UI/GlassComponents';
+import PopupLayout from './PopupLayout';
 
 export default function AddIconForm() {
   const { tabInfo, isLoading } = useCurrentTab();
   const { addIcon, isAdding } = useAddIcon();
 
   const [title, setTitle] = useState('');
+  const [iconType, setIconType] = useState<'text' | 'favicon' | 'upload'>('text');
   const [iconData, setIconData] = useState<IconDraft | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
 
-  // Auto-fill title from current tab (only if empty and not dirty)
+  // Auto-fill title
   useEffect(() => {
     if (tabInfo && !title && !isDirty) {
       setTitle(tabInfo.title);
     }
   }, [tabInfo, title, isDirty]);
+
+  // Default to favicon if available on load? Or keep text default. 
+  // Requirement says "3 types selection". Let's stick to 'text' default or logic:
+  // Usually favicon is better default if available, but text is safer. Sticking to text for now as per previous code,
+  // or maybe switch to 'favicon' if user prefers? Let's keep 'text' as initial state for consistency with design reqs listing "Solid/Favicon/Upload".
 
   const validateUrl = (url: string): boolean => {
     try {
@@ -35,8 +44,7 @@ export default function AddIconForm() {
     e.preventDefault();
 
     if (!iconData) {
-      alert('请选择图标');
-      return;
+      return; // Button should be disabled anyway
     }
 
     if (!tabInfo?.url) {
@@ -44,7 +52,6 @@ export default function AddIconForm() {
       return;
     }
 
-    // Validate URL scheme
     if (!validateUrl(tabInfo.url)) {
       alert('当前页面地址无效');
       return;
@@ -54,23 +61,22 @@ export default function AddIconForm() {
       const icon =
         iconData.type === 'text'
           ? {
-              type: 'text' as const,
-              value: iconData.value,
-              color: iconData.color,
-            }
+            type: 'text' as const,
+            value: iconData.value,
+            color: iconData.color,
+          }
           : {
-              type: iconData.type,
-              value: iconData.value,
-            };
+            type: iconData.type,
+            value: iconData.value,
+          };
 
       await addIcon({
         title,
-        url: tabInfo.url,  // Use URL from current tab
+        url: tabInfo.url,
         icon,
-        position: { x: 0, y: 0 },  // Background will calculate next position
+        position: { x: 0, y: 0 },
       });
 
-      // Close popup on success
       window.close();
     } catch (error) {
       console.error('Failed to add icon:', error);
@@ -79,69 +85,119 @@ export default function AddIconForm() {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">加载中...</div>;
+    return (
+      <PopupLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange-500"></div>
+        </div>
+      </PopupLayout>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Website name */}
-      <div>
-        <label className="block text-sm font-medium mb-1">网站名称</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setIsDirty(true);  // Mark as dirty when user edits
-          }}
-          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          required
-        />
+    <PopupLayout>
+      {/* Header */}
+      <div className="w-full flex items-center justify-between mb-6">
+        <h1 className="text-lg font-semibold tracking-tight">添加快捷方式</h1>
+        <div className="text-xs text-zinc-500 bg-white/5 px-2 py-1 rounded-full border border-white/5">
+          OpenInfinity
+        </div>
       </div>
 
-      {/* Icon selection grid (no separate preview) */}
-      <div>
-        <label className="block text-sm font-medium mb-2">选择图标</label>
-        <IconSelectionGrid
-          url={tabInfo?.url || ''}
-          websiteName={title}
-          onIconSelect={setIconData}
-          onEditRequest={(req) => {
-            // Clear current selection to avoid submitting stale text icon
-            setIconData(null);
-            setEditRequest(req);
-          }}
-        />
-      </div>
+      <form onSubmit={handleSubmit} className="w-full space-y-5 flex-1 overflow-y-auto scrollbar-hide">
+        {/* Preview Section */}
+        <div className="flex justify-center mb-2">
+          <IconPreview title={title} icon={iconData} />
+        </div>
 
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={isAdding || !title || !iconData}
-        className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-      >
-        {isAdding ? '添加中...' : '确定'}
-      </button>
-
-      {/* Icon editor modal */}
-      {editRequest && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <IconEditPage
-            imageUrl={editRequest.imageUrl}
-            iconType={editRequest.iconType}
-            onConfirm={(croppedImageData) => {
-              setIconData({
-                type: editRequest.iconType,
-                value: croppedImageData,
-              });
-              setEditRequest(null);
+        {/* Website Info */}
+        <div className="space-y-3">
+          <GlassInput
+            label="网站名称"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setIsDirty(true);
             }}
-            onCancel={() => {
-              setEditRequest(null);
+            placeholder="输入网站名称"
+            fullWidth
+            required
+          />
+          {/* URL Input could be added here if editable, requirement says "Enter URL (auto fetch)". 
+              Usually readonly or editable. Let's make it editable for flexibility but pre-filled. */}
+          <div className="opacity-60 hover:opacity-100 transition-opacity">
+            <GlassInput
+              label="网址"
+              value={tabInfo?.url || ''}
+              disabled
+              fullWidth
+              className="text-zinc-500 cursor-not-allowed bg-black/20 border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Icon Type Selection */}
+        <div>
+          <label className="block text-xs font-medium text-zinc-400 mb-2 ml-1">图标样式</label>
+          <IconTypeSelector
+            type={iconType}
+            onTypeChange={setIconType}
+            url={tabInfo?.url || ''}
+            websiteName={title}
+            onIconChange={setIconData}
+            onEditRequest={(imageUrl) => {
+              setIconData(null);
+              setEditRequest({ imageUrl, iconType: 'custom' });
             }}
           />
         </div>
+
+        {/* Spacing for bottom actions */}
+        <div className="h-4"></div>
+      </form>
+
+      {/* Footer Actions */}
+      <div className="w-full mt-4 flex gap-3 pt-4 border-t border-white/5">
+        <GlassButton
+          variant="secondary"
+          onClick={() => window.close()}
+          className="flex-1"
+        >
+          取消
+        </GlassButton>
+        <GlassButton
+          variant="primary"
+          onClick={handleSubmit}
+          disabled={isAdding || !title || !iconData}
+          isLoading={isAdding}
+          className="flex-[2]"
+        >
+          {isAdding ? '添加中...' : '添加到主页'}
+        </GlassButton>
+      </div>
+
+      {/* Editor Modal Overlay */}
+      {editRequest && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl max-w-xs w-full">
+            <IconEditPage
+              imageUrl={editRequest.imageUrl}
+              iconType={editRequest.iconType}
+              onConfirm={(croppedImageData) => {
+                setIconData({
+                  type: editRequest.iconType,
+                  value: croppedImageData,
+                });
+                setEditRequest(null);
+              }}
+              onCancel={() => {
+                setEditRequest(null);
+              }}
+            />
+          </div>
+        </div>
       )}
-    </form>
+    </PopupLayout>
   );
 }
+

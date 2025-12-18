@@ -1,5 +1,7 @@
 import TextIconEditor from './TextIconEditor';
 import FaviconSelector from './FaviconSelector';
+import { SegmentedControl, GlassCard } from './UI/GlassComponents';
+import { Type, Image, Upload } from 'lucide-react';
 
 type IconType = 'text' | 'favicon' | 'upload';
 
@@ -7,9 +9,9 @@ interface Props {
   type: IconType;
   onTypeChange: (type: IconType) => void;
   url: string;
-  websiteName?: string;  // Website name for syncing
+  websiteName?: string;
   onIconChange: (iconData: any) => void;
-  onEditRequest?: (imageUrl: string) => void;  // New: callback to open edit page
+  onEditRequest?: (imageUrl: string) => void;
 }
 
 export default function IconTypeSelector({
@@ -21,97 +23,79 @@ export default function IconTypeSelector({
   onEditRequest,
 }: Props) {
   return (
-    <div>
-      {/* Tab switcher */}
-      <div className="flex gap-2 mb-4 border-b">
-        <button
-          type="button"
-          onClick={() => onTypeChange('text')}
-          className={`px-4 py-2 transition-colors ${
-            type === 'text'
-              ? 'border-b-2 border-blue-500 font-medium text-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          纯色图标
-        </button>
-        <button
-          type="button"
-          onClick={() => onTypeChange('favicon')}
-          className={`px-4 py-2 transition-colors ${
-            type === 'favicon'
-              ? 'border-b-2 border-blue-500 font-medium text-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          网站图标
-        </button>
-        <button
-          type="button"
-          onClick={() => onTypeChange('upload')}
-          className={`px-4 py-2 transition-colors ${
-            type === 'upload'
-              ? 'border-b-2 border-blue-500 font-medium text-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          本地上传
-        </button>
-      </div>
+    <div className="space-y-4">
+      <SegmentedControl
+        value={type}
+        onChange={onTypeChange}
+        options={[
+          { value: 'text', label: '纯色', icon: <Type size={14} /> },
+          { value: 'favicon', label: '图标', icon: <Image size={14} /> },
+          { value: 'upload', label: '上传', icon: <Upload size={14} /> },
+        ]}
+      />
 
-      {/* Conditional rendering */}
-      {type === 'text' && <TextIconEditor websiteName={websiteName} onIconChange={onIconChange} />}
-      {type === 'favicon' && (
-        <FaviconSelector
-          url={url}
-          onSelect={(iconData) => {
-            // If onEditRequest provided, open edit page; otherwise directly use
-            if (onEditRequest && iconData.value) {
-              onEditRequest(iconData.value);
-            } else {
-              onIconChange(iconData);
-            }
-          }}
-        />
-      )}
-      {type === 'upload' && (
-        <div>
-          <label className="block text-sm font-medium mb-2">选择图片</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                // Check file size (max 2MB)
-                if (file.size > 2 * 1024 * 1024) {
-                  alert('图片大小不能超过 2MB');
-                  return;
+      <div className="animate-fade-in min-h-[120px]">
+        {type === 'text' && (
+          <GlassCard className="p-4 bg-white/5 border-0">
+            <TextIconEditor websiteName={websiteName} onIconChange={onIconChange} />
+          </GlassCard>
+        )}
+
+        {type === 'favicon' && (
+          <GlassCard className="p-4 bg-white/5 border-0">
+            <FaviconSelector
+              url={url}
+              onSelect={(iconData) => {
+                if (onEditRequest && iconData.value) {
+                  onEditRequest(iconData.value);
+                } else {
+                  onIconChange(iconData);
                 }
+              }}
+            />
+          </GlassCard>
+        )}
 
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const imageUrl = reader.result as string;
-                  // If onEditRequest provided, open edit page
-                  if (onEditRequest) {
-                    onEditRequest(imageUrl);
-                  } else {
-                    onIconChange({
-                      type: 'custom',
-                      value: imageUrl,
-                    });
+        {type === 'upload' && (
+          <GlassCard className="p-4 bg-white/5 border-0 flex flex-col items-center justify-center text-center gap-3 py-8 border-dashed border-2 border-white/20 hover:border-brand-orange-500/50 transition-colors group cursor-pointer relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  if (file.size > 2 * 1024 * 1024) {
+                    alert('图片大小不能超过 2MB');
+                    return;
                   }
-                };
-                reader.readAsDataURL(file);
-              }
-            }}
-            className="w-full px-3 py-2 border rounded-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            支持 PNG、JPG、SVG 格式，最大 2MB
-          </p>
-        </div>
-      )}
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const imageUrl = reader.result as string;
+                    if (onEditRequest) {
+                      onEditRequest(imageUrl);
+                    } else {
+                      onIconChange({
+                        type: 'custom',
+                        value: imageUrl,
+                      });
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Upload className="text-zinc-400 group-hover:text-brand-orange-500 transition-colors" size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">点击或拖拽上传图片</p>
+              <p className="text-xs text-zinc-500 mt-1">支持 PNG, JPG, SVG (Max 2MB)</p>
+            </div>
+          </GlassCard>
+        )}
+      </div>
     </div>
   );
 }
+
