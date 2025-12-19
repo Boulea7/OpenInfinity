@@ -378,12 +378,13 @@ export function SearchBar({ className }: SearchBarProps) {
             aria-haspopup="menu"
             aria-expanded={showEngineSelector}
           >
-            <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center bg-white/50">
+            <div className="w-6 h-6 flex items-center justify-center">
               {currentEngine.icon && !iconLoadFailed ? (
                 <img
                   src={iconCache[currentEngine.id] || currentEngine.icon}
                   alt={currentEngine.name}
-                  className="w-full h-full object-cover"
+                  className="w-5 h-5 object-contain mix-blend-normal"
+                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
                   onError={() => setIconLoadFailed(true)}
                   referrerPolicy="no-referrer"
                 />
@@ -421,7 +422,12 @@ export function SearchBar({ className }: SearchBarProps) {
                   aria-checked={engine.id === currentEngine.id}
                 >
                   {engine.icon ? (
-                    <img src={iconCache[engine.id] || engine.icon} alt="" className="w-4 h-4 rounded-sm" />
+                    <img
+                      src={iconCache[engine.id] || engine.icon}
+                      alt=""
+                      className="w-4 h-4 object-contain"
+                      style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
+                    />
                   ) : (
                     <Search className="w-4 h-4" />
                   )}
