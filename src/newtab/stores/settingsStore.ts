@@ -198,14 +198,14 @@ const defaultSearchEngines: SearchEngine[] = [
     id: 'baidu',
     name: '百度',
     url: 'https://www.baidu.com/s?wd=',
-    icon: 'https://www.google.com/s2/favicons?domain=baidu.com&sz=64',
+    icon: 'https://www.baidu.com/favicon.ico',
     isDefault: false,
   },
   {
     id: 'google',
     name: '谷歌',
     url: 'https://www.google.com/search?q=',
-    icon: 'https://www.google.com/s2/favicons?domain=google.com&sz=64',
+    icon: 'https://www.google.com/favicon.ico',
     isDefault: true,
   },
   {
@@ -219,45 +219,68 @@ const defaultSearchEngines: SearchEngine[] = [
     id: 'yahoo',
     name: '雅虎',
     url: 'https://search.yahoo.com/search?p=',
-    icon: 'https://www.google.com/s2/favicons?domain=yahoo.com&sz=64',
+    icon: 'https://search.yahoo.com/favicon.ico',
     isDefault: false,
   },
   {
     id: 'yandex',
     name: 'Yandex',
     url: 'https://yandex.com/search/?text=',
-    icon: 'https://www.google.com/s2/favicons?domain=yandex.com&sz=64',
+    icon: 'https://yandex.com/favicon.ico',
     isDefault: false,
   },
   {
     id: 'duckduckgo',
     name: 'DuckDuckGo',
     url: 'https://duckduckgo.com/?q=',
-    icon: 'https://www.google.com/s2/favicons?domain=duckduckgo.com&sz=64',
+    icon: 'https://duckduckgo.com/favicon.ico',
     isDefault: false,
   },
   {
     id: 'yandexru',
     name: 'YandexRU',
     url: 'https://yandex.ru/search/?text=',
-    icon: 'https://www.google.com/s2/favicons?domain=yandex.ru&sz=64',
+    icon: 'https://yandex.ru/favicon.ico',
     isDefault: false,
   },
   {
     id: 'sogou',
     name: '搜狗',
     url: 'https://www.sogou.com/web?query=',
-    icon: 'https://www.google.com/s2/favicons?domain=sogou.com&sz=64',
+    icon: 'https://www.sogou.com/favicon.ico',
     isDefault: false,
   },
   {
     id: '360',
     name: '360搜索',
     url: 'https://www.so.com/s?q=',
-    icon: 'https://www.google.com/s2/favicons?domain=so.com&sz=64',
+    icon: 'https://www.so.com/favicon.ico',
     isDefault: false,
   },
 ];
+
+/**
+ * Detect if user is in China region based on language and timezone
+ */
+function isInChinaRegion(): boolean {
+  // Check language (zh-CN, zh-TW, zh-HK, etc.)
+  const lang = navigator.language.toLowerCase();
+  if (lang.startsWith('zh')) {
+    return true;
+  }
+
+  // Check timezone as fallback
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const chinaTimezones = ['Asia/Shanghai', 'Asia/Chongqing', 'Asia/Harbin', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Macau', 'Asia/Taipei'];
+  return chinaTimezones.includes(timezone);
+}
+
+/**
+ * Get smart default search engine based on region
+ */
+function getSmartDefaultEngine(): string {
+  return isInChinaRegion() ? 'bing' : 'google';
+}
 
 /**
  * Default settings values
@@ -284,7 +307,7 @@ const defaultSettings: SettingsState = {
     showSuggestions: true,
     placeholder: 'Search the web or type a URL...',
     engines: defaultSearchEngines,
-    defaultEngine: 'google',
+    defaultEngine: getSmartDefaultEngine(), // Smart default based on region
     showButton: false,
     size: 'medium',
     borderRadius: 50,
@@ -366,11 +389,21 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         try {
           const storedTheme = await db.settings.get('theme');
           const storedLanguage = await db.settings.get('language');
+          const storedDefaultEngine = await db.settings.get('defaultEngine');
 
-          if (storedTheme || storedLanguage) {
+          // If no stored default engine, use smart default based on region
+          const smartDefaultEngine = storedDefaultEngine?.value
+            ? (storedDefaultEngine.value as string)
+            : getSmartDefaultEngine();
+
+          if (storedTheme || storedLanguage || !storedDefaultEngine) {
             set({
               theme: (storedTheme?.value as Theme) || get().theme,
               language: (storedLanguage?.value as string) || get().language,
+              searchSettings: {
+                ...get().searchSettings,
+                defaultEngine: smartDefaultEngine,
+              },
             });
           }
         } catch (error) {
