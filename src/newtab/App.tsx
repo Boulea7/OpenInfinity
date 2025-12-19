@@ -213,7 +213,7 @@ function App() {
         </div>
 
         {/* Icon Grid (P1-9: Loading state) */}
-        <main className="flex-1 flex items-center justify-center px-4 pb-20">
+        <main className="flex-1 flex items-start justify-center px-4 pb-20 pt-8">
           {isLoading ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white/80" />
