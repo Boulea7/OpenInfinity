@@ -51,6 +51,7 @@ export function CompactWeather({ className }: CompactWeatherProps) {
     };
   }, [isExpanded]);
 
+
   if (!weather || isLoading || error) return null;
 
   const unitLabel = weatherSettings.unit === 'celsius' ? '°C' : '°F';
@@ -64,11 +65,13 @@ export function CompactWeather({ className }: CompactWeatherProps) {
         ref={buttonRef}
         className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-full',
-          'bg-white/10 border border-white/15 backdrop-blur-md shadow-sm',
-          'text-white/90 select-none',
-          'cursor-pointer hover:bg-white/15 transition-colors',
+          'bg-black/20 dark:bg-white/10 border border-white/15 backdrop-blur-md shadow-sm',
+          'text-white select-none',
+          'cursor-pointer hover:bg-black/30 dark:hover:bg-white/15 transition-colors duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
-          isExpanded && 'bg-white/20'
+          // Text shadow for readability on any wallpaper
+          '[text-shadow:0_1px_3px_rgba(0,0,0,0.5)]',
+          isExpanded && 'bg-black/30 dark:bg-white/20'
         )}
         role="button"
         tabIndex={0}
@@ -83,33 +86,42 @@ export function CompactWeather({ className }: CompactWeatherProps) {
         aria-label={`Weather: ${weather.current.condition}, ${tempText}`}
         aria-expanded={isExpanded}
       >
-        <WeatherIcon className="w-5 h-5 text-white/90" aria-hidden="true" />
-        <span className="text-sm font-medium">{tempText}</span>
+        <WeatherIcon className="w-5 h-5 text-white drop-shadow-sm" aria-hidden="true" />
+        <span className="text-sm font-medium drop-shadow-sm">{tempText}</span>
       </div>
 
-      {/* Expanded Weather Panel - TO BE DESIGNED BY GEMINI */}
       {/* Expanded Weather Panel */}
       {isExpanded && (
         <div
           ref={panelRef}
           className={cn(
             'absolute top-full mt-3 left-0',
-            'w-[22rem] z-50 origin-top-left', // Width ~352px
-            'animate-weather-expand' // Custom animation
+            'w-96 z-50 origin-top-left', // Increased width (384px)
+            'animate-weather-expand'
           )}
         >
-          {/* Decorative Arrow (pointing to button center) */}
-          <div
-            className="absolute -top-1.5 left-6 w-3 h-3 rotate-45 bg-zinc-900/95 border-t border-l border-white/10"
-            aria-hidden="true"
-          />
+          {/* Decorative Arrow (Speech Bubble Tail) */}
+          <svg
+            className="absolute -top-2.5 left-6 w-5 h-3 text-zinc-900/80 fill-current z-10"
+            viewBox="0 0 20 10"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M10 0L20 10H0L10 0Z"
+              className="stroke-white/10"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Cover the bottom border line of the arrow to merge with container */}
+            <path d="M0 10H20" stroke="transparent" strokeWidth="2" />
+          </svg>
 
           {/* Main Card Container */}
           <div className={cn(
             'relative overflow-hidden',
-            'bg-zinc-900/95 backdrop-blur-2xl', // Deep elegant dark glass
-            'border border-white/10 ring-1 ring-black/20', // Subtle borders
-            'rounded-2xl shadow-2xl shadow-black/50', // Deep depth
+            'bg-zinc-900/80 backdrop-filter backdrop-blur-xl', // Immediate blur
+            'border border-white/10 ring-1 ring-black/20',
+            'rounded-3xl shadow-2xl shadow-black/50',
             'flex flex-col'
           )}>
             {/* Top Gloss Highlight */}
@@ -119,13 +131,15 @@ export function CompactWeather({ className }: CompactWeatherProps) {
             <div className="relative z-10">
               <WeatherWidget
                 isExpanded={true}
-                onToggleExpand={() => { }}
-                className="!bg-transparent !border-none !rounded-none !shadow-none"
+                onToggleExpand={() => setIsExpanded(false)}
+                hideHeader={true}
+                className="!bg-transparent !border-none !rounded-none !shadow-none !p-0"
               />
             </div>
 
-            {/* Bottom Accent Glow (Subtle Brand Color) */}
-            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-brand-orange-500/10 blur-[50px] rounded-full pointer-events-none" />
+            {/* Bottom Accent Glow */}
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none mix-blend-screen" />
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-orange-500/10 blur-[80px] rounded-full pointer-events-none mix-blend-screen" />
           </div>
         </div>
       )}

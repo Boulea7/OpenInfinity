@@ -71,7 +71,8 @@ function getNextPosition(
   icons: Icon[],
   folders: Folder[]
 ): { x: number; y: number } {
-  const columns = useSettingsStore.getState().viewSettings.columns || 6;
+  // Clamp to minimum 1 to prevent division issues
+  const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || 6);
   const rootIcons = icons.filter(i => !i.folderId);
   const allItems = [...rootIcons, ...folders];
 
@@ -420,8 +421,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const [moved] = reordered.splice(activeIndex, 1);
     reordered.splice(overIndex, 0, moved);
 
-    // P1-1: Read columns from settingsStore
-    const columns = useSettingsStore.getState().viewSettings.columns || 6;
+    // P1-1: Read columns from settingsStore (clamp to min 1 for safety)
+    const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || 6);
 
     // Recalculate positions based on new order
     const updates = reordered.map((item, index) => ({
@@ -557,7 +558,11 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const { icons, folders } = get();
     const settingsStore = useSettingsStore.getState();
     const { columns, rows } = settingsStore.viewSettings;
-    const itemsPerPage = columns * rows;
+
+    // Clamp to minimum 1 to prevent NaN/Infinity from division by zero
+    const safeColumns = Math.max(1, columns || 6);
+    const safeRows = Math.max(1, rows || 4);
+    const itemsPerPage = safeColumns * safeRows;
 
     // Only count root level items
     const rootIcons = icons.filter(icon => !icon.folderId);
