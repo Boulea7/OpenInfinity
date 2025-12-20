@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/shallow';
 import { Plus, User, Settings } from 'lucide-react';
 import { SidePanel } from '../ui/SidePanel';
 import { useNavigationStore, type NavigationTab } from '../../stores/navigationStore';
-import { SettingsPanel } from '../Settings/SettingsPanel';
+import { SettingsPanelV2 } from '../Settings/SettingsPanelV2';
 import { AddTab } from './AddTab/AddTab';
 import { MyTab } from './MyTab/MyTab';
 import { cn } from '../../utils';
@@ -13,12 +13,10 @@ import { cn } from '../../utils';
  * Main navigation panel container featuring a top glassmorphism tab bar.
  */
 export function InfinityNavPanel() {
-    // Force HMR update
-    const { isPanelOpen, activeTab, settingsInitialTab, setActiveTab, closePanel } = useNavigationStore(
+    const { isPanelOpen, activeTab, setActiveTab, closePanel } = useNavigationStore(
         useShallow((state) => ({
             isPanelOpen: state.isPanelOpen,
             activeTab: state.activeTab,
-            settingsInitialTab: state.settingsInitialTab,
             setActiveTab: state.setActiveTab,
             closePanel: state.closePanel,
         }))
@@ -45,8 +43,8 @@ export function InfinityNavPanel() {
             case 'my':
                 return <MyTab />;
             case 'settings':
-                // Render SettingsPanel in embedded mode (no SidePanel wrapper)
-                return <SettingsPanel isOpen={true} onClose={() => { }} embedded={true} initialTab={settingsInitialTab || undefined} />;
+                // Render SettingsPanelV2 - new vertical scrolling layout
+                return <SettingsPanelV2 className="h-full" />;
             default:
                 return null;
         }
@@ -57,15 +55,15 @@ export function InfinityNavPanel() {
             isOpen={isPanelOpen}
             onClose={closePanel}
             showCloseButton={false}
-            className="w-[420px] max-w-[90vw] overflow-hidden border-l border-zinc-200 dark:border-zinc-800 shadow-xl"
-            contentClassName="p-0 h-full flex flex-col bg-zinc-50 dark:bg-zinc-950"
+            className="w-[420px] max-w-[90vw] overflow-hidden border-l border-gray-200 dark:border-gray-800 shadow-xl"
+            contentClassName="p-0 h-full flex flex-col bg-gray-100 dark:bg-gray-950"
         >
             {/* Minimalist Top Tab Bar */}
             <div
                 className={cn(
                     'sticky top-0 z-20',
-                    'bg-white dark:bg-zinc-950',
-                    'border-b border-zinc-100 dark:border-zinc-900',
+                    'bg-white dark:bg-gray-950',
+                    'border-b border-gray-100 dark:border-gray-900',
                 )}
             >
                 <div className="flex flex-col">
@@ -81,8 +79,8 @@ export function InfinityNavPanel() {
                                         'flex flex-col items-center gap-1 min-w-[3rem]',
                                         'text-xs font-medium transition-colors duration-200',
                                         activeTab === tab.id
-                                            ? 'text-zinc-900 dark:text-white'
-                                            : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+                                            ? 'text-gray-900 dark:text-white'
+                                            : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                                     )}
                                 >
                                     <tab.icon className="w-5 h-5" />
@@ -96,7 +94,7 @@ export function InfinityNavPanel() {
 
             {/* Scrollable Content Area */}
             <div
-                className="flex-1 overflow-y-auto no-scrollbar bg-zinc-50/50 dark:bg-zinc-900/50"
+                className="flex-1 overflow-y-auto no-scrollbar bg-gray-100 dark:bg-gray-950"
                 role="tabpanel"
             >
                 {renderTabContent()}

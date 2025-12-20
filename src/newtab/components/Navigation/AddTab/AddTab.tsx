@@ -77,21 +77,21 @@ export function AddTab() {
     }, [selectedCategory, searchQuery]);
 
     return (
-        <div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+        <div className="flex flex-col h-full bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
             {/* Header: Search & Custom Add */}
-            <div className="flex items-center gap-3 p-4 px-5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+            <div className="flex items-center gap-3 p-4 px-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-10">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                         type="search"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="搜索网站"
-                        className="w-full pl-9 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-zinc-700 transition-all"
+                        className="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700 transition-all"
                     />
                 </div>
                 <button
-                    className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors"
+                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors duration-200"
                     title="添加自定义网站"
                 >
                     <Plus className="w-5 h-5" />
@@ -101,15 +101,15 @@ export function AddTab() {
             {/* Main Content: 2-Column Layout */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Left Sidebar: Categories */}
-                <div className="w-[120px] flex-shrink-0 overflow-y-auto no-scrollbar py-2 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50">
+                <div className="w-[120px] flex-shrink-0 overflow-y-auto no-scrollbar py-2 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
                     <div className="flex flex-col gap-1 px-2">
                         <button
                             onClick={() => setCategory(null)}
                             className={cn(
-                                "flex flex-col items-center justify-center p-2 rounded-xl gap-1 transition-all",
+                                "flex flex-col items-center justify-center p-2 rounded-xl gap-1 transition-colors duration-200",
                                 !selectedCategory
-                                    ? "bg-zinc-900 text-white dark:bg-white dark:text-black shadow-sm"
-                                    : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                    ? "bg-gray-900 text-white dark:bg-white dark:text-black"
+                                    : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                             )}
                         >
                             <MoreHorizontal className="w-5 h-5" />
@@ -124,10 +124,10 @@ export function AddTab() {
                                     key={category.id}
                                     onClick={() => setCategory(category.id)}
                                     className={cn(
-                                        "flex flex-col items-center justify-center p-3 rounded-xl gap-1.5 transition-all text-center",
+                                        "flex flex-col items-center justify-center p-3 rounded-xl gap-1.5 transition-colors duration-200 text-center",
                                         isActive
-                                            ? "bg-zinc-900 text-white dark:bg-white dark:text-black shadow-sm"
-                                            : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                            ? "bg-gray-900 text-white dark:bg-white dark:text-black"
+                                            : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                                     )}
                                 >
                                     <Icon className="w-5 h-5" />
@@ -147,7 +147,7 @@ export function AddTab() {
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <Search className="w-10 h-10 mb-3 opacity-20" />
                             <p className="text-sm">未找到相关网站</p>
                         </div>

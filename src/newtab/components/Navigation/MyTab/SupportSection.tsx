@@ -10,26 +10,22 @@ export function SupportSection() {
     return (
         <div className={cn(
             "rounded-xl p-4 space-y-4",
-            "bg-white dark:bg-zinc-900",
-            "border border-zinc-100 dark:border-zinc-800",
-            "shadow-sm"
+            "bg-white dark:bg-gray-900"
         )}>
             <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-100">支持</h3>
-                <Minus className="w-4 h-4 text-zinc-400" />
+                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">支持</h3>
+                <Minus className="w-4 h-4 text-gray-400" />
             </div>
 
             <button
                 type="button"
                 onClick={handleCopyQQ}
                 className={cn(
-                    "w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white font-medium transition-opacity hover:opacity-90",
-                    "bg-blue-400"
+                    "w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors duration-200",
+                    "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
                 )}
             >
-                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                    <Users className="w-3.5 h-3.5 text-white" aria-hidden="true" />
-                </div>
+                <Users className="w-4 h-4" aria-hidden="true" />
                 <span>QQ群</span>
             </button>
         </div>

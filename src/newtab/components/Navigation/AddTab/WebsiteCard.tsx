@@ -60,16 +60,15 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
         <div
             className={cn(
                 "group relative flex items-center gap-3 p-3 w-full rounded-xl",
-                "bg-white dark:bg-zinc-900",
-                "border border-zinc-100 dark:border-zinc-800",
-                "shadow-sm hover:shadow-md transition-all duration-200",
-                "hover:-translate-y-0.5"
+                "bg-white dark:bg-gray-900",
+                "hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                "transition-colors duration-200"
             )}
         >
             {/* Icon */}
-            <div className="relative w-8 h-8 shrink-0 rounded-md overflow-hidden bg-white dark:bg-zinc-800 shadow-sm border border-zinc-100 dark:border-zinc-700">
+            <div className="relative w-8 h-8 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                 {imageFailed ? (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-zinc-500 font-bold bg-zinc-50 dark:bg-zinc-800">
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-500 font-bold bg-gray-50 dark:bg-gray-800">
                         {website.name.charAt(0).toUpperCase()}
                     </div>
                 ) : (
@@ -85,10 +84,10 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
 
             {/* Info */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <h4 className="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate leading-tight">
+                <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate leading-tight">
                     {website.name}
                 </h4>
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                     {website.description || new URL(website.url).hostname.replace(/^www\./, '')}
                 </p>
             </div>
@@ -102,7 +101,7 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
                     "w-7 h-7 rounded-md flex items-center justify-center transition-all duration-200",
                     isAdded
                         ? "text-green-500 bg-green-50 dark:bg-green-900/20"
-                        : "opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700",
+                        : "opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:bg-gray-700",
                     isLoading && "opacity-100"
                 )}
                 aria-label={`Add ${website.name}`}

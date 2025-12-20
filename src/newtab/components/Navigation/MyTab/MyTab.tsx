@@ -13,7 +13,7 @@ import { AboutSection } from './AboutSection';
  */
 export function MyTab() {
     return (
-        <div className="flex flex-col gap-4 animate-fade-in pb-4">
+        <div className="flex flex-col gap-3 animate-fade-in p-3">
             <AccountSection />
 
             <BackupSection />
@@ -27,9 +27,6 @@ export function MyTab() {
             <SupportSection />
 
             <AboutSection />
-
-            {/* Bottom spacer for comfortable scrolling */}
-            <div className="h-4" />
         </div>
     );
 }
