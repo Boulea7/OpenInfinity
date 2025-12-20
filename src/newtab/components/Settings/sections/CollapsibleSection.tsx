@@ -33,7 +33,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   subtitle,
   children,
   className = '',
-  showDivider = true,
+  showDivider: _showDivider = true,
   defaultCollapsed = false,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
