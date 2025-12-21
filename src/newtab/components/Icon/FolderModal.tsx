@@ -217,7 +217,7 @@ export function FolderModal({
           {folderIcons.length} {folderIcons.length === 1 ? 'item' : 'items'}
         </p>
 
-        {/* Icons grid */}
+        {/* Icons grid with glassmorphism */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -225,7 +225,14 @@ export function FolderModal({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-4 gap-4 min-h-[200px] p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+            <div
+              className="grid grid-cols-4 gap-4 min-h-[200px] p-4 rounded-xl"
+              style={{
+                background: 'var(--folder-bg)',
+                backdropFilter: `blur(var(--folder-backdrop-blur))`,
+                WebkitBackdropFilter: `blur(var(--folder-backdrop-blur))`,
+              }}
+            >
               {folderIcons.map((icon) => (
                 <div key={icon.id} className="relative group">
                   <IconItem

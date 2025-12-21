@@ -54,15 +54,25 @@ export const WallpaperCard: React.FC<WallpaperCardProps> = ({
     return count.toString();
   };
 
+  // Keyboard handler for accessibility (div with role="button")
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(wallpaper);
+    }
+  };
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(wallpaper)}
+      onKeyDown={handleKeyDown}
       className="
         group relative aspect-[16/10] rounded-xl overflow-hidden
         bg-gray-100 dark:bg-gray-800
         focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-        transition-shadow hover:shadow-lg
+        transition-shadow hover:shadow-lg cursor-pointer
       "
     >
       {/* Skeleton loader */}
@@ -165,7 +175,7 @@ export const WallpaperCard: React.FC<WallpaperCardProps> = ({
       ">
         {wallpaper.author}
       </div>
-    </button>
+    </div>
   );
 };
 

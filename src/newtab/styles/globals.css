@@ -13,6 +13,38 @@
   /* Slider track colors - Light mode */
   --slider-fill-color: #374151;   /* gray-700: filled portion (left of thumb) */
   --slider-track-color: #e5e7eb;  /* gray-200: unfilled portion (right of thumb) */
+
+  /* ============================================
+     Icon Grid System Variables (Infinity Pro style)
+     ============================================ */
+
+  /* Grid Layout */
+  --icon-box-width: 760px;
+  --icon-box-height: 401px;
+  --icon-col: 8;
+  --icon-row: 4;
+
+  /* Single Icon Dimensions */
+  --icon-width: 56px;
+  --icon-height: 100px;
+  --icon-radius: 50%;
+  --icon-img-ratio: 0.6;
+
+  /* Icon Text Styling */
+  --icon-font-size: 12px;
+  --icon-font-color: rgba(255, 255, 255, 0.9);
+  --icon-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+
+  /* Folder Styling */
+  --folder-bg: rgba(255, 255, 255, 0.15);
+  --folder-backdrop-blur: 12px;
+  --folder-border-radius: 16px;
+
+  /* Folder Preview Grid (3x3) */
+  --mini-icon-padding: 8px;
+  --mini-icon-gap: 2px;
+  --mini-icon-opacity: 0.85;
+  --mini-icon-size: 33.33%;
 }
 
 /* Dark mode slider colors */

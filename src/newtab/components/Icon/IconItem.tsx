@@ -233,16 +233,19 @@ export function IconItem({
         )}
       </div>
 
-      {/* Title */}
+      {/* Title with CSS variable styling */}
       {iconStyle.showName && (
         <span
           className={cn(
-            'text-xs font-medium text-center px-1 w-full',
+            'font-medium text-center px-1 w-full',
             'truncate',
-            'text-zinc-700 dark:text-zinc-300',
-            'group-hover:text-zinc-900 dark:group-hover:text-zinc-100',
             'transition-colors duration-200'
           )}
+          style={{
+            fontSize: 'var(--icon-font-size)',
+            color: 'var(--icon-font-color)',
+            textShadow: 'var(--icon-text-shadow)',
+          }}
         >
           {icon.title}
         </span>

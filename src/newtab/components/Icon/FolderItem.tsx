@@ -58,11 +58,11 @@ export function FolderItem({
     [transform, transition, isOverlay]
   );
 
-  // Get icons inside this folder (max 4 for preview)
+  // Get icons inside this folder (max 9 for 3x3 preview grid)
   const folderIcons = useMemo(() => {
     return icons
       .filter(icon => icon.folderId === folder.id)
-      .slice(0, 4);
+      .slice(0, 9);
   }, [icons, folder.id]);
 
   // Calculate icon count (P0-4: use filtered icons instead of folder.children)
@@ -104,7 +104,7 @@ export function FolderItem({
       {...attributes}
       {...listeners}
       className={cn(
-        'flex flex-col items-center justify-center group',
+        'relative flex flex-col items-center justify-center group',
         containerSize,
         'rounded-xl cursor-pointer select-none',
         'transition-all duration-200',
@@ -124,23 +124,31 @@ export function FolderItem({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Folder container */}
+      {/* Folder container with Infinity Pro style */}
       <div
         className={cn(
           folderIconSize,
           'relative flex items-center justify-center mb-1.5',
-          'bg-gray-100/40 dark:bg-gray-700/60 backdrop-blur-sm',
-          'rounded-xl overflow-hidden',
+          'overflow-hidden',
           'transition-all duration-200',
-          'group-hover:bg-gray-200/50 dark:group-hover:bg-gray-600/70',
+          'group-hover:brightness-110',
           iconStyle.shadow && 'shadow-lg shadow-black/10'
         )}
         style={{
+          background: 'var(--folder-bg)',
+          backdropFilter: `blur(var(--folder-backdrop-blur))`,
+          WebkitBackdropFilter: `blur(var(--folder-backdrop-blur))`,
           borderRadius: `${iconStyle.borderRadius}%`,
         }}
       >
-        {/* 2x2 Icon preview grid */}
-        <div className="grid grid-cols-2 gap-0.5 p-1.5 w-full h-full">
+        {/* 3x3 Icon preview grid (Infinity Pro style) */}
+        <div
+          className="grid grid-cols-3 w-full h-full"
+          style={{
+            padding: 'var(--mini-icon-padding)',
+            gap: 'var(--mini-icon-gap)',
+          }}
+        >
           {folderIcons.map((icon) => {
             // P0-2: Safe URL handling + adapt to new icon structure
             const validUrl = safeParseUrl(icon.url);
@@ -156,12 +164,13 @@ export function FolderItem({
             return (
               <div
                 key={icon.id}
-                className="w-full h-full flex items-center justify-center bg-white/30 dark:bg-gray-600/30 rounded"
+                className="aspect-square flex items-center justify-center bg-white/30 dark:bg-gray-600/30 rounded-sm overflow-hidden"
+                style={{ opacity: 'var(--mini-icon-opacity)' }}
               >
                 {icon.icon.type === 'text' ? (
                   // Text icon
                   <div
-                    className="w-4 h-4 flex items-center justify-center text-[10px] font-bold text-white rounded"
+                    className="w-full h-full flex items-center justify-center text-[8px] font-bold text-white"
                     style={{ backgroundColor: icon.icon.color || '#3b82f6' }}
                   >
                     {icon.icon.value}
@@ -172,14 +181,14 @@ export function FolderItem({
                     <img
                       src={iconSrc}
                       alt=""
-                      className="w-4 h-4 object-contain"
+                      className="w-full h-full object-contain p-0.5"
                       loading="lazy"
                       onError={() => {
                         setPreviewErrors(prev => ({ ...prev, [icon.id]: true }));
                       }}
                     />
                   ) : (
-                    <div className="w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-gray-400 text-white rounded">
+                    <div className="w-full h-full flex items-center justify-center text-[8px] font-bold bg-gray-400 text-white">
                       {icon.title[0]?.toUpperCase() || '?'}
                     </div>
                   )
@@ -187,12 +196,12 @@ export function FolderItem({
               </div>
             );
           })}
-          {/* Empty slots */}
-          {Array.from({ length: Math.max(0, 4 - folderIcons.length) }).map(
+          {/* Empty slots to complete 3x3 grid */}
+          {Array.from({ length: Math.max(0, 9 - folderIcons.length) }).map(
             (_, i) => (
               <div
                 key={`empty-${i}`}
-                className="w-full h-full bg-white/10 dark:bg-gray-700/30 rounded"
+                className="aspect-square bg-white/10 dark:bg-gray-700/30 rounded-sm"
               />
             )
           )}
@@ -218,15 +227,18 @@ export function FolderItem({
         )}
       </div>
 
-      {/* Folder name */}
+      {/* Folder name with CSS variable styling */}
       {iconStyle.showName && (
         <span
           className={cn(
-            'text-xs font-medium text-center px-1',
-            'line-clamp-1 max-w-full',
-            'text-white/90 dark:text-gray-200',
-            iconStyle.shadow && 'drop-shadow-md'
+            'font-medium text-center px-1',
+            'line-clamp-1 max-w-full'
           )}
+          style={{
+            fontSize: 'var(--icon-font-size)',
+            color: 'var(--icon-font-color)',
+            textShadow: 'var(--icon-text-shadow)',
+          }}
         >
           {folder.name}
         </span>

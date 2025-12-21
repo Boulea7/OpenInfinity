@@ -49,17 +49,16 @@ interface WallpaperItem {
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-// Color filter options (Infinity Pro standard 8 colors)
+// Color filter options (aligned with presetWallpapers.primaryColor values)
 const COLOR_OPTIONS = [
   { id: 'any', color: 'transparent', label: '全部' },
   { id: 'red', color: '#c00018', label: '红色' },
   { id: 'orange', color: '#de8930', label: '橙色' },
   { id: 'yellow', color: '#f7d946', label: '黄色' },
-  { id: 'light-green', color: '#cbe582', label: '浅绿' },
-  { id: 'dark-green', color: '#506f37', label: '深绿' },
-  { id: 'light-blue', color: '#60a8d8', label: '浅蓝' },
-  { id: 'dark-blue', color: '#184878', label: '深蓝' },
-  { id: 'purple', color: '#be7ab9', label: '紫色' },
+  { id: 'green', color: '#22c55e', label: '绿色' },
+  { id: 'blue', color: '#3b82f6', label: '蓝色' },
+  { id: 'purple', color: '#a855f7', label: '紫色' },
+  { id: 'black', color: '#0f172a', label: '深色' },
 ];
 
 // Tag options for filtering (Infinity Pro standard 10 tags)
