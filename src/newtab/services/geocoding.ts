@@ -6,7 +6,7 @@
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 const GEOCODE_TIMEOUT_MS = 5000;
 const CACHE_KEY = 'geocode-cache-v1';
-const CACHE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CACHE_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes (reduced from 7 days for fresher data)
 
 interface GeocodeCache {
   [key: string]: {
@@ -35,13 +35,17 @@ export async function getCityName(
     const entry = cache[cacheKey];
 
     if (entry && Date.now() - entry.cachedAt < CACHE_EXPIRATION_MS) {
+      console.log('[Geocoding] Using cached city name:', entry.cityName);
       return entry.cityName;
+    } else if (entry) {
+      console.log('[Geocoding] Cache expired, fetching fresh data');
     }
   } catch (error) {
-    console.warn('Failed to read geocode cache:', error);
+    console.warn('[Geocoding] Failed to read cache:', error);
   }
 
   // Fetch from Nominatim API
+  console.log('[Geocoding] Fetching from Nominatim API:', { latitude, longitude, language });
   try {
     const params = new URLSearchParams({
       lat: latitude.toString(),
@@ -61,10 +65,12 @@ export async function getCityName(
     });
 
     if (!response.ok) {
+      console.error('[Geocoding] Nominatim API error:', response.status, response.statusText);
       throw new Error(`Nominatim API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('[Geocoding] Nominatim response:', data);
 
     // Extract city and country name from address
     const city =
@@ -76,6 +82,8 @@ export async function getCityName(
       '';
 
     const country = data.address?.country || '';
+
+    console.log('[Geocoding] Extracted location:', { city, country });
 
     // Format: "Country, City" or just "City" if no country
     let locationName = '';
@@ -89,6 +97,8 @@ export async function getCityName(
       // Fallback to first part of display_name
       locationName = data.display_name?.split(',')[0] || '';
     }
+
+    console.log('[Geocoding] Final location name:', locationName);
 
     if (locationName) {
       // Cache the result

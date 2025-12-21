@@ -6,6 +6,7 @@
 import { UnsplashProvider } from './unsplash';
 import { PexelsProvider } from './pexels';
 import { BingProvider } from './bing';
+import { WallhavenProvider } from './wallhaven';
 import { PresetWallpaperProvider } from './preset';
 import type { WallpaperProvider, WallpaperResult, WallpaperFetchOptions, WallpaperSource } from './types';
 
@@ -15,7 +16,7 @@ import type { WallpaperProvider, WallpaperResult, WallpaperFetchOptions, Wallpap
  */
 export class WallpaperManager {
   private providers: Map<WallpaperSource, WallpaperProvider>;
-  private fallbackOrder: WallpaperSource[] = ['preset', 'unsplash', 'pexels', 'bing'];
+  private fallbackOrder: WallpaperSource[] = ['preset', 'unsplash', 'pexels', 'bing', 'wallhaven'];
   private presetProvider: PresetWallpaperProvider;
 
   constructor() {
@@ -26,7 +27,16 @@ export class WallpaperManager {
       ['unsplash' as WallpaperSource, new UnsplashProvider()],
       ['pexels' as WallpaperSource, new PexelsProvider()],
       ['bing' as WallpaperSource, new BingProvider()],
+      ['wallhaven' as WallpaperSource, new WallhavenProvider()],
     ]);
+  }
+
+  /**
+   * Check if a source is a remote provider (can fetch from API)
+   */
+  private isRemoteSource(source: WallpaperSource): boolean {
+    const nonRemoteSources: WallpaperSource[] = ['local', 'solid', 'gradient', 'custom'];
+    return !nonRemoteSources.includes(source);
   }
 
   /**
@@ -40,8 +50,15 @@ export class WallpaperManager {
     preferredSource?: WallpaperSource,
     options?: WallpaperFetchOptions
   ): Promise<WallpaperResult & { actualSource: WallpaperSource }> {
+    // Reject non-remote sources explicitly
+    if (preferredSource && !this.isRemoteSource(preferredSource)) {
+      throw new Error(
+        `Source '${preferredSource}' is not a remote provider. Use store methods directly for local/solid/gradient/custom wallpapers.`
+      );
+    }
+
     // Determine source order (preferred first, then fallbacks)
-    const sources = preferredSource && preferredSource !== 'local'
+    const sources = preferredSource
       ? [preferredSource, ...this.fallbackOrder.filter(s => s !== preferredSource)]
       : this.fallbackOrder;
 

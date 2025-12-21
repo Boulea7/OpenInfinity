@@ -27,11 +27,14 @@
     "alarms",
     "tabs",
     "contextMenus",
-    "activeTab"
+    "activeTab",
+    "identity",
+    "notifications"
   ],
   "optional_permissions": [
     "bookmarks",
-    "history"
+    "history",
+    "identity.email"
   ],
   "commands": {
     "add-current-page": {
@@ -55,8 +58,15 @@
     "https://devapi.qweather.com/*",
     "https://api.openweathermap.org/*",
     "https://*.gstatic.com/*",
-    "https://api.bigdatacloud.net/*"
+    "https://api.bigdatacloud.net/*",
+    "https://www.googleapis.com/*"
   ],
+  "oauth2": {
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/gmail.readonly"
+    ]
+  },
   "background": {
     "service_worker": "src/background/index.ts",
     "type": "module"

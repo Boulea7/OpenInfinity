@@ -887,6 +887,48 @@ function SearchSettingsTab({ searchSettings, setSearchSettings }: SearchSettings
           className="w-full"
         />
       </div>
+
+      {/* Clear After Search Toggle */}
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('settings.search.clearAfterSearch')}
+        </label>
+        <button
+          onClick={() => setSearchSettings({ clearAfterSearch: !searchSettings.clearAfterSearch })}
+          className={cn(
+            'w-11 h-6 rounded-full transition-colors duration-200',
+            searchSettings.clearAfterSearch ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
+          )}
+        >
+          <span
+            className={cn(
+              'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+              searchSettings.clearAfterSearch ? 'translate-x-5' : 'translate-x-0.5'
+            )}
+          />
+        </button>
+      </div>
+
+      {/* Open In New Tab Toggle */}
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('settings.search.openInNewTab')}
+        </label>
+        <button
+          onClick={() => setSearchSettings({ openInNewTab: !searchSettings.openInNewTab })}
+          className={cn(
+            'w-11 h-6 rounded-full transition-colors duration-200',
+            searchSettings.openInNewTab ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
+          )}
+        >
+          <span
+            className={cn(
+              'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+              searchSettings.openInNewTab ? 'translate-x-5' : 'translate-x-0.5'
+            )}
+          />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1129,6 +1171,54 @@ function LayoutSettings({ viewSettings, setViewSettings }: LayoutSettingsProps) 
           onChange={(e) => setViewSettings({ zoom: Number(e.target.value) })}
           className="w-full"
         />
+      </div>
+
+      {/* Animation Intensity */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('settings.layout.animationIntensity')}
+        </label>
+        <div className="flex gap-2">
+          {(['none', 'light', 'normal', 'heavy'] as const).map((intensity) => (
+            <button
+              key={intensity}
+              onClick={() => setViewSettings({ animationIntensity: intensity })}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm',
+                'transition-colors duration-200',
+                viewSettings.animationIntensity === intensity
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              )}
+            >
+              {intensity === 'none' && t('settings.layout.animationNone')}
+              {intensity === 'light' && t('settings.layout.animationLight')}
+              {intensity === 'normal' && t('settings.layout.animationNormal')}
+              {intensity === 'heavy' && t('settings.layout.animationHeavy')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Show Pinned Notes */}
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('settings.layout.showPinnedNotes')}
+        </label>
+        <button
+          onClick={() => setViewSettings({ showPinnedNotes: !viewSettings.showPinnedNotes })}
+          className={cn(
+            'w-11 h-6 rounded-full transition-colors duration-200',
+            viewSettings.showPinnedNotes ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-gray-300 dark:bg-zinc-600'
+          )}
+        >
+          <span
+            className={cn(
+              'block w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+              viewSettings.showPinnedNotes ? 'translate-x-5' : 'translate-x-0.5'
+            )}
+          />
+        </button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFaviconFetch } from '../hooks/useFaviconFetch';
-import TextIconEditor from './TextIconEditor';
+import TextIconEditor, { TextIconConfig, PRESET_COLORS } from './TextIconEditor';
+import { generateTextIcon } from '../utils/iconGenerator';
 import type { EditRequest, IconDraft } from '../types/iconDraft';
 
 interface Props {
@@ -13,6 +14,55 @@ interface Props {
 export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEditRequest }: Props) {
   const { sources, isLoading } = useFaviconFetch(url);
   const [selectedType, setSelectedType] = useState<'text' | 'duckduckgo' | 'upload' | null>('text');
+
+  // Lifted state for text icon config
+  const [textConfig, setTextConfig] = useState<TextIconConfig>({
+    text: '',
+    color: PRESET_COLORS[0],
+    fontSize: 130,
+    isManuallyEdited: false
+  });
+  const generationIdRef = useRef(0);
+
+  // Sync text with websiteName
+  useEffect(() => {
+    if (!textConfig.isManuallyEdited && websiteName) {
+      setTextConfig(prev => ({ ...prev, text: websiteName.slice(0, 2) }));
+    }
+  }, [websiteName, textConfig.isManuallyEdited]);
+
+  // Generate text icon on config change
+  useEffect(() => {
+    if (selectedType !== 'text') return;
+
+    if (!textConfig.text) {
+      onIconSelect(null);
+      return;
+    }
+
+    const currentId = ++generationIdRef.current;
+    let cancelled = false;
+
+    generateTextIcon({
+      text: textConfig.text,
+      color: textConfig.color,
+      fontSize: textConfig.fontSize
+    }).then(dataUrl => {
+      if (cancelled) return;
+      if (currentId === generationIdRef.current) {
+        onIconSelect({
+          type: 'text',
+          value: textConfig.text,
+          color: textConfig.color,
+          dataUrl
+        });
+      }
+    }).catch(err => {
+      console.error(err);
+    });
+
+    return () => { cancelled = true; };
+  }, [textConfig, selectedType, onIconSelect]);
 
   const duckSource = !isLoading
     ? sources.find((s) => s.provider === 'duckduckgo' && s.status === 'success')
@@ -73,12 +123,11 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
         <button
           type="button"
           onClick={handleTextIconSelect}
-          className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${
-            selectedType === 'text' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-          }`}
+          className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${selectedType === 'text' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+            }`}
         >
           <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-orange-500 rounded-full flex items-center justify-center text-white text-lg font-bold">
-            {websiteName.slice(0, 2) || 'Ab'}
+            {textConfig.text || 'Ab'}
           </div>
           <span className="text-xs text-gray-600">纯色图标</span>
         </button>
@@ -88,9 +137,8 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
           <button
             type="button"
             onClick={handleFaviconSelect}
-            className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${
-              selectedType === 'duckduckgo' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-            }`}
+            className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${selectedType === 'duckduckgo' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
           >
             <div className="w-12 h-12 flex items-center justify-center">
               <img
@@ -107,11 +155,10 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
         <button
           type="button"
           onClick={handleUploadSelect}
-          className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${
-            selectedType === 'upload'
+          className={`flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all ${selectedType === 'upload'
               ? 'border-blue-500 bg-blue-50'
               : 'border-dashed border-gray-300 hover:border-gray-400'
-          }`}
+            }`}
         >
           <div className="w-12 h-12 flex items-center justify-center text-gray-400 text-3xl">
             +
@@ -123,8 +170,8 @@ export default function IconSelectionGrid({ url, websiteName, onIconSelect, onEd
       {/* Text icon config panel (show below when text icon selected) */}
       {selectedType === 'text' && (
         <TextIconEditor
-          websiteName={websiteName}
-          onIconChange={onIconSelect}
+          config={textConfig}
+          onChange={setTextConfig}
         />
       )}
     </div>

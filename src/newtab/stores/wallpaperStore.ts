@@ -59,7 +59,7 @@ function preloadImageUrl(url: string): Promise<void> {
 }
 
 function isPreloadableWallpaperSource(source: WallpaperSource): boolean {
-  return source === 'unsplash' || source === 'pexels' || source === 'bing' || source === 'preset';
+  return source === 'unsplash' || source === 'pexels' || source === 'bing' || source === 'wallhaven' || source === 'preset';
 }
 
 /**
@@ -71,6 +71,7 @@ export type WallpaperSource =
   | 'unsplash'
   | 'pexels'
   | 'bing'
+  | 'wallhaven'
   | 'solid'
   | 'gradient'
   | 'custom';
@@ -148,6 +149,10 @@ interface WallpaperState {
   // Collection
   favorites: Wallpaper[];
 
+  // User interactions for preset wallpapers
+  likedWallpapers: string[];
+  favoritedPresets: string[];
+
   // Loading state
   isLoading: boolean;
   error: string | null;
@@ -205,6 +210,12 @@ interface WallpaperActions {
   fetchRandomWallpaper: (source?: WallpaperSource) => Promise<void>;
   preloadNextWallpaper: (source?: WallpaperSource) => Promise<void>;
 
+  // Preset wallpaper interactions
+  togglePresetLike: (id: string) => void;
+  togglePresetFavorite: (id: string) => void;
+  isPresetLiked: (id: string) => boolean;
+  isPresetFavorited: (id: string) => boolean;
+
   // Reset
   resetWallpaper: () => void;
 }
@@ -248,6 +259,8 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       },
       searchQuery: 'nature',
       favorites: [],
+      likedWallpapers: [],
+      favoritedPresets: [],
       isLoading: false,
       error: null,
       preloadedNext: null,
@@ -623,6 +636,40 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         }
       },
 
+      // Toggle like for preset wallpaper (one like per user per wallpaper)
+      togglePresetLike: (id: string) => {
+        set((state) => {
+          const isCurrentlyLiked = state.likedWallpapers.includes(id);
+          return {
+            likedWallpapers: isCurrentlyLiked
+              ? state.likedWallpapers.filter((wid) => wid !== id)
+              : [...state.likedWallpapers, id],
+          };
+        });
+      },
+
+      // Toggle favorite for preset wallpaper
+      togglePresetFavorite: (id: string) => {
+        set((state) => {
+          const isCurrentlyFavorited = state.favoritedPresets.includes(id);
+          return {
+            favoritedPresets: isCurrentlyFavorited
+              ? state.favoritedPresets.filter((wid) => wid !== id)
+              : [...state.favoritedPresets, id],
+          };
+        });
+      },
+
+      // Check if preset is liked
+      isPresetLiked: (id: string) => {
+        return get().likedWallpapers.includes(id);
+      },
+
+      // Check if preset is favorited
+      isPresetFavorited: (id: string) => {
+        return get().favoritedPresets.includes(id);
+      },
+
       resetWallpaper: () => {
         set({
           currentWallpaper: null,
@@ -644,6 +691,8 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         effects: state.effects,
         autoChange: state.autoChange,
         searchQuery: state.searchQuery,
+        likedWallpapers: state.likedWallpapers,
+        favoritedPresets: state.favoritedPresets,
       }),
     }
   )

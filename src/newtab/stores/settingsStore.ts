@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db } from '../services/database';
+import { isUserLocaleChina } from '../utils/regionUtils';
 
 /**
  * Theme type - light, dark, or follow system
@@ -54,6 +55,8 @@ export interface SearchSettings {
   borderRadius: number;
   opacity: number;
   searchType: 'web' | 'images' | 'videos' | 'maps';  // New: search type
+  clearAfterSearch: boolean;  // Clear search box after search (default: false)
+  openInNewTab: boolean;      // Open search results in new tab (default: true)
 }
 
 /**
@@ -61,8 +64,11 @@ export interface SearchSettings {
  */
 export interface ViewSettings {
   zoom: number; // 50-150%
-  columns: number; // 4-10
-  rows: number; // 2-6
+  columns: number; // 1-8
+  rows: number; // 1-8
+  columnGap: number; // 0-100%
+  rowGap: number; // 0-100%
+  iconScale: number; // 10-100%
   randomWallpaper: boolean;
   showTopSites: boolean;
   showBookmarks: boolean;
@@ -76,6 +82,9 @@ export interface ViewSettings {
   showNotesWidget: boolean;
   showBookmarksWidget: boolean;
   showHistoryWidget: boolean;
+  animationIntensity: 'none' | 'light' | 'normal' | 'heavy';  // Animation intensity (default: 'normal')
+  currentView: 'search' | 'notes';  // Current view mode (default: 'search')
+  showPinnedNotes: boolean;         // Show pinned notes in search view (default: false)
 }
 
 /**
@@ -138,6 +147,36 @@ export interface ClockSettings {
 }
 
 /**
+ * Changelog settings
+ */
+export interface ChangelogSettings {
+  lastViewedVersion: string;  // Last viewed version
+  showOnUpdate: boolean;       // Show changelog on update (default: true)
+}
+
+/**
+ * Notification settings (Gmail, Todo badges, etc.)
+ */
+export interface NotificationSettings {
+  // Gmail notifications
+  gmailEnabled: boolean;           // Enable Gmail notifications
+  gmailSound: boolean;             // Play sound on new email
+  showUnreadCount: boolean;        // Show unread count on icon badge
+  // Todo notifications
+  showTodoCount: boolean;          // Show todo count on icon badge
+  // Authorization state (read-only, managed by gmail service)
+  gmailAuthorized: boolean;        // Whether Gmail is authorized
+  gmailEmail: string | null;       // Authorized Gmail email address
+}
+
+/**
+ * Minimal mode settings
+ */
+export interface MinimalModeSettings {
+  showViewSwitcher: boolean;       // Show ViewSwitcher (search/notes toggle) in minimal mode
+}
+
+/**
  * Settings store state
  */
 interface SettingsState {
@@ -156,6 +195,15 @@ interface SettingsState {
   clockSettings: ClockSettings;
   weatherSettings: WeatherSettings;
   widgetSettings: WidgetSettings;
+  changelogSettings: ChangelogSettings;
+  notificationSettings: NotificationSettings;
+
+  // Minimal mode (shows only search bar on homepage)
+  minimalMode: boolean;
+  minimalModeSettings: MinimalModeSettings;
+
+  // Settings panel section collapse state
+  collapsedSections: Record<string, boolean>;
 
   // State flags
   isInitialized: boolean;
@@ -185,6 +233,17 @@ interface SettingsActions {
   setClockSettings: (settings: Partial<ClockSettings>) => void;
   setWeatherSettings: (settings: Partial<WeatherSettings>) => void;
   setWidgetSettings: (settings: Partial<WidgetSettings>) => void;
+  setChangelogSettings: (settings: Partial<ChangelogSettings>) => void;
+  setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
+
+  // Minimal mode
+  setMinimalMode: (enabled: boolean) => void;
+  setMinimalModeSettings: (settings: Partial<MinimalModeSettings>) => void;
+
+  // Settings panel section collapse
+  toggleSectionCollapse: (sectionId: string) => void;
+  setSectionCollapsed: (sectionId: string, collapsed: boolean) => void;
+  setAllSectionsCollapsed: (collapsed: boolean) => void;
 
   // Reset
   resetToDefaults: () => void;
@@ -260,26 +319,10 @@ const defaultSearchEngines: SearchEngine[] = [
 ];
 
 /**
- * Detect if user is in China region based on language and timezone
- */
-function isInChinaRegion(): boolean {
-  // Check language (zh-CN, zh-TW, zh-HK, etc.)
-  const lang = navigator.language.toLowerCase();
-  if (lang.startsWith('zh')) {
-    return true;
-  }
-
-  // Check timezone as fallback
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const chinaTimezones = ['Asia/Shanghai', 'Asia/Chongqing', 'Asia/Harbin', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Macau', 'Asia/Taipei'];
-  return chinaTimezones.includes(timezone);
-}
-
-/**
  * Get smart default search engine based on region
  */
 function getSmartDefaultEngine(): string {
-  return isInChinaRegion() ? 'bing' : 'google';
+  return isUserLocaleChina() ? 'bing' : 'google';
 }
 
 /**
@@ -313,11 +356,16 @@ const defaultSettings: SettingsState = {
     borderRadius: 50,
     opacity: 80,
     searchType: 'web',  // New: default to web search
+    clearAfterSearch: false,  // Default: keep search query after search
+    openInNewTab: true,       // Default: open search results in new tab
   },
   viewSettings: {
     zoom: 100,
     columns: 6,
     rows: 4,
+    columnGap: 50,  // Default 50%
+    rowGap: 50,     // Default 50%
+    iconScale: 80,  // Default 80%
     randomWallpaper: false,
     showTopSites: true,
     showBookmarks: true,
@@ -331,6 +379,9 @@ const defaultSettings: SettingsState = {
     showNotesWidget: true,
     showBookmarksWidget: true,
     showHistoryWidget: true,
+    animationIntensity: 'normal',  // Default: normal animation
+    currentView: 'search',          // Default: search view
+    showPinnedNotes: false,         // Default: hide pinned notes
   },
   fontSettings: {
     family: 'Inter',
@@ -373,6 +424,23 @@ const defaultSettings: SettingsState = {
       timeRange: 'today',
     },
   },
+  changelogSettings: {
+    lastViewedVersion: '0.0.0',  // Default: never viewed
+    showOnUpdate: true,           // Default: show changelog on update
+  },
+  notificationSettings: {
+    gmailEnabled: false,
+    gmailSound: true,
+    showUnreadCount: true,
+    showTodoCount: true,
+    gmailAuthorized: false,
+    gmailEmail: null,
+  },
+  minimalMode: false,  // Default: standard mode (full features)
+  minimalModeSettings: {
+    showViewSwitcher: false,  // Default: hide ViewSwitcher in minimal mode
+  },
+  collapsedSections: {},  // Default: all sections expanded
   isInitialized: false,
 };
 
@@ -472,6 +540,60 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         }));
       },
 
+      setChangelogSettings: (settings) => {
+        set((state) => ({
+          changelogSettings: { ...state.changelogSettings, ...settings },
+        }));
+      },
+
+      setNotificationSettings: (settings) => {
+        set((state) => ({
+          notificationSettings: { ...state.notificationSettings, ...settings },
+        }));
+      },
+
+      setMinimalMode: (enabled) => {
+        set({ minimalMode: enabled });
+      },
+
+      setMinimalModeSettings: (settings) => {
+        set((state) => ({
+          minimalModeSettings: { ...state.minimalModeSettings, ...settings },
+        }));
+      },
+
+      toggleSectionCollapse: (sectionId) => {
+        set((state) => ({
+          collapsedSections: {
+            ...state.collapsedSections,
+            [sectionId]: !state.collapsedSections[sectionId],
+          },
+        }));
+      },
+
+      setSectionCollapsed: (sectionId, collapsed) => {
+        set((state) => ({
+          collapsedSections: {
+            ...state.collapsedSections,
+            [sectionId]: collapsed,
+          },
+        }));
+      },
+
+      setAllSectionsCollapsed: (collapsed) => {
+        // All possible section IDs for the settings panel
+        const sectionIds = [
+          'wallpaper', 'openBehavior', 'notification', 'view', 'minimalMode', 'layout',
+          'icon', 'search', 'font', 'animation', 'reset',
+          'general', 'clock', 'weather', 'backup', 'about',
+        ];
+        const newCollapsedSections: Record<string, boolean> = {};
+        sectionIds.forEach((id) => {
+          newCollapsedSections[id] = collapsed;
+        });
+        set({ collapsedSections: newCollapsedSections });
+      },
+
       resetToDefaults: () => {
         set({ ...defaultSettings, isInitialized: true });
         // Clear persisted settings
@@ -480,11 +602,11 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'openinfinity-settings',
-      version: 3, // Increment version to force migration
+      version: 6, // V6: Add minimalModeSettings
       migrate: (persistedState: any, version: number) => {
-        // V3: Ensure default search engines are up-to-date without requiring manual localStorage clear
         const state = persistedState ?? {};
 
+        // V3: Ensure default search engines are up-to-date
         if (version < 3) {
           const persistedEngines = Array.isArray(state?.searchSettings?.engines)
             ? (state.searchSettings.engines as SearchEngine[])
@@ -523,14 +645,64 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
               ? persistedDefaultEngine
               : (mergedEngines.find((e) => e.isDefault)?.id || mergedEngines[0]?.id || 'google');
 
-          return {
-            ...state,
-            searchSettings: {
-              ...state.searchSettings,
-              engines: mergedEngines,
-              defaultEngine,
-              searchType: state?.searchSettings?.searchType ?? 'web',
-            },
+          state.searchSettings = {
+            ...state.searchSettings,
+            engines: mergedEngines,
+            defaultEngine,
+            searchType: state?.searchSettings?.searchType ?? 'web',
+          };
+        }
+
+        // V4: Add new fields with proper defaults
+        if (version < 4) {
+          // Ensure searchSettings has new fields
+          state.searchSettings = {
+            ...state.searchSettings,
+            clearAfterSearch: state?.searchSettings?.clearAfterSearch ?? false,
+            openInNewTab: state?.searchSettings?.openInNewTab ?? true,
+          };
+
+          // Ensure viewSettings has new fields
+          state.viewSettings = {
+            ...state.viewSettings,
+            animationIntensity: state?.viewSettings?.animationIntensity ?? 'normal',
+            currentView: 'search',  // Always default to search view
+            showPinnedNotes: state?.viewSettings?.showPinnedNotes ?? false,
+          };
+
+          // Ensure changelogSettings exists
+          state.changelogSettings = state?.changelogSettings ?? {
+            lastViewedVersion: '0.0.0',
+            showOnUpdate: true,
+          };
+        }
+
+        // V5: Add notification settings, minimal mode, collapsed sections, and layout gap/scale
+        if (version < 5) {
+          state.notificationSettings = state?.notificationSettings ?? {
+            gmailEnabled: false,
+            gmailSound: true,
+            showUnreadCount: true,
+            showTodoCount: true,
+            gmailAuthorized: false,
+            gmailEmail: null,
+          };
+          state.minimalMode = state?.minimalMode ?? false;
+          state.collapsedSections = state?.collapsedSections ?? {};
+
+          // Add layout gap and scale settings
+          state.viewSettings = {
+            ...state.viewSettings,
+            columnGap: state?.viewSettings?.columnGap ?? 50,
+            rowGap: state?.viewSettings?.rowGap ?? 50,
+            iconScale: state?.viewSettings?.iconScale ?? 80,
+          };
+        }
+
+        // V6: Add minimalModeSettings
+        if (version < 6) {
+          state.minimalModeSettings = state?.minimalModeSettings ?? {
+            showViewSwitcher: false,
           };
         }
 
@@ -547,6 +719,11 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         clockSettings: state.clockSettings,
         weatherSettings: state.weatherSettings,
         widgetSettings: state.widgetSettings,
+        changelogSettings: state.changelogSettings,
+        notificationSettings: state.notificationSettings,
+        minimalMode: state.minimalMode,
+        minimalModeSettings: state.minimalModeSettings,
+        collapsedSections: state.collapsedSections,
       }),
     }
   )

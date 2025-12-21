@@ -21,9 +21,9 @@ export async function generateTextIcon(params: TextIconParams): Promise<string> 
     throw new Error('Failed to get canvas context');
   }
 
-  // Draw circular background (50% radius = perfect circle)
+  // Draw rounded square background (squircle-like)
   ctx.fillStyle = color;
-  const radius = size * 0.5;  // Changed from 0.2 to 0.5 for circle
+  const radius = size * 0.22; // Adjusted for rounded rectangle look
   ctx.beginPath();
   ctx.roundRect(0, 0, size, size, radius);
   ctx.fill();

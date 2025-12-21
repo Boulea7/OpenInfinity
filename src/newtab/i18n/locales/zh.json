@@ -36,8 +36,25 @@
   },
   "settings": {
     "title": "设置",
+    "expandAll": "展开全部",
+    "collapseAll": "收起全部",
     "resetAll": "重置所有设置",
     "resetAllConfirm": "确定要重置所有设置吗?",
+    "mode": {
+      "title": "模式",
+      "standard": "标准模式",
+      "standardDesc": "完整功能：图标网格、时钟、天气等",
+      "minimal": "极简模式",
+      "minimalDesc": "仅搜索框，居中显示"
+    },
+    "minimalMode": {
+      "title": "极简模式",
+      "subtitle": "简化界面，只保留核心功能",
+      "enable": "启用极简模式",
+      "enableDesc": "仅显示搜索框、时钟和天气",
+      "showViewSwitcher": "显示便签入口",
+      "showViewSwitcherDesc": "在极简模式下显示搜索/便签切换按钮"
+    },
     "tabs": {
       "general": "通用",
       "clock": "时钟",
@@ -63,8 +80,62 @@
       "chinese": "中文",
       "english": "English"
     },
+    "openBehavior": {
+      "title": "目标打开方式",
+      "website": "网站",
+      "search": "搜索",
+      "bookmark": "书签",
+      "history": "历史记录",
+      "currentTab": "当前标签页",
+      "newTab": "新标签页"
+    },
+    "notification": {
+      "title": "通知",
+      "gmail": "Gmail 邮件通知",
+      "gmailSound": "新邮件提示音",
+      "showUnreadCount": "图标显示未读数",
+      "showTodoCount": "图标显示待办数",
+      "authorize": "授权 Gmail",
+      "authorized": "已授权",
+      "revoke": "取消授权",
+      "authError": "授权失败，请重试"
+    },
     "wallpaper": {
       "title": "壁纸设置",
+      "change": "更换壁纸",
+      "download": "下载壁纸",
+      "fileTooLarge": "文件超过大小限制",
+      "libraryFull": "自定义壁纸库已满",
+      "picker": {
+        "title": "选择壁纸",
+        "singleTab": "选择单张壁纸",
+        "sourceTab": "选择壁纸源",
+        "cloud": "云端",
+        "local": "本地",
+        "solid": "纯色",
+        "recent": "最近",
+        "favorites": "收藏",
+        "searchPlaceholder": "搜索壁纸...",
+        "colorFilter": "颜色筛选",
+        "tagFilter": "标签筛选",
+        "noResults": "暂无壁纸，点击刷新加载",
+        "uploadLocal": "上传本地图片",
+        "noRecent": "暂无最近使用的壁纸",
+        "noFavorites": "暂无收藏的壁纸",
+        "sources": "壁纸源",
+        "customLibrary": "自定义壁纸库",
+        "customLibraryHint": "最多20张图片，单张不超过10MB"
+      },
+      "tags": {
+        "nature": "自然",
+        "city": "城市",
+        "abstract": "抽象",
+        "minimal": "极简",
+        "dark": "暗色",
+        "space": "太空",
+        "architecture": "建筑",
+        "landscape": "风景"
+      },
       "source": "壁纸来源",
       "sources": {
         "local": "本地",
@@ -139,7 +210,9 @@
       "sizeMedium": "中",
       "sizeLarge": "大",
       "borderRadius": "搜索栏圆角",
-      "opacity": "不透明度"
+      "opacity": "不透明度",
+      "clearAfterSearch": "搜索后清空搜索框",
+      "openInNewTab": "在新标签页打开搜索结果"
     },
     "layout": {
       "title": "布局设置",
@@ -148,11 +221,22 @@
       "gridRows": "网格行数",
       "columns": "列数",
       "rows": "行数",
+      "columnGap": "列间距",
+      "rowGap": "行间距",
+      "iconScale": "图标大小",
+      "preset": "预设布局",
+      "custom": "自定义",
       "showTopSites": "显示常用网站",
       "showBookmarks": "显示书签",
       "showPagination": "显示翻页按钮",
       "showClock": "显示时钟",
       "showWeather": "显示天气",
+      "animationIntensity": "动画强度",
+      "animationNone": "无动画",
+      "animationLight": "轻微",
+      "animationNormal": "正常",
+      "animationHeavy": "强烈",
+      "showPinnedNotes": "显示固定便签",
       "widgetSidebar": {
         "title": "小组件侧边栏",
         "show": "显示小组件侧边栏",
@@ -164,6 +248,51 @@
           "history": "历史"
         }
       }
+    },
+    "animation": {
+      "title": "动画",
+      "subtitle": "仅作用于 OpenInfinity 内部模块",
+      "default": "默认",
+      "bounce": "回弹",
+      "fade": "淡入"
+    },
+    "view": {
+      "title": "视图",
+      "zoom": "屏幕缩放",
+      "sidebarZoom": "侧边栏缩放",
+      "showClock": "显示时钟",
+      "showWeather": "显示天气",
+      "showTopSites": "显示常用网站",
+      "showBookmarks": "显示书签"
+    },
+    "weather": {
+      "title": "天气",
+      "unit": "温度单位",
+      "celsius": "摄氏度",
+      "fahrenheit": "华氏度",
+      "showForecast": "显示天气预报",
+      "location": "位置",
+      "auto": "自动定位",
+      "manual": "手动设置"
+    },
+    "clock": {
+      "title": "时钟",
+      "format": "时间格式",
+      "hour": "小时",
+      "showSeconds": "显示秒数",
+      "autoDetect": "自动检测时区"
+    },
+    "reset": {
+      "title": "重置设置",
+      "button": "还原默认设置",
+      "confirmTitle": "确认重置",
+      "confirmDesc": "此操作将清除所有设置和数据，无法恢复。建议先导出备份。",
+      "confirm": "确认重置",
+      "resetting": "重置中..."
+    },
+    "font": {
+      "title": "字体",
+      "color": "字体颜色"
     },
     "fonts": {
       "title": "字体设置",
@@ -178,7 +307,19 @@
       "weightBold": "粗体"
     },
     "backup": {
-      "title": "备份与恢复",
+      "title": "备份",
+      "export": "导出数据",
+      "exportDesc": "将所有设置和图标导出为文件",
+      "import": "导入数据",
+      "importDesc": "从备份文件恢复设置",
+      "importError": "导入失败，请检查文件格式",
+      "importBookmarks": "导入书签",
+      "importBookmarksDesc": "从浏览器导出的HTML文件导入书签",
+      "bookmarkSuccess": "成功导入书签",
+      "clearCache": "清除缓存",
+      "clearCacheDesc": "清除图片和临时数据缓存",
+      "clearCacheConfirm": "确定要清除缓存吗？这不会影响您的设置和数据。",
+      "clearCacheSuccess": "缓存已清除",
       "exportAllData": "导出所有数据",
       "exporting": "导出中...",
       "importAllData": "导入所有数据",
@@ -194,9 +335,6 @@
         "title": "从 Chrome 导入",
         "description": "将 Chrome 书签导入为新图标，不会删除现有数据。同一 URL 会自动跳过。"
       },
-      "export": "导出所有数据",
-      "import": "导入数据",
-      "importBookmarks": "导入Chrome书签",
       "exportDescription": "导出配置和图标到JSON文件",
       "importDescription": "从备份文件恢复数据"
     },
@@ -215,8 +353,10 @@
       "geocodeCount": "位置缓存"
     },
     "about": {
-      "title": "关于 OpenInfinity",
+      "title": "关于",
       "version": "版本",
+      "donate": "支持作者",
+      "rights": "保留所有权利。",
       "description": "OpenInfinity 是一款美观且可自定义的新标签页扩展，帮助你整理常用网站、个性化壁纸并提升效率。",
       "builtWith": "基于 React、TypeScript 和 Tailwind CSS 构建。",
       "copyright": "© 2024 OpenInfinity。基于 MIT License 开源。"
@@ -276,5 +416,60 @@
       "thunderstormWithHeavyHail": "雷暴伴强冰雹",
       "unknown": "未知"
     }
+  },
+  "viewSwitcher": {
+    "search": "搜索",
+    "notes": "便签"
+  },
+  "notes": {
+    "title": "便签",
+    "newNote": "新建便签",
+    "editNote": "编辑便签",
+    "deleteNote": "删除便签",
+    "pinNote": "固定便签",
+    "unpinNote": "取消固定",
+    "noteTitle": "便签标题",
+    "noteContent": "便签内容",
+    "pinnedNotes": "固定便签",
+    "allNotes": "所有便签",
+    "noNotes": "还没有便签",
+    "noNotesDescription": "点击新建按钮创建您的第一条便签",
+    "noSearchResults": "未找到匹配的便签",
+    "noSearchResultsDesc": "尝试使用不同的关键词搜索",
+    "createFirstNote": "创建第一条便签",
+    "untitled": "无标题",
+    "noContent": "暂无内容",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "pin": "固定",
+    "unpin": "取消固定",
+    "titlePlaceholder": "输入便签标题...",
+    "contentPlaceholder": "输入便签内容，支持 Markdown、Mermaid 图表和 LaTeX 公式...",
+    "colorLabel": "颜色标签",
+    "tagsLabel": "标签",
+    "tagsPlaceholder": "添加标签...",
+    "searchPlaceholder": "搜索便签...",
+    "filterAll": "全部",
+    "filterPinned": "已固定",
+    "sortBy": "排序方式",
+    "sortByCreatedAt": "创建时间",
+    "sortByUpdatedAt": "修改时间",
+    "sortByTitle": "标题",
+    "viewMode": "视图模式",
+    "viewModeGrid": "网格",
+    "viewModeList": "列表",
+    "gridView": "网格视图",
+    "listView": "列表视图",
+    "count": "{{count}} 个便签",
+    "selectToView": "选择一个便签以查看",
+    "unsavedChangesConfirm": "有未保存的更改，确定要关闭吗？",
+    "emptyNote": "（空便签）"
+  },
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "close": "关闭", "today": "今天"
   }
 }

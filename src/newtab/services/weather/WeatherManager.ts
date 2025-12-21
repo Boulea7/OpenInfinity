@@ -8,10 +8,7 @@ import { OpenMeteoProvider } from './providers/OpenMeteoProvider';
 import { OpenWeatherMapProvider } from './providers/OpenWeatherMapProvider';
 // import { QWeatherProvider } from './providers/QWeatherProvider'; // Temporarily disabled due to 403 errors
 import { getCityName } from '../geocoding';
-
-function isInChinaRegion(latitude: number, longitude: number): boolean {
-  return latitude >= 18 && latitude <= 54 && longitude >= 73 && longitude <= 135;
-}
+import { isCoordinatesInChina } from '../../utils/regionUtils';
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -43,7 +40,7 @@ export class WeatherManager {
   private getProviderChain(latitude: number, longitude: number): IWeatherProvider[] {
     // Temporarily disable QWeather due to 403 errors
     // TODO: Fix QWeather JWT authentication
-    if (isInChinaRegion(latitude, longitude)) {
+    if (isCoordinatesInChina(latitude, longitude)) {
       return [this.openMeteo, this.openWeatherMap]; // Skip qweather
     }
     return [this.openMeteo, this.openWeatherMap]; // Skip qweather
@@ -63,13 +60,17 @@ export class WeatherManager {
         const weatherData = await provider.fetchWeather(latitude, longitude, unit);
 
         // Fetch city name via reverse geocoding (await to ensure it updates before return)
+        console.log('[WeatherManager] Fetching city name for:', { latitude, longitude, language });
         try {
           const cityName = await getCityName(latitude, longitude, language);
+          console.log('[WeatherManager] City name resolved:', cityName);
           if (cityName) {
             weatherData.location.name = cityName;
+          } else {
+            console.warn('[WeatherManager] getCityName returned empty string');
           }
         } catch (error) {
-          console.warn('[WeatherManager] Failed to get city name:', error);
+          console.error('[WeatherManager] Failed to get city name:', error);
           // Keep "Current Location" as fallback
         }
 

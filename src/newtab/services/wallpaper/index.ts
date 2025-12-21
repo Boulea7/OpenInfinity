@@ -7,6 +7,7 @@ export * from './types';
 export * from './unsplash';
 export * from './pexels';
 export * from './bing';
+export * from './wallhaven';
 export * from './preset';
 export * from './manager';
 

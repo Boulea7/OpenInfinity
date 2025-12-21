@@ -1,6 +1,8 @@
+import type { IconDraft } from '../types/iconDraft';
+
 interface Props {
   title: string;
-  icon: any;
+  icon: IconDraft | null;
 }
 
 export default function IconPreview({ title, icon }: Props) {
@@ -12,20 +14,23 @@ export default function IconPreview({ title, icon }: Props) {
     );
   }
 
+  // Get image source based on icon type
+  const getImageSrc = (): string | undefined => {
+    if (icon.type === 'text') {
+      return icon.dataUrl ?? icon.value;
+    }
+    return icon.value;
+  };
+
+  const imageSrc = getImageSrc();
+
   return (
     <div className="border rounded-lg p-4 text-center bg-gray-50">
       <p className="text-sm text-gray-500 mb-2">预览</p>
       <div className="flex flex-col items-center gap-2">
-        {icon.type === 'text' && icon.dataUrl && (
+        {imageSrc && (
           <img
-            src={icon.dataUrl}
-            alt={title}
-            className="w-16 h-16 rounded-xl"
-          />
-        )}
-        {(icon.type === 'favicon' || icon.type === 'custom') && icon.value && (
-          <img
-            src={icon.value}
+            src={imageSrc}
             alt={title}
             className="w-16 h-16 rounded-xl object-cover"
           />

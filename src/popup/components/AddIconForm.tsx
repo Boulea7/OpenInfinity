@@ -3,7 +3,7 @@ import { useCurrentTab } from '../hooks/useCurrentTab';
 import { useAddIcon } from '../hooks/useAddIcon';
 import IconTypeSelector from './IconTypeSelector';
 import IconEditPage from './IconEditPage';
-import IconPreview from './IconPreview';
+
 import type { EditRequest, IconDraft } from '../types/iconDraft';
 import { GlassButton } from './UI/GlassComponents';
 import PopupLayout from './PopupLayout';
@@ -97,21 +97,18 @@ export default function AddIconForm() {
   return (
     <PopupLayout>
       {/* Header */}
-      <div className="w-full flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold tracking-tight">添加快捷方式</h1>
-        <div className="text-xs text-zinc-500 bg-white/5 px-2 py-1 rounded-full border border-white/5">
+      <div className="w-full flex items-center justify-between mb-3">
+        <h1 className="text-base font-semibold tracking-tight text-zinc-900">添加快捷方式</h1>
+        <div className="text-[10px] text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded-full border border-zinc-100">
           OpenInfinity
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full space-y-5 flex-1 overflow-y-auto scrollbar-hide">
-        {/* Preview Section */}
-        <div className="flex justify-center mb-2">
-          <IconPreview title={title} icon={iconData} />
-        </div>
+      <form onSubmit={handleSubmit} className="w-full space-y-2 flex-1 overflow-y-auto scrollbar-hide">
+
 
         {/* Website Info */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <input
             type="text"
             value={title}
@@ -119,14 +116,14 @@ export default function AddIconForm() {
               setTitle(e.target.value);
               setIsDirty(true);
             }}
-            className="w-full bg-transparent border-b border-white/20 px-0 py-2 text-base focus:outline-none focus:border-brand-orange-500 transition-colors placeholder-zinc-600 font-medium"
+            className="w-full bg-transparent border-b border-zinc-100 px-0 py-1.5 text-sm focus:outline-none focus:border-brand-orange-500 transition-colors placeholder-zinc-300 font-medium text-zinc-900"
             placeholder="网站名称"
           />
         </div>
 
         {/* Icon Type Selection */}
-        <div className="flex-1 min-h-0 pt-2">
-          <label className="block text-sm font-semibold mb-3">选择图标</label>
+        <div className="flex-1 min-h-0 pt-1">
+          <label className="block text-xs font-semibold mb-2 text-zinc-400">选择图标</label>
           <IconTypeSelector
             type={iconType}
             onTypeChange={setIconType}
@@ -134,9 +131,13 @@ export default function AddIconForm() {
             websiteName={title}
             iconData={iconData}
             onIconChange={setIconData}
-            onEditRequest={(imageUrl) => {
+            onEditRequest={(imageUrl, nextType) => {
+              setIconType(nextType);
               setIconData(null);
-              setEditRequest({ imageUrl, iconType: 'custom' });
+              // Only set editRequest for types that support image editing
+              if (nextType === 'favicon' || nextType === 'custom') {
+                setEditRequest({ imageUrl, iconType: nextType });
+              }
             }}
           />
         </div>
@@ -144,24 +145,17 @@ export default function AddIconForm() {
 
 
         {/* Spacing for bottom actions */}
-        <div className="h-4"></div>
+        <div className="h-1"></div>
       </form>
 
       {/* Footer Actions */}
-      <div className="w-full mt-4 flex gap-3 pt-4 border-t border-white/5">
-        <GlassButton
-          variant="secondary"
-          onClick={() => window.close()}
-          className="flex-1"
-        >
-          取消
-        </GlassButton>
+      <div className="w-full mt-2">
         <GlassButton
           variant="primary"
           onClick={handleSubmit}
           disabled={isAdding || !title || !iconData}
           isLoading={isAdding}
-          className="flex-[2]"
+          className="w-full"
         >
           {isAdding ? '添加中...' : '添加到主页'}
         </GlassButton>
@@ -170,7 +164,7 @@ export default function AddIconForm() {
       {/* Editor Modal Overlay */}
       {editRequest && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl max-w-xs w-full">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl w-full max-w-2xl">
             <IconEditPage
               imageUrl={editRequest.imageUrl}
               iconType={editRequest.iconType}

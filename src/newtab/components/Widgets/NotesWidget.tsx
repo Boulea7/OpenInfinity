@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
+import type { MouseEvent } from 'react';
 import { FileText, Plus, Trash2, Edit2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
-import MDEditor from '@uiw/react-md-editor';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../stores';
 import { useNotes } from '../../hooks';
 import { cn } from '../../utils';
@@ -11,10 +12,12 @@ import type { BaseWidgetProps } from '../../types';
  * Displays and manages notes with Markdown editing within the sidebar
  */
 export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
+  const { t } = useTranslation();
   const { viewSettings } = useSettingsStore();
   const { notes, addNote, updateNote, deleteNote } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [draftContent, setDraftContent] = useState('');
 
   // Auto-select first note if none selected - must be before early return
   useEffect(() => {
@@ -25,41 +28,56 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
 
   const selectedNote = notes.find(n => n.id === selectedNoteId);
 
+  // Sync draft content when selected note changes
+  useEffect(() => {
+    if (selectedNote) {
+      setDraftContent(selectedNote.content);
+    } else {
+      setDraftContent('');
+    }
+  }, [selectedNote]);
+
   // Handle adding new note - must be defined before early return
   const handleAddNote = useCallback(async () => {
     try {
-      await addNote('# New Note\n\nStart writing...');
-      // Select the newly added note (last in list after re-render)
-      setIsEditMode(true);
+      const id = await addNote('# New Note\n\nStart writing...');
+      if (id) {
+        setSelectedNoteId(id); // Auto-select the newly created note
+        setIsEditMode(true);
+      }
     } catch (error) {
       console.error('Failed to add note:', error);
     }
   }, [addNote]);
 
   // Handle delete note - must be defined before early return
-  const handleDeleteNote = useCallback(async (id: string, e?: React.MouseEvent) => {
+  const handleDeleteNote = useCallback(async (id: string, e?: MouseEvent) => {
     e?.stopPropagation();
-    if (confirm('确定要删除这条笔记吗？')) {
+    if (confirm(t('notes.deleteNote', '确定要删除这条笔记吗？') + '?')) {
       try {
         await deleteNote(id);
+        // Auto-select next note after deletion
         if (selectedNoteId === id) {
-          setSelectedNoteId(null);
+          const nextNote = notes.find((n) => n.id !== id);
+          setSelectedNoteId(nextNote?.id ?? null);
         }
       } catch (error) {
         console.error('Failed to delete note:', error);
       }
     }
-  }, [deleteNote, selectedNoteId]);
+  }, [deleteNote, selectedNoteId, notes, t]);
 
   // Handle note content update - must be defined before early return
   const handleNoteChange = useCallback(async (value: string | undefined) => {
     if (!selectedNote) return;
+    const next = value ?? '';
+    setDraftContent(next); // Keep UI responsive
     try {
-      await updateNote(selectedNote.id, value || '');
+      await updateNote(selectedNote.id, next);
     } catch (error) {
       console.error('Failed to update note:', error);
     }
-  }, [selectedNote, updateNote]);
+  }, [selectedNote?.id, updateNote]);
 
   // Don't render if widget is disabled
   if (!viewSettings.showNotesWidget) return null;
@@ -85,7 +103,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
       >
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-white/80" />
-          <span className="font-medium text-white">笔记</span>
+          <span className="font-medium text-white">{t('notes.title', '笔记')}</span>
           <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
             {notes.length}
           </span>
@@ -97,7 +115,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
               handleAddNote();
             }}
             className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
-            title="新建笔记"
+            title={t('notes.newNote', '新建笔记')}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -117,8 +135,8 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
             {notes.length === 0 ? (
               <div className="p-4 text-center text-white/40 text-sm">
                 <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>暂无笔记</p>
-                <p className="text-xs mt-1">点击 + 创建</p>
+                <p>{t('notes.noNotes', '暂无笔记')}</p>
+                <p className="text-xs mt-1">{t('notes.noNotesDescription', '点击 + 创建')}</p>
               </div>
             ) : (
               notes.map((note) => (
@@ -171,17 +189,17 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
                         ? 'bg-white/10 text-white'
                         : 'bg-transparent text-white/60 hover:bg-white/5'
                     )}
-                    title={isEditMode ? '切换到预览' : '切换到编辑'}
+                    title={isEditMode ? t('notes.viewMode.preview', '切换到预览') : t('notes.viewMode.edit', '切换到编辑')}
                   >
                     {isEditMode ? (
                       <>
                         <Eye className="w-3 h-3" />
-                        <span>预览</span>
+                        <span>{t('notes.viewMode.preview', '预览')}</span>
                       </>
                     ) : (
                       <>
                         <Edit2 className="w-3 h-3" />
-                        <span>编辑</span>
+                        <span>{t('notes.viewMode.edit', '编辑')}</span>
                       </>
                     )}
                   </button>
@@ -190,30 +208,22 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
                     onClick={(e) => handleDeleteNote(selectedNote.id, e)}
                     className="px-3 py-1.5 text-xs rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors"
                   >
-                    删除笔记
+                    {t('notes.delete', '删除笔记')}
                   </button>
                 </div>
 
-                {/* Markdown Editor/Preview */}
-                <div className="flex-1 overflow-auto" data-color-mode="dark">
+                {/* Content Editor or Preview */}
+                <div className="flex-1 overflow-auto">
                   {isEditMode ? (
-                    <MDEditor
-                      value={selectedNote.content}
-                      onChange={handleNoteChange}
-                      preview="edit"
-                      height="100%"
-                      hideToolbar={false}
-                      visibleDragbar={false}
-                      textareaProps={{
-                        placeholder: 'Write your note in Markdown...',
-                      }}
+                    <textarea
+                      value={draftContent}
+                      onChange={(e) => handleNoteChange(e.target.value)}
+                      placeholder={t('notes.contentPlaceholder', 'Write your note...')}
+                      className="w-full h-full p-4 bg-transparent border-none outline-none resize-none text-white/80 placeholder-white/30 text-sm"
                     />
                   ) : (
-                    <div className="p-4">
-                      <MDEditor.Markdown
-                        source={selectedNote.content}
-                        style={{ backgroundColor: 'transparent', color: '#fff' }}
-                      />
+                    <div className="whitespace-pre-wrap p-4 text-white/80 text-sm leading-relaxed min-h-full">
+                      {draftContent || t('notes.emptyNote', '（空笔记）')}
                     </div>
                   )}
                 </div>

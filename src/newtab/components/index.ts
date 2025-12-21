@@ -19,6 +19,12 @@ export { IconGrid, PageDots } from './Grid';
 // Search
 export { SearchBar } from './SearchBar';
 
+// View Switcher
+export { ViewSwitcher } from './ViewSwitcher';
+
+// Notes
+export { NoteEditor, NotesView, PinnedNotesPanel } from './Notes';
+
 // Weather (Header)
 export { CompactWeather } from './CompactWeather';
 

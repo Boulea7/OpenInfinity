@@ -36,8 +36,25 @@
   },
   "settings": {
     "title": "Settings",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
     "resetAll": "Reset All Settings",
     "resetAllConfirm": "Are you sure you want to reset all settings?",
+    "mode": {
+      "title": "Mode",
+      "standard": "Standard Mode",
+      "standardDesc": "Full features: icon grid, clock, weather, etc.",
+      "minimal": "Minimal Mode",
+      "minimalDesc": "Search bar only, centered display"
+    },
+    "minimalMode": {
+      "title": "Minimal Mode",
+      "subtitle": "Simplified interface with core features only",
+      "enable": "Enable Minimal Mode",
+      "enableDesc": "Show only search bar, clock, and weather",
+      "showViewSwitcher": "Show Notes Entry",
+      "showViewSwitcherDesc": "Show search/notes switcher in minimal mode"
+    },
     "tabs": {
       "general": "General",
       "clock": "Clock",
@@ -63,8 +80,62 @@
       "chinese": "中文",
       "english": "English"
     },
+    "openBehavior": {
+      "title": "Open Behavior",
+      "website": "Website",
+      "search": "Search",
+      "bookmark": "Bookmark",
+      "history": "History",
+      "currentTab": "Current Tab",
+      "newTab": "New Tab"
+    },
+    "notification": {
+      "title": "Notifications",
+      "gmail": "Gmail Notifications",
+      "gmailSound": "New Mail Sound",
+      "showUnreadCount": "Show Unread Count on Icon",
+      "showTodoCount": "Show Todo Count on Icon",
+      "authorize": "Authorize Gmail",
+      "authorized": "Authorized",
+      "revoke": "Revoke Authorization",
+      "authError": "Authorization failed, please try again"
+    },
     "wallpaper": {
       "title": "Wallpaper Settings",
+      "change": "Change Wallpaper",
+      "download": "Download Wallpaper",
+      "fileTooLarge": "File exceeds size limit",
+      "libraryFull": "Custom wallpaper library is full",
+      "picker": {
+        "title": "Select Wallpaper",
+        "singleTab": "Select Single Wallpaper",
+        "sourceTab": "Select Wallpaper Source",
+        "cloud": "Cloud",
+        "local": "Local",
+        "solid": "Solid",
+        "recent": "Recent",
+        "favorites": "Favorites",
+        "searchPlaceholder": "Search wallpapers...",
+        "colorFilter": "Color Filter",
+        "tagFilter": "Tag Filter",
+        "noResults": "No wallpapers, click refresh to load",
+        "uploadLocal": "Upload Local Image",
+        "noRecent": "No recent wallpapers",
+        "noFavorites": "No favorite wallpapers",
+        "sources": "Wallpaper Sources",
+        "customLibrary": "Custom Wallpaper Library",
+        "customLibraryHint": "Max 20 images, 10MB each"
+      },
+      "tags": {
+        "nature": "Nature",
+        "city": "City",
+        "abstract": "Abstract",
+        "minimal": "Minimal",
+        "dark": "Dark",
+        "space": "Space",
+        "architecture": "Architecture",
+        "landscape": "Landscape"
+      },
       "source": "Wallpaper Source",
       "sources": {
         "local": "Local",
@@ -148,6 +219,11 @@
       "gridRows": "Grid Rows",
       "columns": "Columns",
       "rows": "Rows",
+      "columnGap": "Column Gap",
+      "rowGap": "Row Gap",
+      "iconScale": "Icon Size",
+      "preset": "Preset Layouts",
+      "custom": "Custom",
       "showTopSites": "Show Top Sites",
       "showBookmarks": "Show Bookmarks",
       "showPagination": "Show Pagination",
@@ -165,6 +241,51 @@
         }
       }
     },
+    "animation": {
+      "title": "Animation",
+      "subtitle": "Only applies to OpenInfinity internal modules",
+      "default": "Default",
+      "bounce": "Bounce",
+      "fade": "Fade"
+    },
+    "view": {
+      "title": "View",
+      "zoom": "Screen Zoom",
+      "sidebarZoom": "Sidebar Zoom",
+      "showClock": "Show Clock",
+      "showWeather": "Show Weather",
+      "showTopSites": "Show Top Sites",
+      "showBookmarks": "Show Bookmarks"
+    },
+    "weather": {
+      "title": "Weather",
+      "unit": "Temperature Unit",
+      "celsius": "Celsius",
+      "fahrenheit": "Fahrenheit",
+      "showForecast": "Show Weather Forecast",
+      "location": "Location",
+      "auto": "Auto Detect",
+      "manual": "Manual"
+    },
+    "clock": {
+      "title": "Clock",
+      "format": "Time Format",
+      "hour": "hour",
+      "showSeconds": "Show Seconds",
+      "autoDetect": "Auto Detect Timezone"
+    },
+    "reset": {
+      "title": "Reset Settings",
+      "button": "Reset to Defaults",
+      "confirmTitle": "Confirm Reset",
+      "confirmDesc": "This will clear all settings and data. This action cannot be undone. We recommend exporting a backup first.",
+      "confirm": "Confirm Reset",
+      "resetting": "Resetting..."
+    },
+    "font": {
+      "title": "Font",
+      "color": "Font Color"
+    },
     "fonts": {
       "title": "Font Settings",
       "family": "Font Family",
@@ -178,7 +299,19 @@
       "weightBold": "Bold"
     },
     "backup": {
-      "title": "Backup & Restore",
+      "title": "Backup",
+      "export": "Export Data",
+      "exportDesc": "Export all settings and icons to a file",
+      "import": "Import Data",
+      "importDesc": "Restore settings from backup file",
+      "importError": "Import failed, please check file format",
+      "importBookmarks": "Import Bookmarks",
+      "importBookmarksDesc": "Import bookmarks from browser HTML export",
+      "bookmarkSuccess": "Bookmarks imported successfully",
+      "clearCache": "Clear Cache",
+      "clearCacheDesc": "Clear image and temporary data cache",
+      "clearCacheConfirm": "Are you sure you want to clear the cache? This won't affect your settings and data.",
+      "clearCacheSuccess": "Cache cleared",
       "exportAllData": "Export All Data",
       "exporting": "Exporting...",
       "importAllData": "Import All Data",
@@ -194,9 +327,6 @@
         "title": "Import from Chrome",
         "description": "Import your Chrome bookmarks as new icons without deleting existing data. Duplicates will be automatically skipped."
       },
-      "export": "Export All Data",
-      "import": "Import Data",
-      "importBookmarks": "Import Chrome Bookmarks",
       "exportDescription": "Export settings and icons to JSON file",
       "importDescription": "Restore data from backup file"
     },
@@ -215,8 +345,10 @@
       "geocodeCount": "Location Cache"
     },
     "about": {
-      "title": "About OpenInfinity",
+      "title": "About",
       "version": "Version",
+      "donate": "Support the Author",
+      "rights": "All rights reserved.",
       "description": "OpenInfinity is a beautiful and customizable new tab page for your browser. Organize your favorite websites, customize your wallpaper, and boost your productivity.",
       "builtWith": "Built with React, TypeScript, and Tailwind CSS.",
       "copyright": "© 2024 OpenInfinity. Open source under MIT License."
@@ -276,5 +408,61 @@
       "thunderstormWithHeavyHail": "Thunderstorm with Heavy Hail",
       "unknown": "Unknown"
     }
+  },
+  "viewSwitcher": {
+    "search": "Search",
+    "notes": "Notes"
+  },
+  "notes": {
+    "title": "Notes",
+    "newNote": "New Note",
+    "editNote": "Edit Note",
+    "deleteNote": "Delete Note",
+    "pinNote": "Pin Note",
+    "unpinNote": "Unpin Note",
+    "noteTitle": "Note Title",
+    "noteContent": "Note Content",
+    "pinnedNotes": "Pinned Notes",
+    "allNotes": "All Notes",
+    "noNotes": "No notes yet",
+    "noNotesDescription": "Click new button to create your first note",
+    "noSearchResults": "No matching notes found",
+    "noSearchResultsDesc": "Try searching with different keywords",
+    "createFirstNote": "Create your first note",
+    "untitled": "Untitled",
+    "noContent": "No content",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "titlePlaceholder": "Enter note title...",
+    "contentPlaceholder": "Write your note, supports Markdown, Mermaid diagrams and LaTeX formulas...",
+    "colorLabel": "Color Label",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Add tags...",
+    "searchPlaceholder": "Search notes...",
+    "filterAll": "All",
+    "filterPinned": "Pinned",
+    "sortBy": "Sort by",
+    "sortByCreatedAt": "Created Time",
+    "sortByUpdatedAt": "Modified Time",
+    "sortByTitle": "Title",
+    "viewMode": "View Mode",
+    "viewModeGrid": "Grid",
+    "viewModeList": "List",
+    "gridView": "Grid View",
+    "listView": "List View",
+    "count": "{{count}} Notes",
+    "selectToView": "Select a note to view",
+    "unsavedChangesConfirm": "You have unsaved changes. Are you sure you want to close?",
+    "emptyNote": "(Empty note)"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "today": "Today"
   }
 }

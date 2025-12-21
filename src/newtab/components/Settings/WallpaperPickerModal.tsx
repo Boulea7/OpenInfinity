@@ -14,7 +14,7 @@
  *    - Custom library (max 20 images, max 10MB each)
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   X,
@@ -30,6 +30,8 @@ import {
   getStoredApiKeys,
 } from '../../services/wallpaperSources';
 import { WallpaperSkeleton } from './components/WallpaperSkeleton';
+import { WallpaperCard } from './components/WallpaperCard';
+import { PRESET_WALLPAPERS, type PresetWallpaper } from '../../data/presetWallpapers';
 
 // Types
 interface WallpaperItem {
@@ -47,30 +49,31 @@ interface WallpaperItem {
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-// Color filter options
+// Color filter options (Infinity Pro standard 8 colors)
 const COLOR_OPTIONS = [
   { id: 'any', color: 'transparent', label: '全部' },
-  { id: 'black', color: '#000000', label: '黑色' },
-  { id: 'white', color: '#ffffff', label: '白色' },
-  { id: 'gray', color: '#6b7280', label: '灰色' },
-  { id: 'red', color: '#ef4444', label: '红色' },
-  { id: 'orange', color: '#f97316', label: '橙色' },
-  { id: 'yellow', color: '#eab308', label: '黄色' },
-  { id: 'green', color: '#22c55e', label: '绿色' },
-  { id: 'blue', color: '#3b82f6', label: '蓝色' },
-  { id: 'purple', color: '#8b5cf6', label: '紫色' },
+  { id: 'red', color: '#c00018', label: '红色' },
+  { id: 'orange', color: '#de8930', label: '橙色' },
+  { id: 'yellow', color: '#f7d946', label: '黄色' },
+  { id: 'light-green', color: '#cbe582', label: '浅绿' },
+  { id: 'dark-green', color: '#506f37', label: '深绿' },
+  { id: 'light-blue', color: '#60a8d8', label: '浅蓝' },
+  { id: 'dark-blue', color: '#184878', label: '深蓝' },
+  { id: 'purple', color: '#be7ab9', label: '紫色' },
 ];
 
-// Tag options for filtering
+// Tag options for filtering (Infinity Pro standard 10 tags)
 const TAG_OPTIONS = [
   { id: 'nature', label: '自然' },
-  { id: 'city', label: '城市' },
-  { id: 'abstract', label: '抽象' },
-  { id: 'minimal', label: '极简' },
-  { id: 'dark', label: '暗色' },
-  { id: 'space', label: '太空' },
+  { id: 'ocean', label: '海洋' },
   { id: 'architecture', label: '建筑' },
-  { id: 'landscape', label: '风景' },
+  { id: 'animals', label: '动物' },
+  { id: 'travel', label: '旅行' },
+  { id: 'food-drink', label: '美食' },
+  { id: 'anime', label: '动漫' },
+  { id: 'athletics', label: '运动' },
+  { id: 'technology', label: '技术' },
+  { id: 'street', label: '街头' },
 ];
 
 // Initialize sources with enabled state from localStorage
@@ -126,6 +129,14 @@ const SourceLogo: React.FC<{ src?: string; name: string }> = ({ src, name }) => 
 
 type MainTab = 'single' | 'source';
 type SingleSubTab = 'cloud' | 'local' | 'solid' | 'recent' | 'favorites';
+type SortOption = 'default' | 'popularity' | 'recent';
+
+// Sort options for cloud wallpapers
+const SORT_OPTIONS = [
+  { id: 'default' as const, label: '默认排序' },
+  { id: 'popularity' as const, label: '热度排序' },
+  { id: 'recent' as const, label: '收录时间' },
+];
 
 export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
   isOpen,
@@ -139,10 +150,11 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
   const [singleSubTab, setSingleSubTab] = useState<SingleSubTab>('cloud');
   const [selectedColor, setSelectedColor] = useState('any');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [isLoading] = useState(false);
 
-  // Mock data - in real implementation, fetch from wallpaperStore
-  const [cloudWallpapers, setCloudWallpapers] = useState<WallpaperItem[]>([]);
+  // Local wallpapers uploaded by user
   const [localWallpapers, setLocalWallpapers] = useState<WallpaperItem[]>([]);
   const [recentWallpapers] = useState<WallpaperItem[]>([]);
   const [favoriteWallpapers] = useState<WallpaperItem[]>([]);
@@ -153,6 +165,55 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
   const setWallpaperFromUrl = useWallpaperStore((state) => state.setWallpaperFromUrl);
   const setSolidColor = useWallpaperStore((state) => state.setSolidColor);
   const setGradient = useWallpaperStore((state) => state.setGradient);
+  const togglePresetLike = useWallpaperStore((state) => state.togglePresetLike);
+  const togglePresetFavorite = useWallpaperStore((state) => state.togglePresetFavorite);
+  const likedWallpapers = useWallpaperStore((state) => state.likedWallpapers);
+  const favoritedPresets = useWallpaperStore((state) => state.favoritedPresets);
+
+  // Filter and sort preset wallpapers
+  const filteredPresetWallpapers = useMemo(() => {
+    // First filter
+    let result = PRESET_WALLPAPERS.filter((w) => {
+      // Color filter
+      if (selectedColor !== 'any' && w.primaryColor !== selectedColor) {
+        return false;
+      }
+      // Tags filter
+      if (selectedTags.length > 0 && !selectedTags.some((t) => w.tags.includes(t))) {
+        return false;
+      }
+      return true;
+    });
+
+    // Then sort
+    if (sortBy === 'popularity') {
+      result = [...result].sort((a, b) => b.baseLikes - a.baseLikes);
+    } else if (sortBy === 'recent') {
+      // Sort by ID (newer IDs = more recent)
+      result = [...result].sort((a, b) => {
+        const aNum = parseInt(a.id.replace('preset-', ''), 10);
+        const bNum = parseInt(b.id.replace('preset-', ''), 10);
+        return bNum - aNum;
+      });
+    }
+    // 'default' keeps original order
+
+    return result;
+  }, [selectedColor, selectedTags, sortBy]);
+
+  // Handle preset wallpaper selection
+  const handleSelectPresetWallpaper = async (wallpaper: PresetWallpaper) => {
+    await setWallpaperFromUrl(wallpaper.url, {
+      author: wallpaper.author,
+    });
+    onClose();
+  };
+
+  // Calculate like count (base + user like if applicable)
+  const getLikeCount = (wallpaper: PresetWallpaper): number => {
+    const userLiked = likedWallpapers.includes(wallpaper.id);
+    return wallpaper.baseLikes + (userLiked ? 1 : 0);
+  };
 
   // Handle wallpaper selection
   const handleSelectWallpaper = async (wallpaper: WallpaperItem) => {
@@ -252,31 +313,6 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
     );
   };
 
-  // Filter logic
-  const filterWallpapers = useCallback((list: WallpaperItem[]) => {
-    return list.filter(w => {
-      // Color filter
-      if (selectedColor !== 'any' && w.primaryColor !== selectedColor) {
-        return false;
-      }
-      // Tags filter
-      if (selectedTags.length > 0 && !selectedTags.every(t => w.tags?.includes(t))) {
-        return false;
-      }
-      return true;
-    });
-  }, [selectedColor, selectedTags]);
-
-  // Fetch cloud wallpapers
-  const fetchCloudWallpapers = useCallback(async () => {
-    setIsLoading(true);
-    // TODO: Implement actual API call to Unsplash/Pexels
-    setTimeout(() => {
-      setCloudWallpapers([]);
-      setIsLoading(false);
-    }, 500);
-  }, [selectedColor, selectedTags]);
-
   if (!isOpen) return null;
 
   return (
@@ -287,11 +323,11 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
         onClick={onClose}
       />
 
-      {/* Modal - Centered large panel */}
+      {/* Modal - Centered large panel (Infinity Pro size: 960px x 85vh) */}
       <div className="
         relative
-        w-full max-w-[680px]
-        max-h-[70vh]
+        w-full max-w-[960px]
+        max-h-[85vh]
         bg-white dark:bg-gray-900
         rounded-xl
         shadow-2xl
@@ -383,15 +419,56 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                 ))}
 
                 <div className="flex-1" />
-                {/* Sort button */}
-                <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="4" y1="6" x2="16" y2="6" />
-                    <line x1="4" y1="12" x2="12" y2="12" />
-                    <line x1="4" y1="18" x2="8" y2="18" />
-                  </svg>
-                  {t('common.sort', '默认排序')}
-                </button>
+                {/* Sort dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowSortMenu(!showSortMenu)}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="4" y1="6" x2="16" y2="6" />
+                      <line x1="4" y1="12" x2="12" y2="12" />
+                      <line x1="4" y1="18" x2="8" y2="18" />
+                    </svg>
+                    {SORT_OPTIONS.find(o => o.id === sortBy)?.label || '默认排序'}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+
+                  {/* Sort menu dropdown */}
+                  {showSortMenu && (
+                    <>
+                      {/* Backdrop to close menu */}
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowSortMenu(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 min-w-[120px]">
+                        {SORT_OPTIONS.map(({ id, label }) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => {
+                              setSortBy(id);
+                              setShowSortMenu(false);
+                            }}
+                            className={`
+                              w-full px-3 py-1.5 text-left text-sm transition-colors
+                              ${sortBy === id
+                                ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white font-medium'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-750'
+                              }
+                            `}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Content Area - Horizontal layout */}
@@ -399,7 +476,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
 
                 {/* Left Sidebar: Filters (Only for Cloud tab) */}
                 {singleSubTab === 'cloud' && (
-                  <div className="w-40 flex-shrink-0 px-5 py-4 border-r border-gray-100 dark:border-gray-800 overflow-y-auto">
+                  <div className="w-44 flex-shrink-0 px-5 py-4 border-r border-gray-100 dark:border-gray-800 overflow-y-auto">
                     {/* Colors */}
                     <div className="mb-5">
                       <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">{t('settings.wallpaper.picker.colorFilter', '颜色')}</div>
@@ -446,29 +523,31 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                   </div>
                 )}
 
-                {/* Right: Wallpaper Grid (2 columns as per design) */}
+                {/* Right: Wallpaper Grid (3 columns for larger modal) */}
                 <div className="flex-1 overflow-y-auto p-4">
                   {singleSubTab === 'cloud' && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       {isLoading ? (
                         Array.from({ length: 6 }).map((_, i) => (
                           <WallpaperSkeleton key={i} />
                         ))
-                      ) : filterWallpapers(cloudWallpapers).length > 0 ? (
-                        filterWallpapers(cloudWallpapers).map((wallpaper) => (
-                          <button
+                      ) : filteredPresetWallpapers.length > 0 ? (
+                        filteredPresetWallpapers.map((wallpaper) => (
+                          <WallpaperCard
                             key={wallpaper.id}
-                            onClick={() => handleSelectWallpaper(wallpaper)}
-                            className="group relative aspect-[16/10] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800"
-                          >
-                            <img src={wallpaper.thumbnailUrl || wallpaper.url} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                          </button>
+                            wallpaper={wallpaper}
+                            onSelect={handleSelectPresetWallpaper}
+                            onFavorite={(w) => togglePresetFavorite(w.id)}
+                            onLike={(w) => togglePresetLike(w.id)}
+                            isFavorited={favoritedPresets.includes(wallpaper.id)}
+                            isLiked={likedWallpapers.includes(wallpaper.id)}
+                            likeCount={getLikeCount(wallpaper)}
+                          />
                         ))
                       ) : (
                         <div className="col-span-2 py-16 text-center text-gray-400 flex flex-col items-center">
                           <ImageIcon className="w-10 h-10 mb-3 opacity-30" />
                           <p className="text-sm">{t('settings.wallpaper.picker.noResults', '暂无壁纸')}</p>
-                          <button onClick={fetchCloudWallpapers} className="mt-3 text-sm text-blue-500 hover:underline">刷新</button>
                         </div>
                       )}
                     </div>

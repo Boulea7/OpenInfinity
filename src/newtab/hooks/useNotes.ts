@@ -12,7 +12,7 @@ export interface UseNotesReturn {
   notes: Note[];
   isLoading: boolean;
   error: string | null;
-  addNote: (content: string, tags?: string[]) => Promise<void>;
+  addNote: (content: string, tags?: string[]) => Promise<string>;
   updateNote: (id: string, content: string, tags?: string[]) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   searchNotes: (query: string) => Promise<Note[]>;
@@ -37,38 +37,43 @@ export function useNotes(): UseNotesReturn {
     return query.toArray();
   }, [widgetSettings.notesWidget]);
 
-  // Add new note
-  const addNote = useCallback(async (content: string, tags: string[] = []) => {
-    if (!content.trim()) return;
+  // Add new note - returns the new note ID for selection
+  const addNote = useCallback(async (content: string, tags: string[] = []): Promise<string> => {
+    if (!content.trim()) return '';
 
     try {
+      const id = crypto.randomUUID();
       const newNote: Omit<Note, 'id' | 'createdAt' | 'updatedAt'> = {
+        title: '',
         content: content.trim(),
+        isPinned: false,
         tags: tags.filter(tag => tag.trim()), // Filter out empty tags
       };
 
       await db.notes.add({
         ...newNote,
-        id: crypto.randomUUID(),
+        id,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      return id;
     } catch (error) {
       console.error('Failed to add note:', error);
       throw error;
     }
   }, []);
 
-  // Update existing note
+  // Update existing note - allows empty content (user may want to clear note)
   const updateNote = useCallback(async (id: string, content: string, tags?: string[]) => {
-    if (!content.trim()) return;
-
     try {
-      await db.notes.update(id, {
-        content: content.trim(),
-        tags: tags ? tags.filter(tag => tag.trim()) : undefined,
+      const payload: Partial<Note> = {
+        content: content.trim(), // Allow empty string
         updatedAt: Date.now(),
-      });
+      };
+      if (tags !== undefined) {
+        payload.tags = tags.filter(tag => tag.trim());
+      }
+      await db.notes.update(id, payload);
     } catch (error) {
       console.error('Failed to update note:', error);
       throw error;
@@ -97,7 +102,7 @@ export function useNotes(): UseNotesReturn {
           const content = note.content.toLowerCase();
           return searchTerms.every(term =>
             content.includes(term) ||
-            note.tags.some(tag => tag.toLowerCase().includes(term))
+            note.tags?.some(tag => tag.toLowerCase().includes(term))
           );
         })
         .toArray();

@@ -1,16 +1,25 @@
 import { useState } from 'react';
 import { useFaviconFetch } from '../hooks/useFaviconFetch';
+import type { IconDraft } from '../types/iconDraft';
+
+type FaviconSource = {
+  provider: 'google' | 'duckduckgo';
+  status: 'loading' | 'success' | 'error';
+  dataUrl?: string;
+};
 
 interface Props {
   url: string;
-  onSelect: (iconData: any) => void;
+  onSelect: (iconData: IconDraft) => void;
 }
 
 export default function FaviconSelector({ url, onSelect }: Props) {
   const { sources, isLoading } = useFaviconFetch(url);
   const [selected, setSelected] = useState<string | null>(null);
 
-  const handleSelect = (source: any) => {
+  const handleSelect = (source: FaviconSource) => {
+    // Only allow selection if source is valid
+    if (source.status !== 'success' || !source.dataUrl) return;
     setSelected(source.provider);
     onSelect({
       type: 'favicon',
@@ -22,7 +31,7 @@ export default function FaviconSelector({ url, onSelect }: Props) {
     return <div className="text-center py-4 text-gray-500">获取网站图标中...</div>;
   }
 
-  const hasValidSource = sources.some((s) => s.status === 'success');
+  const hasValidSource = sources.some((s) => s.status === 'success' && !!s.dataUrl);
 
   if (!hasValidSource) {
     return (

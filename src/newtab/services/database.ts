@@ -130,10 +130,13 @@ export interface TodoItem {
 // Note type definition
 export interface Note {
   id: string;
-  content: string;
-  tags: string[];
+  title: string;           // Note title
+  content: string;         // Markdown content
+  color?: string;          // Optional color tag
+  isPinned: boolean;       // Whether pinned to search view
   createdAt: number;
   updatedAt: number;
+  tags?: string[];         // Optional tags
 }
 
 // Settings key-value store
@@ -438,6 +441,24 @@ class OpenInfinityDB extends Dexie {
           await trans.table('folders').put(folder);
         }
       });
+
+    // Version 8: Add isPinned index to notes table
+    this.version(8).stores({
+      icons: '++id, type, url, folderId, createdAt',
+      folders: '++id, name, createdAt',
+      wallpapers: '++id, type, createdAt',
+      todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+      notes: '++id, isPinned, *tags, createdAt, updatedAt',
+      settings: 'key',
+      emailAccounts: '++id, provider, email, enabled, lastChecked',
+      todoIntegrations: '++id, provider, enabled, lastSynced',
+      rssSubscriptions: '++id, url, category, enabled, lastFetched',
+      rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+      notificationLogs: '++id, type, source, isRead, createdAt',
+      presetWebsites: '++id, category, region, popularity, *tags',
+      userFavorites: '++id, websiteId, addedAt',
+      weatherCache: 'id, fetchedAt, expiresAt',
+    });
   }
 }
 

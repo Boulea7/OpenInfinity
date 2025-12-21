@@ -80,6 +80,7 @@ export type WallpaperSource =
   | 'pexels'
   | 'pixabay'
   | 'bing'
+  | 'wallhaven'
   | 'solid'
   | 'gradient'
   | 'custom';

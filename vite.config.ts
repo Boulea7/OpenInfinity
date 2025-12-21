@@ -10,6 +10,10 @@ export default defineConfig({
     react(),
     crx({ manifest }),
   ],
+  optimizeDeps: {
+    // Exclude prosemirror packages from pre-bundling to avoid duplicate extension warnings
+    exclude: ['@tiptap/pm', 'prosemirror-markdown'],
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

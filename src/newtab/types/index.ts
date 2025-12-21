@@ -11,6 +11,7 @@ export interface BaseWidgetProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   className?: string;
+  hideHeader?: boolean;
 }
 
 /**
@@ -153,7 +154,7 @@ export interface Size {
 /**
  * Bounding box
  */
-export interface BoundingBox extends GridPosition, Size {}
+export interface BoundingBox extends GridPosition, Size { }
 
 /**
  * Color with optional alpha

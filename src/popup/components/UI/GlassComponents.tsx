@@ -1,16 +1,16 @@
 import React, { ButtonHTMLAttributes, InputHTMLAttributes } from 'react';
 
-// --- Glass Card ---
+// --- Card (Light Mode) ---
 export const GlassCard = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
     <div className={`
-    bg-zinc-900/80 backdrop-blur-xl border border-white/10 shadow-glass rounded-2xl
+    bg-white border border-zinc-200 shadow-sm rounded-2xl
     ${className}
   `}>
         {children}
     </div>
 );
 
-// --- Glass Input ---
+// --- Input (Light Mode - Underline Style) ---
 interface GlassInputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     error?: string;
@@ -22,34 +22,33 @@ export const GlassInput = React.forwardRef<HTMLInputElement, GlassInputProps>(
         return (
             <div className={`${fullWidth ? 'w-full' : ''}`}>
                 {label && (
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5 ml-1">
+                    <label className="block text-xs font-medium text-zinc-500 mb-1.5 ml-1">
                         {label}
                     </label>
                 )}
                 <input
                     ref={ref}
                     className={`
-            bg-white/5 border border-white/10 text-zinc-100 placeholder-zinc-500
-            rounded-xl px-4 py-2.5 outline-none transition-all duration-200
-            hover:bg-white/10 hover:border-white/20
-            focus:bg-white/10 focus:border-brand-orange-500/50 focus:ring-1 focus:ring-brand-orange-500/50
+            bg-transparent border-b border-zinc-200 text-zinc-900 placeholder-zinc-400
+            px-0 py-2 outline-none transition-all duration-200
+            focus:border-brand-orange-500
             disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20' : ''}
+            ${error ? 'border-red-500' : ''}
             ${fullWidth ? 'w-full' : ''}
             ${className}
           `}
                     {...props}
                 />
-                {error && <p className="text-xs text-red-400 mt-1 ml-1">{error}</p>}
+                {error && <p className="text-xs text-red-500 mt-1 ml-1">{error}</p>}
             </div>
         );
     }
 );
 GlassInput.displayName = 'GlassInput';
 
-// --- Glass Button ---
+// --- Button (Light Mode) ---
 interface GlassButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
     isLoading?: boolean;
     fullWidth?: boolean;
 }
@@ -64,10 +63,11 @@ export const GlassButton = ({
     ...props
 }: GlassButtonProps) => {
     const variants = {
-        primary: 'bg-brand-orange-500 hover:bg-brand-orange-600 active:bg-brand-orange-700 text-white border border-transparent shadow-lg shadow-brand-orange-500/20',
-        secondary: 'bg-white/5 hover:bg-white/10 active:bg-white/15 text-zinc-200 border border-white/10 backdrop-blur-md',
-        ghost: 'bg-transparent hover:bg-white/5 text-zinc-400 hover:text-zinc-200',
-        danger: 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20',
+        primary: 'bg-zinc-700 hover:bg-zinc-800 active:bg-zinc-900 text-white shadow-md', // Matching image 'confirm' button usually dark
+        secondary: 'bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300 text-zinc-700',
+        outline: 'bg-transparent hover:bg-zinc-50 active:bg-zinc-100 text-zinc-600 border border-zinc-200',
+        ghost: 'bg-transparent hover:bg-zinc-100 text-zinc-500 hover:text-zinc-700',
+        danger: 'bg-red-50 hover:bg-red-100 text-red-500',
     };
 
     return (
@@ -94,7 +94,7 @@ export const GlassButton = ({
     );
 };
 
-// --- Segmented Control ---
+// --- Segmented Control (Light Mode) ---
 interface SegmentedControlOption {
     value: string;
     label: string;
@@ -110,7 +110,7 @@ interface SegmentedControlProps {
 
 export const SegmentedControl = ({ options, value, onChange, className = '' }: SegmentedControlProps) => {
     return (
-        <div className={`p-1 bg-black/20 backdrop-blur-xl border border-white/5 rounded-xl flex ${className}`}>
+        <div className={`p-1 bg-zinc-100 border border-zinc-200 rounded-xl flex ${className}`}>
             {options.map((option) => {
                 const isActive = value === option.value;
                 return (
@@ -121,8 +121,8 @@ export const SegmentedControl = ({ options, value, onChange, className = '' }: S
                         className={`
               flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200
               ${isActive
-                                ? 'bg-zinc-800/80 text-white shadow-sm border border-white/10'
-                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}
+                                ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200'
+                                : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'}
             `}
                     >
                         {option.icon && <span className="w-4 h-4">{option.icon}</span>}

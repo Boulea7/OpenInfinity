@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { db, type WeatherCache } from '../services/database';
 import { useSettingsStore } from '../stores';
 import { getLocation } from '../services/location';
+import { watchLocationPermission } from '../services/locationPermission';
 import { weatherManager } from '../services/weather/WeatherManager';
 import type { WeatherData } from '../services/weather/types';
 import type { LocationData } from '../types';
@@ -116,17 +117,19 @@ export function useWeather(): UseWeatherReturn {
   const prevUnitRef = useRef<'celsius' | 'fahrenheit'>(weatherSettings.unit);
 
   // Real-time query for weather cache
-  // This will automatically update when cache changes
+  // Filter by current unit to prevent showing data with wrong temperature unit
   const weather = useLiveQuery(async () => {
     try {
-      // Get the most recent weather cache entry
-      const caches = await db.weatherCache.orderBy('fetchedAt').reverse().limit(1).toArray();
-      return caches.length > 0 ? caches[0] : null;
+      // Get the most recent weather cache entry matching current unit
+      const caches = await db.weatherCache
+        .filter((item) => item.id.endsWith(`_${weatherSettings.unit}`))
+        .sortBy('fetchedAt');
+      return caches.length > 0 ? caches[caches.length - 1] : null;
     } catch (err) {
       console.error('Failed to query weather cache:', err);
       return null;
     }
-  }, []);
+  }, [weatherSettings.unit]);
 
   /**
    * Fetch weather data
@@ -166,10 +169,12 @@ export function useWeather(): UseWeatherReturn {
           location = await getLocation();
         }
 
-        // Use cached data when available, otherwise fetch via WeatherManager
+        // Use cached data when available, but also respect updateInterval setting
         const cached = await getCachedWeather(location, weatherSettings.unit);
+        const intervalMs = weatherSettings.updateInterval * 60 * 1000;
+        const isStaleByInterval = cached && intervalMs > 0 && (Date.now() - cached.fetchedAt) >= intervalMs;
 
-        if (cached) {
+        if (cached && !isStaleByInterval) {
           return;
         }
 
@@ -225,9 +230,13 @@ export function useWeather(): UseWeatherReturn {
    * Force refresh weather data (ignore cache)
    */
   const forceRefresh = useCallback(async () => {
+    // If another fetch is running, wait for it then proceed so manual refresh always triggers a real request
     if (weatherFetchInFlight) {
-      await weatherFetchInFlight;
-      return;
+      try {
+        await weatherFetchInFlight;
+      } catch {
+        // Ignore and retry
+      }
     }
 
     if (isFetchingRef.current) return;
@@ -343,6 +352,28 @@ export function useWeather(): UseWeatherReturn {
       forceRefresh();
     }
   }, [weatherSettings.unit, weather, forceRefresh]);
+
+  /**
+   * Watch for location permission changes
+   * If user initially denied but later granted permission, automatically retry
+   */
+  useEffect(() => {
+    // Only watch if using auto-detect location
+    if (weatherSettings.location.type !== 'auto') {
+      return;
+    }
+
+    const cleanup = watchLocationPermission((state) => {
+      console.log('[useWeather] Location permission changed to:', state);
+      if (state === 'granted') {
+        // Permission granted, fetch weather data
+        console.log('[useWeather] Permission granted, fetching weather...');
+        forceRefresh();
+      }
+    });
+
+    return cleanup;
+  }, [weatherSettings.location.type, forceRefresh]);
 
   return {
     weather: weather || null,
