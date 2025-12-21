@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { Search, Plus, TrendingUp, Share2, AppWindow, Newspaper, Clapperboard, Image, ShoppingBag, MessageCircle, Plane, Coffee, Gamepad2, GraduationCap, Cpu, TrendingDown, BookOpen, MoreHorizontal, Flame, DollarSign, Video, ShoppingCart, Users, Sparkles } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useNavigationStore } from '../../../stores/navigationStore';
@@ -50,6 +50,31 @@ export function AddTab() {
         }))
     );
 
+    // Sliding indicator state
+    const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0 });
+    const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Calculate indicator position
+    const updateIndicator = useCallback(() => {
+        const activeIndex = selectedCategory
+            ? PRESET_CATEGORIES.findIndex(c => c.id === selectedCategory) + 1
+            : 0;
+        const activeButton = buttonRefs.current[activeIndex];
+        if (activeButton && containerRef.current) {
+            const containerRect = containerRef.current.getBoundingClientRect();
+            const buttonRect = activeButton.getBoundingClientRect();
+            setIndicatorStyle({
+                top: buttonRect.top - containerRect.top,
+                height: buttonRect.height,
+            });
+        }
+    }, [selectedCategory]);
+
+    useLayoutEffect(() => {
+        updateIndicator();
+    }, [updateIndicator]);
+
     // Filter websites based on category and search query
     const filteredWebsites = useMemo(() => {
         let result = PRESET_WEBSITES;
@@ -100,38 +125,52 @@ export function AddTab() {
 
             {/* Main Content: 2-Column Layout */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left Sidebar: Categories */}
-                <div className="w-[120px] flex-shrink-0 overflow-y-auto no-scrollbar py-2 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                    <div className="flex flex-col gap-1 px-2">
+                {/* Left Sidebar: Categories with Sliding Indicator */}
+                <div className="w-[160px] flex-shrink-0 overflow-y-auto no-scrollbar py-2 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                    <div ref={containerRef} className="relative flex flex-col gap-0.5 px-2">
+                        {/* Sliding Indicator */}
+                        <div
+                            className="absolute left-2 right-2 bg-gray-100 dark:bg-gray-800 rounded-xl transition-all duration-300 ease-out pointer-events-none"
+                            style={{
+                                top: indicatorStyle.top,
+                                height: indicatorStyle.height,
+                                opacity: indicatorStyle.height > 0 ? 1 : 0,
+                            }}
+                        />
+
+                        {/* All Button */}
                         <button
+                            ref={(el) => { buttonRefs.current[0] = el; }}
                             onClick={() => setCategory(null)}
                             className={cn(
-                                "flex flex-col items-center justify-center p-2 rounded-xl gap-1 transition-colors duration-200",
+                                "relative z-10 flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left transition-colors duration-200",
                                 !selectedCategory
-                                    ? "bg-gray-900 text-white dark:bg-white dark:text-black"
-                                    : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    ? "text-gray-900 dark:text-white"
+                                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                             )}
                         >
-                            <MoreHorizontal className="w-5 h-5" />
-                            <span className="text-xs font-medium">全部</span>
+                            <MoreHorizontal className="w-5 h-5 flex-shrink-0" />
+                            <span className="text-sm font-medium">全部</span>
                         </button>
 
-                        {PRESET_CATEGORIES.map(category => {
+                        {/* Category Buttons */}
+                        {PRESET_CATEGORIES.map((category, index) => {
                             const Icon = getCategoryIcon(category.icon);
                             const isActive = selectedCategory === category.id;
                             return (
                                 <button
                                     key={category.id}
+                                    ref={(el) => { buttonRefs.current[index + 1] = el; }}
                                     onClick={() => setCategory(category.id)}
                                     className={cn(
-                                        "flex flex-col items-center justify-center p-3 rounded-xl gap-1.5 transition-colors duration-200 text-center",
+                                        "relative z-10 flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left transition-colors duration-200",
                                         isActive
-                                            ? "bg-gray-900 text-white dark:bg-white dark:text-black"
-                                            : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            ? "text-gray-900 dark:text-white"
+                                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                     )}
                                 >
-                                    <Icon className="w-5 h-5" />
-                                    <span className="text-[10px] font-medium leading-tight">{category.name}</span>
+                                    <Icon className="w-5 h-5 flex-shrink-0" />
+                                    <span className="text-sm font-medium truncate">{category.name}</span>
                                 </button>
                             );
                         })}

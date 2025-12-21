@@ -10,14 +10,13 @@ import { useSettingsStore } from '../../../stores/settingsStore';
 import { Toggle } from '../components/Toggle';
 import { Slider } from '../components/Slider';
 
-// Preset colors for font
+// Preset colors for font (8 colors to fit in one row with custom picker)
 const FONT_COLORS = [
   { color: '#ffffff', name: 'white' },
   { color: '#ef4444', name: 'red' },
   { color: '#f97316', name: 'orange' },
   { color: '#eab308', name: 'yellow' },
   { color: '#22c55e', name: 'green' },
-  { color: '#06b6d4', name: 'cyan' },
   { color: '#3b82f6', name: 'blue' },
   { color: '#8b5cf6', name: 'purple' },
   { color: '#000000', name: 'black' },
@@ -94,7 +93,7 @@ export const FontSection: React.FC = () => {
                 <Check
                   className="w-4 h-4"
                   style={{
-                    color: ['#ffffff', '#eab308', '#22c55e', '#06b6d4'].includes(color) ? '#000' : '#fff'
+                    color: ['#ffffff', '#eab308', '#22c55e'].includes(color) ? '#000' : '#fff'
                   }}
                 />
               )}
