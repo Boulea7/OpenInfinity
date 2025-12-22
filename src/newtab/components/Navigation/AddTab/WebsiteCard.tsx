@@ -1,9 +1,8 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { Plus, Check } from 'lucide-react';
 import { useIconStore } from '../../../stores/iconStore';
-import { useNavigationStore } from '../../../stores/navigationStore';
 import type { PresetWebsite } from '../../../services/database';
-import { cn } from '../../../utils';
+import { cn, getGoogleFaviconUrl } from '../../../utils';
 
 interface WebsiteCardProps {
     website: PresetWebsite;
@@ -15,11 +14,15 @@ interface WebsiteCardProps {
  */
 export function WebsiteCard({ website }: WebsiteCardProps) {
     const addIcon = useIconStore((state) => state.addIcon);
-    const closePanel = useNavigationStore((state) => state.closePanel);
     const [isAdded, setIsAdded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [imageFailed, setImageFailed] = useState(false);
     const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Generate high-resolution favicon URL (128px for retina displays)
+    const hdIconUrl = useMemo(() => {
+        return getGoogleFaviconUrl(website.url, 128);
+    }, [website.url]);
 
     useEffect(() => {
         return () => {
@@ -40,15 +43,12 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
                 url: website.url,
                 icon: {
                     type: 'favicon',
-                    value: website.icon,
+                    value: hdIconUrl, // Use high-resolution icon
                 },
             });
             setIsAdded(true);
 
-            // Close panel after short delay to show success state
-            closeTimerRef.current = setTimeout(() => {
-                closePanel();
-            }, 500);
+            // Keep panel open for multiple additions
         } catch (error) {
             console.error('Failed to add icon:', error);
         } finally {
@@ -73,7 +73,7 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
                     </div>
                 ) : (
                     <img
-                        src={website.icon}
+                        src={hdIconUrl}
                         alt={website.name}
                         className="w-full h-full object-contain p-1"
                         loading="lazy"

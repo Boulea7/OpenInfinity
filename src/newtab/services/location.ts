@@ -60,7 +60,7 @@ async function getGeolocation(): Promise<LocationData> {
 
         resolve({
           type: 'auto',
-          name: 'Current Location',
+          name: '', // Empty - geocoding will populate, UI uses i18n fallback
           latitude: lat,
           longitude: lon,
         });

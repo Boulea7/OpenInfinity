@@ -248,17 +248,22 @@ export function useAsync<T>(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Use ref to always get the latest asyncFn without adding it to deps
+  const asyncFnRef = useRef(asyncFn);
+  asyncFnRef.current = asyncFn;
+
   const execute = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await asyncFn();
+      const result = await asyncFnRef.current();
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return { data, loading, error, execute };
@@ -273,6 +278,15 @@ export function useClipboard(): {
 } {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup timeout on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const copy = useCallback(async (text: string) => {
     try {

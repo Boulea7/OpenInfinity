@@ -54,6 +54,14 @@ async function getCachedWeather(
       return null;
     }
 
+    // If cache is missing location name, treat as invalid to force refresh
+    // This ensures we don't keep showing "当前位置" when geocoding should have worked
+    if (!cached.location?.name?.trim()) {
+      console.warn('[useWeather] Cached weather missing location name, forcing refresh:', cacheKey);
+      await db.weatherCache.delete(cacheKey);
+      return null;
+    }
+
     if (isCacheExpired(cached)) {
       await db.weatherCache.delete(cacheKey);
       return null;
@@ -74,10 +82,25 @@ async function upsertWeatherCache(
   const now = weatherData.fetchedAt;
   const cacheKey = getCacheKey(location.latitude, location.longitude, unit);
 
+  // Priority for location name:
+  // 1. For auto-location: use geocoded name from weatherData (set by WeatherManager)
+  // 2. For manual location: use user-provided name
+  // 3. Fallback to weatherData.location.name or location.name
+  const resolvedName =
+    (location.type === 'auto'
+      ? weatherData.location.name?.trim()
+      : location.name?.trim()) ||
+    weatherData.location.name?.trim() ||
+    location.name?.trim() ||
+    '';
+
+  // Sync back to weatherData for consistency in the call chain
+  weatherData.location.name = resolvedName;
+
   const cacheEntry: WeatherCache = {
     id: cacheKey,
     location: {
-      name: location.name,
+      name: resolvedName,
       latitude: location.latitude,
       longitude: location.longitude,
     },
@@ -86,6 +109,12 @@ async function upsertWeatherCache(
     fetchedAt: now,
     expiresAt: now + CACHE_EXPIRATION_MS,
   };
+
+  console.log('[useWeather] Upserting weather cache', {
+    cacheKey,
+    locationName: resolvedName,
+    provider: weatherData.provider,
+  });
 
   await db.weatherCache.put(cacheEntry);
   return cacheEntry;
@@ -115,6 +144,7 @@ export function useWeather(): UseWeatherReturn {
   const isFetchingRef = useRef(false);
   const updateIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const prevUnitRef = useRef<'celsius' | 'fahrenheit'>(weatherSettings.unit);
+  const prevLangRef = useRef<string>(i18n.language);
 
   // Real-time query for weather cache
   // Filter by current unit to prevent showing data with wrong temperature unit
@@ -202,7 +232,7 @@ export function useWeather(): UseWeatherReturn {
     } finally {
       weatherFetchInFlight = null;
     }
-  }, [weatherSettings]);
+  }, [weatherSettings, i18n.language]);
 
   /**
    * Manual refetch
@@ -287,7 +317,7 @@ export function useWeather(): UseWeatherReturn {
     } finally {
       weatherFetchInFlight = null;
     }
-  }, [weatherSettings]);
+  }, [weatherSettings, i18n.language]);
 
   /**
    * Initial fetch and periodic updates
@@ -352,6 +382,18 @@ export function useWeather(): UseWeatherReturn {
       forceRefresh();
     }
   }, [weatherSettings.unit, weather, forceRefresh]);
+
+  /**
+   * Re-fetch when language changes (weather descriptions are localized)
+   */
+  useEffect(() => {
+    if (!weather) return;
+
+    if (prevLangRef.current !== i18n.language) {
+      prevLangRef.current = i18n.language;
+      forceRefresh();
+    }
+  }, [i18n.language, weather, forceRefresh]);
 
   /**
    * Watch for location permission changes

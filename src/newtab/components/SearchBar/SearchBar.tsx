@@ -6,6 +6,7 @@ import { useSettingsStore } from '../../stores';
 import { useDebounce } from '../../hooks';
 import { preloadEngineIcons } from '../../utils/iconCache';
 import { cn } from '../../utils';
+import { isSafeUrl } from '../../utils/navigation';
 import { ViewSwitcher } from '../ViewSwitcher/ViewSwitcher';
 
 interface SearchBarProps {
@@ -120,9 +121,10 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
   const [query, setQuery] = useState(externalQuery || '');
 
   // Update query when externalQuery changes (e.g. cleared from parent)
+  // Use functional setState to avoid stale closure and unnecessary re-renders
   useEffect(() => {
-    if (externalQuery !== undefined && externalQuery !== query) {
-      setQuery(externalQuery);
+    if (externalQuery !== undefined) {
+      setQuery((prev) => (prev !== externalQuery ? externalQuery : prev));
     }
   }, [externalQuery]);
 
@@ -237,6 +239,12 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
         : currentEngine.url;
 
       const url = baseUrl + encodeURIComponent(searchQuery);
+
+      // Security: Validate URL before navigation to prevent XSS from malicious custom engines
+      if (!isSafeUrl(url)) {
+        console.error('[SearchBar] Blocked unsafe search URL:', url);
+        return;
+      }
 
       if (searchSettings.openInNewTab) {
         window.open(url, '_blank', 'noopener,noreferrer');
@@ -556,6 +564,7 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
         <input
           ref={inputRef}
           type="text"
+          data-search-input="true"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

@@ -8,7 +8,7 @@ import { getWeatherCondition } from '../../weather';
 import type { IWeatherProvider, WeatherData } from '../types';
 
 const QWEATHER_BASE_URL = 'https://devapi.qweather.com';
-const QWEATHER_TIMEOUT_MS = 8000;
+const QWEATHER_TIMEOUT_MS = 15000; // Increased for network stability
 const JWT_TTL_SEC = 30 * 60;
 
 function getPrivateKeyPem(): string {
@@ -154,6 +154,24 @@ export class QWeatherProvider implements IWeatherProvider {
   private jwtCache: { token: string; exp: number } | null = null;
   private privateKeyPromise: Promise<CryptoKey> | null = null;
 
+  /**
+   * Check if QWeather API credentials are configured
+   */
+  static hasApiKey(): boolean {
+    const projectId = import.meta.env.VITE_QWEATHER_PROJECT_ID;
+    const credentialId = import.meta.env.VITE_QWEATHER_CREDENTIAL_ID;
+    const privateKey = import.meta.env.VITE_QWEATHER_PRIVATE_KEY;
+
+    return Boolean(
+      projectId &&
+        projectId !== 'your-project-id-here' &&
+        credentialId &&
+        credentialId !== 'your-credential-id-here' &&
+        privateKey &&
+        privateKey !== 'your-private-key-here'
+    );
+  }
+
   private async getPrivateKey(): Promise<CryptoKey> {
     if (!this.privateKeyPromise) {
       const pem = getPrivateKeyPem();
@@ -194,11 +212,14 @@ export class QWeatherProvider implements IWeatherProvider {
     return token;
   }
 
-  private async fetchJson<T>(url: string): Promise<T> {
+  private async fetchJson<T>(url: string, token: string): Promise<T> {
     const response = await fetch(url, {
       signal: AbortSignal.timeout(QWEATHER_TIMEOUT_MS),
       referrerPolicy: 'no-referrer',
       credentials: 'omit',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -223,15 +244,14 @@ export class QWeatherProvider implements IWeatherProvider {
         location: `${longitude},${latitude}`,
         unit: unitParam,
         lang: 'en',
-        key: token,
       });
 
       const nowUrl = `${QWEATHER_BASE_URL}/v7/weather/now?${baseParams}`;
       const dailyUrl = `${QWEATHER_BASE_URL}/v7/weather/7d?${baseParams}`;
 
       const [nowData, dailyData] = await Promise.all([
-        this.fetchJson<QWeatherNowResponse>(nowUrl),
-        this.fetchJson<QWeather7dResponse>(dailyUrl),
+        this.fetchJson<QWeatherNowResponse>(nowUrl, token),
+        this.fetchJson<QWeather7dResponse>(dailyUrl, token),
       ]);
 
       if (nowData.code !== '200' || !nowData.now) {

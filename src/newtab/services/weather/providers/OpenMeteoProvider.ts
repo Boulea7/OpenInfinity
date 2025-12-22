@@ -64,7 +64,7 @@ export class OpenMeteoProvider implements IWeatherProvider {
       const url = `https://api.open-meteo.com/v1/forecast?${params}`;
 
       const response = await fetch(url, {
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(15000), // Increased timeout for slower networks
         referrerPolicy: 'no-referrer',
         credentials: 'omit',
       });

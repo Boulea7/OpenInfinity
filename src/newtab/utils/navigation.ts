@@ -64,22 +64,29 @@ export function openWebsite(url: string, openBehaviorSettings: OpenBehavior): vo
 
 /**
  * Check if URL is safe to open
- * Basic validation to prevent javascript: and data: schemes
+ * Uses whitelist approach - only allow http: and https: schemes
+ * This is more secure than blacklisting dangerous schemes
  */
 export function isSafeUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false;
 
-  const lower = url.toLowerCase().trim();
+  const trimmed = url.trim();
+  if (!trimmed) return false;
 
-  // Block dangerous schemes
-  const dangerousSchemes = ['javascript:', 'data:', 'vbscript:', 'file:'];
-  for (const scheme of dangerousSchemes) {
-    if (lower.startsWith(scheme)) {
-      return false;
+  try {
+    const parsed = new URL(trimmed);
+    // Whitelist: only allow http and https protocols
+    const allowedProtocols = ['http:', 'https:'];
+    return allowedProtocols.includes(parsed.protocol.toLowerCase());
+  } catch {
+    // Invalid URL format - could be relative URL or malformed
+    // For relative URLs starting with '/' or alphanumeric, allow them
+    // as they will be resolved against the current origin
+    if (/^[a-zA-Z0-9/]/.test(trimmed) && !trimmed.includes(':')) {
+      return true;
     }
+    return false;
   }
-
-  return true;
 }
 
 /**

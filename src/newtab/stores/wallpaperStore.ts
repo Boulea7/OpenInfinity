@@ -10,6 +10,9 @@ let autoChangeTimer: ReturnType<typeof setInterval> | null = null;
 // Module-level next-wallpaper preloading state (avoid duplicate work across rapid triggers)
 let nextPreloadToken = 0;
 
+// Maximum number of wallpapers to keep in IndexedDB history
+const MAX_WALLPAPER_HISTORY = 50;
+
 /**
  * Stop auto-change timer safely
  */
@@ -60,6 +63,29 @@ function preloadImageUrl(url: string): Promise<void> {
 
 function isPreloadableWallpaperSource(source: WallpaperSource): boolean {
   return source === 'unsplash' || source === 'pexels' || source === 'bing' || source === 'wallhaven' || source === 'preset';
+}
+
+/**
+ * Trim wallpaper history to prevent unlimited IndexedDB growth.
+ * Keeps the most recent MAX_WALLPAPER_HISTORY entries, deletes older ones.
+ */
+async function trimWallpaperHistory(): Promise<void> {
+  try {
+    const count = await db.wallpapers.count();
+    if (count <= MAX_WALLPAPER_HISTORY) return;
+
+    // Get oldest entries to delete
+    const toDelete = count - MAX_WALLPAPER_HISTORY;
+    const oldest = await db.wallpapers.orderBy('createdAt').limit(toDelete).toArray();
+
+    // Delete in batch
+    const idsToDelete = oldest.map((w) => w.id);
+    await db.wallpapers.bulkDelete(idsToDelete);
+
+    console.info(`[Wallpaper] Trimmed ${idsToDelete.length} old entries from history`);
+  } catch (error) {
+    console.warn('[Wallpaper] Failed to trim history:', error);
+  }
 }
 
 /**
@@ -339,6 +365,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
           };
 
           await db.wallpapers.add(wallpaper);
+          await trimWallpaperHistory();
 
           set({
             currentWallpaper: wallpaper,
@@ -394,6 +421,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
           };
 
           await db.wallpapers.add(wallpaper);
+          await trimWallpaperHistory();
 
           set({
             currentWallpaper: wallpaper,
@@ -410,6 +438,12 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       },
 
       setSolidColor: (color) => {
+        // Release old blob URL to prevent memory leak
+        const oldUrl = get().currentUrl;
+        if (oldUrl && oldUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(oldUrl);
+        }
+
         set({
           solidColor: color,
           activeSource: 'solid',
@@ -419,6 +453,12 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       },
 
       setGradient: (config) => {
+        // Release old blob URL to prevent memory leak
+        const oldUrl = get().currentUrl;
+        if (oldUrl && oldUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(oldUrl);
+        }
+
         set({
           gradient: config,
           activeSource: 'gradient',
@@ -563,6 +603,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
           };
 
           await db.wallpapers.add(wallpaper);
+          await trimWallpaperHistory();
 
           // Release old ObjectURL
           const oldUrl = get().currentUrl;

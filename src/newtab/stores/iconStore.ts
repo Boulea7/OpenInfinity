@@ -3,6 +3,12 @@ import { db, generateId, type Icon, type Folder, type GridItem, isValidPosition,
 import { syncIcon, syncFolder, listenForSync, type SyncMessage } from '../utils/sync';
 import { useSettingsStore } from './settingsStore';
 
+// Default grid columns for folders (fixed layout inside folder modal)
+const FOLDER_GRID_COLUMNS = 6;
+
+// Default grid columns fallback when settings are unavailable
+const DEFAULT_GRID_COLUMNS = 6;
+
 /**
  * Icon store state
  */
@@ -16,6 +22,7 @@ interface IconState {
   selectedItems: string[];
   draggedItem: GridItem | null;
   editingItem: GridItem | null;
+  isDeleteMode: boolean; // iOS-style delete mode
 
   // Loading states
   isLoading: boolean;
@@ -61,6 +68,10 @@ interface IconActions {
 
   // Edit mode
   setEditingItem: (item: GridItem | null) => void;
+
+  // Delete mode (iOS-style)
+  enterDeleteMode: () => void;
+  exitDeleteMode: () => void;
 }
 
 /**
@@ -72,7 +83,7 @@ function getNextPosition(
   folders: Folder[]
 ): { x: number; y: number } {
   // Clamp to minimum 1 to prevent division issues
-  const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || 6);
+  const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
   const rootIcons = icons.filter(i => !i.folderId);
   const allItems = [...rootIcons, ...folders];
 
@@ -116,6 +127,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   selectedItems: [],
   draggedItem: null,
   editingItem: null,
+  isDeleteMode: false,
   isLoading: false,
   error: null,
 
@@ -422,7 +434,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     reordered.splice(overIndex, 0, moved);
 
     // P1-1: Read columns from settingsStore (clamp to min 1 for safety)
-    const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || 6);
+    const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
 
     // Recalculate positions based on new order
     const updates = reordered.map((item, index) => ({
@@ -483,8 +495,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const updates = reordered.map((icon, index) => ({
       ...icon,
       position: {
-        x: index % 6, // Default 6 columns in folder
-        y: Math.floor(index / 6),
+        x: index % FOLDER_GRID_COLUMNS,
+        y: Math.floor(index / FOLDER_GRID_COLUMNS),
       },
     }));
 
@@ -560,8 +572,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const { columns, rows } = settingsStore.viewSettings;
 
     // Clamp to minimum 1 to prevent NaN/Infinity from division by zero
-    const safeColumns = Math.max(1, columns || 6);
-    const safeRows = Math.max(1, rows || 4);
+    const safeColumns = Math.max(1, columns || DEFAULT_GRID_COLUMNS);
+    const safeRows = Math.max(1, rows || 4); // 4 rows is a reasonable default
     const itemsPerPage = safeColumns * safeRows;
 
     // Only count root level items
@@ -574,10 +586,21 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   setEditingItem: item => {
     set({ editingItem: item });
   },
+
+  // iOS-style delete mode actions
+  enterDeleteMode: () => {
+    set({ isDeleteMode: true, selectedItems: [] });
+  },
+
+  exitDeleteMode: () => {
+    set({ isDeleteMode: false });
+  },
 }));
 
-// P2-1: Setup BroadcastChannel sync listener
-listenForSync((message: SyncMessage) => {
+// P2-1: Setup BroadcastChannel sync listener (singleton guard to prevent duplicate registration)
+let syncListenerCleanup: (() => void) | null = null;
+if (!syncListenerCleanup) {
+  syncListenerCleanup = listenForSync((message: SyncMessage) => {
   const store = useIconStore.getState();
 
   switch (message.type) {
@@ -636,4 +659,5 @@ listenForSync((message: SyncMessage) => {
     default:
       break;
   }
-});
+  });
+}

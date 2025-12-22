@@ -6,7 +6,7 @@
 import type { IWeatherProvider, WeatherData } from './types';
 import { OpenMeteoProvider } from './providers/OpenMeteoProvider';
 import { OpenWeatherMapProvider } from './providers/OpenWeatherMapProvider';
-// import { QWeatherProvider } from './providers/QWeatherProvider'; // Temporarily disabled due to 403 errors
+import { QWeatherProvider } from './providers/QWeatherProvider';
 import { getCityName } from '../geocoding';
 import { isCoordinatesInChina } from '../../utils/regionUtils';
 
@@ -23,7 +23,7 @@ export class WeatherManager {
   private static instance: WeatherManager | null = null;
 
   private readonly openMeteo = new OpenMeteoProvider();
-  // private readonly qweather = new QWeatherProvider(); // Temporarily disabled due to 403 errors
+  private readonly qweather = new QWeatherProvider();
   private readonly openWeatherMap = new OpenWeatherMapProvider();
 
   static getInstance(): WeatherManager {
@@ -38,12 +38,22 @@ export class WeatherManager {
   }
 
   private getProviderChain(latitude: number, longitude: number): IWeatherProvider[] {
-    // Temporarily disable QWeather due to 403 errors
-    // TODO: Fix QWeather JWT authentication
-    if (isCoordinatesInChina(latitude, longitude)) {
-      return [this.openMeteo, this.openWeatherMap]; // Skip qweather
+    const providers: IWeatherProvider[] = [];
+
+    // For China region: prioritize QWeather (better local data coverage)
+    if (isCoordinatesInChina(latitude, longitude) && QWeatherProvider.hasApiKey()) {
+      providers.push(this.qweather);
     }
-    return [this.openMeteo, this.openWeatherMap]; // Skip qweather
+
+    // Primary fallback: Open-Meteo (free, no API key required, global coverage)
+    providers.push(this.openMeteo);
+
+    // Secondary fallback: OpenWeatherMap (if API key is configured)
+    if (OpenWeatherMapProvider.hasApiKey()) {
+      providers.push(this.openWeatherMap);
+    }
+
+    return providers;
   }
 
   async fetchWeather(

@@ -122,6 +122,25 @@ function App() {
     document.documentElement.setAttribute('data-animation-intensity', intensity);
   }, [viewSettings.animationIntensity]);
 
+  // Ctrl+F / Cmd+F to focus search bar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        const target = e.target as HTMLElement | null;
+        // Do not override native find when user is typing in input/textarea
+        if (target && (target.closest('input, textarea') || target.isContentEditable)) {
+          return;
+        }
+        e.preventDefault();
+        // Use data attribute to find the main search input
+        const searchInput = document.querySelector('input[data-search-input="true"]') as HTMLInputElement;
+        searchInput?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleAddIcon = useCallback(() => {
     setEditingIcon(null);
     setShowIconEditor(true);
@@ -231,7 +250,7 @@ function App() {
                   </div>
                 ) : (
                   <IconGrid
-                    className="max-w-4xl w-full"
+                    className="w-full"
                     onAddIcon={handleAddIcon}
                     onEditIcon={handleEditIcon}
                     onOpenFolder={handleOpenFolder}

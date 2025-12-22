@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useShallow } from 'zustand/shallow';
 import { db } from '../services/database';
 import { useSettingsStore } from '../stores';
 import type { TodoItem } from '../services/database';
@@ -27,24 +28,30 @@ export interface UseTodosReturn {
  * Uses Dexie's useLiveQuery for real-time database synchronization
  */
 export function useTodos(): UseTodosReturn {
-  const { widgetSettings } = useSettingsStore();
+  // Only subscribe to the specific settings we need to avoid unnecessary re-renders
+  const { maxItems, showCompleted } = useSettingsStore(
+    useShallow((state) => ({
+      maxItems: state.widgetSettings.todoWidget.maxItems,
+      showCompleted: state.widgetSettings.todoWidget.showCompleted,
+    }))
+  );
 
   // Real-time query for todos
   const todos = useLiveQuery(() => {
     let query = db.todos.orderBy('createdAt').reverse();
 
     // Apply max items limit from settings
-    if (widgetSettings.todoWidget.maxItems > 0) {
-      query = query.limit(widgetSettings.todoWidget.maxItems);
+    if (maxItems > 0) {
+      query = query.limit(maxItems);
     }
 
     // Filter completed todos if setting is disabled
-    if (!widgetSettings.todoWidget.showCompleted) {
+    if (!showCompleted) {
       query = query.filter(todo => !todo.done);
     }
 
     return query.toArray();
-  }, [widgetSettings.todoWidget]);
+  }, [maxItems, showCompleted]);
 
   // Add new todo
   const addTodo = useCallback(async (text: string, priority: TodoPriority = 'medium') => {
@@ -111,15 +118,16 @@ export function useTodos(): UseTodosReturn {
     }
   }, []);
 
-  // Clear completed todos
+  // Clear completed todos using batch delete for better performance
   const clearCompleted = useCallback(async () => {
     try {
-      const completedTodos = await db.todos.filter(todo => todo.done).toArray();
+      // Get IDs of completed todos and delete in batch
+      const completedIds = await db.todos
+        .filter(todo => todo.done)
+        .primaryKeys();
 
-      if (completedTodos.length > 0) {
-        for (const todo of completedTodos) {
-          await db.todos.delete(todo.id);
-        }
+      if (completedIds.length > 0) {
+        await db.todos.bulkDelete(completedIds);
       }
     } catch (error) {
       console.error('Failed to clear completed todos:', error);

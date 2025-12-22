@@ -72,12 +72,16 @@ export async function exportAllData(): Promise<string> {
 
     // 3. Serialize wallpapers (convert Blob to base64)
     const wallpapersWithBase64 = await Promise.all(
-      wallpapers.map(async (w) => ({
-        ...w,
-        blob: w.blob ? await blobToBase64(w.blob) : undefined,
-        // Store blob as base64 for JSON compatibility
-        _blobBase64: w.blob ? await blobToBase64(w.blob) : undefined,
-      }))
+      wallpapers.map(async (w) => {
+        // Convert blob once and reuse to avoid duplicate serialization
+        const base64 = w.blob ? await blobToBase64(w.blob) : undefined;
+        return {
+          ...w,
+          blob: base64,
+          // Store blob as base64 for JSON compatibility (used during import)
+          _blobBase64: base64,
+        };
+      })
     );
 
     // 4. Construct backup object

@@ -305,6 +305,11 @@
     @apply ring-2 ring-primary-500 ring-offset-2;
   }
 
+  /* iOS-style delete mode shake animation */
+  .animate-shake {
+    animation: icon-shake 0.15s ease-in-out infinite;
+  }
+
   /* View transition animations */
   .view-transition-fade-in {
     animation: fadeIn var(--fade-duration) ease-in-out;
@@ -337,6 +342,16 @@
   to {
     opacity: 0;
     transform: translateY(-10px);
+  }
+}
+
+/* iOS-style delete mode shake keyframes */
+@keyframes icon-shake {
+  0%, 100% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
   }
 }
 

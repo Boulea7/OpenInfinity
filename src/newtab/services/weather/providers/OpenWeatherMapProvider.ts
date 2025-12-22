@@ -1,13 +1,16 @@
 /**
- * OpenWeatherMap provider (One Call API 3.0)
- * Reference: https://openweathermap.org/api/one-call-3
+ * OpenWeatherMap provider (Free tier APIs)
+ * Uses Current Weather API + 5 Day/3 Hour Forecast API
+ * Reference: https://openweathermap.org/current
+ * Reference: https://openweathermap.org/forecast5
  */
 
 import { getWeatherCondition } from '../../weather';
 import type { IWeatherProvider, WeatherData } from '../types';
 
-const OWM_BASE_URL = 'https://api.openweathermap.org/data/3.0/onecall';
-const OWM_TIMEOUT_MS = 8000;
+const OWM_CURRENT_URL = 'https://api.openweathermap.org/data/2.5/weather';
+const OWM_FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
+const OWM_TIMEOUT_MS = 10000;
 
 function toNumber(value: unknown, fieldName: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -16,23 +19,10 @@ function toNumber(value: unknown, fieldName: string): number {
   return value;
 }
 
-function formatDateFromUnix(dtSeconds: number, timeZone?: string): string {
-  const date = new Date(dtSeconds * 1000);
-
-  if (timeZone) {
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(date);
-    } catch {
-      // Ignore invalid timezone
-    }
-  }
-
-  return date.toISOString().slice(0, 10);
+function formatDateFromUnix(dtSeconds: number, timezoneOffset: number): string {
+  // Apply timezone offset (in seconds) to get local date
+  const localDate = new Date((dtSeconds + timezoneOffset) * 1000);
+  return localDate.toISOString().slice(0, 10);
 }
 
 function getDayOfWeek(dateString: string): string {
@@ -90,37 +80,58 @@ function mapOwmWeatherIdToWmoCode(weatherId: number): number {
   return 999;
 }
 
-interface OwmWeather {
-  id: number;
+// Current Weather API response
+interface OwmCurrentResponse {
+  main: {
+    temp: number;
+    feels_like: number;
+    humidity: number;
+    temp_max: number;
+    temp_min: number;
+  };
+  wind: {
+    speed: number;
+  };
+  weather: Array<{ id: number }>;
+  timezone: number; // Shift in seconds from UTC
 }
 
-interface OwmCurrent {
-  temp: number;
-  feels_like: number;
-  humidity: number;
-  wind_speed: number;
-  weather: OwmWeather[];
-}
-
-interface OwmDailyTemp {
-  max: number;
-  min: number;
-}
-
-interface OwmDaily {
+// 5 Day Forecast API response
+interface OwmForecastItem {
   dt: number;
-  temp: OwmDailyTemp;
-  weather: OwmWeather[];
+  main: {
+    temp: number;
+    temp_max: number;
+    temp_min: number;
+  };
+  weather: Array<{ id: number }>;
 }
 
-interface OwmResponse {
-  timezone?: string;
-  current?: OwmCurrent;
-  daily?: OwmDaily[];
+interface OwmForecastResponse {
+  list: OwmForecastItem[];
+  city: {
+    timezone: number;
+  };
+}
+
+// Aggregated daily forecast
+interface DailyForecast {
+  date: string;
+  high: number;
+  low: number;
+  weatherId: number;
 }
 
 export class OpenWeatherMapProvider implements IWeatherProvider {
   readonly name = 'openweathermap';
+
+  /**
+   * Check if API key is configured
+   */
+  static hasApiKey(): boolean {
+    const key = import.meta.env.VITE_OPENWEATHER_API_KEY;
+    return Boolean(key && key !== 'your-openweather-api-key-here');
+  }
 
   private async fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url, {
@@ -130,10 +141,52 @@ export class OpenWeatherMapProvider implements IWeatherProvider {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('OpenWeatherMap API key invalid');
+      }
       throw new Error(`OpenWeatherMap API error: ${response.status} ${response.statusText}`);
     }
 
     return response.json() as Promise<T>;
+  }
+
+  /**
+   * Aggregate 3-hour forecast items into daily forecasts
+   */
+  private aggregateDailyForecasts(
+    forecastItems: OwmForecastItem[],
+    timezoneOffset: number
+  ): DailyForecast[] {
+    const dailyMap = new Map<string, { highs: number[]; lows: number[]; weatherIds: number[] }>();
+
+    for (const item of forecastItems) {
+      const date = formatDateFromUnix(item.dt, timezoneOffset);
+
+      if (!dailyMap.has(date)) {
+        dailyMap.set(date, { highs: [], lows: [], weatherIds: [] });
+      }
+
+      const day = dailyMap.get(date)!;
+      day.highs.push(item.main.temp_max);
+      day.lows.push(item.main.temp_min);
+      if (item.weather?.[0]?.id) {
+        day.weatherIds.push(item.weather[0].id);
+      }
+    }
+
+    const dailyForecasts: DailyForecast[] = [];
+
+    for (const [date, data] of dailyMap) {
+      dailyForecasts.push({
+        date,
+        high: Math.round(Math.max(...data.highs)),
+        low: Math.round(Math.min(...data.lows)),
+        // Use most common weather ID or first one
+        weatherId: data.weatherIds[Math.floor(data.weatherIds.length / 2)] || 800,
+      });
+    }
+
+    return dailyForecasts.slice(0, 7); // Return up to 7 days
   }
 
   async fetchWeather(
@@ -146,37 +199,42 @@ export class OpenWeatherMapProvider implements IWeatherProvider {
     try {
       const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
-      if (!apiKey) {
-        throw new Error('Missing VITE_OPENWEATHER_API_KEY');
+      if (!apiKey || apiKey === 'your-openweather-api-key-here') {
+        throw new Error('OpenWeatherMap API key not configured');
       }
 
       const unitsParam = unit === 'fahrenheit' ? 'imperial' : 'metric';
 
-      const params = new URLSearchParams({
+      // Fetch current weather and forecast in parallel
+      const currentParams = new URLSearchParams({
         lat: latitude.toString(),
         lon: longitude.toString(),
         appid: apiKey,
         units: unitsParam,
-        exclude: 'minutely,hourly,alerts',
-        lang: 'en',
       });
 
-      const url = `${OWM_BASE_URL}?${params}`;
-      const data: OwmResponse = await this.fetchJson<OwmResponse>(url);
+      const forecastParams = new URLSearchParams({
+        lat: latitude.toString(),
+        lon: longitude.toString(),
+        appid: apiKey,
+        units: unitsParam,
+      });
 
-      if (!data.current || !data.daily || data.daily.length === 0) {
-        throw new Error('Invalid OpenWeatherMap data format');
-      }
+      const [currentData, forecastData] = await Promise.all([
+        this.fetchJson<OwmCurrentResponse>(`${OWM_CURRENT_URL}?${currentParams}`),
+        this.fetchJson<OwmForecastResponse>(`${OWM_FORECAST_URL}?${forecastParams}`),
+      ]);
 
-      const currentWeatherId = data.current.weather?.[0]?.id;
+      // Process current weather
+      const currentWeatherId = currentData.weather?.[0]?.id;
       const currentWmoCode =
         typeof currentWeatherId === 'number' ? mapOwmWeatherIdToWmoCode(currentWeatherId) : 999;
 
-      const temp = Math.round(toNumber(data.current.temp, 'temp'));
-      const feelsLike = Math.round(toNumber(data.current.feels_like, 'feels_like'));
-      const humidity = Math.round(toNumber(data.current.humidity, 'humidity'));
+      const temp = Math.round(toNumber(currentData.main.temp, 'temp'));
+      const feelsLike = Math.round(toNumber(currentData.main.feels_like, 'feels_like'));
+      const humidity = Math.round(toNumber(currentData.main.humidity, 'humidity'));
 
-      const windSpeedRaw = toNumber(data.current.wind_speed, 'wind_speed');
+      const windSpeedRaw = toNumber(currentData.wind.speed, 'wind.speed');
 
       // OWM wind speed: m/s (metric) or mph (imperial). Normalize to km/h for UI.
       const windSpeedKmh = unitsParam === 'metric' ? windSpeedRaw * 3.6 : windSpeedRaw * 1.60934;
@@ -190,18 +248,20 @@ export class OpenWeatherMapProvider implements IWeatherProvider {
         feelsLike,
       };
 
-      const forecast = data.daily.slice(0, 7).map((day) => {
-        const date = formatDateFromUnix(day.dt, data.timezone);
-        const weatherId = day.weather?.[0]?.id;
-        const wmoCode = typeof weatherId === 'number' ? mapOwmWeatherIdToWmoCode(weatherId) : 999;
-        const dayDate = new Date(`${date}T00:00:00`);
+      // Process forecast
+      const timezoneOffset = forecastData.city?.timezone || currentData.timezone || 0;
+      const dailyForecasts = this.aggregateDailyForecasts(forecastData.list, timezoneOffset);
+
+      const forecast = dailyForecasts.map((day) => {
+        const wmoCode = mapOwmWeatherIdToWmoCode(day.weatherId);
+        const dayDate = new Date(`${day.date}T00:00:00`);
 
         return {
-          date,
-          dayOfWeek: getDayOfWeek(date),
-          dayIndex: dayDate.getDay(), // 0-6 for i18n
-          high: Math.round(toNumber(day.temp.max, 'temp.max')),
-          low: Math.round(toNumber(day.temp.min, 'temp.min')),
+          date: day.date,
+          dayOfWeek: getDayOfWeek(day.date),
+          dayIndex: dayDate.getDay(),
+          high: day.high,
+          low: day.low,
           condition: getWeatherCondition(wmoCode),
           conditionCode: wmoCode,
         };
@@ -224,4 +284,3 @@ export class OpenWeatherMapProvider implements IWeatherProvider {
     }
   }
 }
-

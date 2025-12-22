@@ -99,7 +99,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className, hideHeade
         <div className="flex items-start justify-between px-6 pt-6 mb-4">
           <div className="flex flex-col">
             <span className="text-xl font-bold tracking-tight shadow-black/50 drop-shadow-sm">
-              {weather.location.name === 'Current Location' ? t('weather.currentLocation') : weather.location.name}
+              {weather.location.name || t('weather.currentLocation')}
             </span>
             <span className="text-sm text-white/60 font-medium">{getWeatherConditionI18n(weather.current.conditionCode, t)}</span>
           </div>

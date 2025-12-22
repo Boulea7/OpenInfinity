@@ -144,9 +144,20 @@ export function getFaviconUrl(url: string, _size: number = 64): string {
 }
 
 /**
- * Get high-quality favicon using Google's service
+ * Get high-quality logo using Clearbit Logo API
+ * Returns SVG/PNG at specified size, empty string if domain is invalid
  */
-export function getGoogleFaviconUrl(url: string, size: number = 64): string {
+export function getClearbitLogoUrl(url: string, size: number = 256): string {
+  const domain = extractDomain(url);
+  if (!domain || domain === url) return '';
+  return `https://logo.clearbit.com/${domain}?size=${size}`;
+}
+
+/**
+ * Get high-quality favicon using Google's service
+ * Default size 256px for Retina display support (2x scaling)
+ */
+export function getGoogleFaviconUrl(url: string, size: number = 256): string {
   const domain = extractDomain(url);
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
 }

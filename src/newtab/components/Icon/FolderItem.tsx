@@ -4,7 +4,8 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Folder } from '../../services/database';
 import { useIconStore, useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
-import { safeParseUrl, getFaviconUrl } from '../../utils/urlHelpers';
+import { safeParseUrl } from '../../utils/urlHelpers';
+import { getGoogleFaviconUrl } from '../../utils';
 
 interface FolderItemProps {
   folder: Folder;
@@ -16,8 +17,11 @@ interface FolderItemProps {
 
 /**
  * FolderItem Component
- * Renders a folder with preview of contained icons
- * Supports receiving dragged icons
+ * Renders a folder with 3x3 icon preview grid (Infinity Pro style)
+ * - Glassmorphism folder background
+ * - Folder name displayed BELOW the folder container
+ * - Supports drag-and-drop (sortable + droppable)
+ * - Smooth hover and drop target animations
  */
 export function FolderItem({
   folder,
@@ -50,9 +54,11 @@ export function FolderItem({
   });
 
   // Apply drag transform
+  // IMPORTANT: When isOverlay=true, DragOverlay handles positioning
+  // Avoid double-transform which causes flash/jump bug
   const style = useMemo(
     () => ({
-      transform: CSS.Transform.toString(transform),
+      transform: isOverlay ? undefined : CSS.Transform.toString(transform),
       transition: isOverlay ? undefined : transition,
     }),
     [transform, transition, isOverlay]
@@ -82,63 +88,78 @@ export function FolderItem({
     onContextMenu?.(e, folder);
   };
 
-  // Container size based on icon size settings
-  const containerSize =
-    iconStyle.size === 'small'
-      ? 'w-16 h-20'
-      : iconStyle.size === 'large'
-        ? 'w-24 h-28'
-        : 'w-20 h-24';
-
-  const folderIconSize =
+  // Folder container size based on icon size settings
+  const folderSize =
     iconStyle.size === 'small'
       ? 'w-12 h-12'
       : iconStyle.size === 'large'
         ? 'w-16 h-16'
         : 'w-14 h-14';
 
+  // Container width for text truncation
+  const containerWidth =
+    iconStyle.size === 'small'
+      ? 'w-16'
+      : iconStyle.size === 'large'
+        ? 'w-20'
+        : 'w-18';
+
   return (
     <div
       ref={setNodeRef}
       style={style}
+      data-folder-item
       {...attributes}
       {...listeners}
       className={cn(
-        'relative flex flex-col items-center justify-center group',
-        containerSize,
-        'rounded-xl cursor-pointer select-none',
-        'transition-all duration-200',
-        // Hover effect
-        iconStyle.animation === 'scale' && !isDragging && 'hover:scale-105',
-        // Drop target highlight
-        isOver && !isDragging && 'ring-2 ring-primary-500 scale-105',
-        // Dragging state
-        isDragging && 'opacity-50 scale-95',
-        // Overlay style
-        isOverlay && 'shadow-2xl',
+        // Flex column layout: folder on top, text below (matches IconItem)
+        'group relative flex flex-col items-center',
+        'py-2 px-1',
+        'cursor-pointer select-none',
+        'transition-all duration-300 ease-out',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
+
+        // NO background on container (transparent)
+
+        // Hover effect: lift up
+        'hover:-translate-y-1',
+
+        // Drop target highlight (when dragging icon over folder)
+        isOver && !isDragging && 'scale-110',
+
+        // Dragging state: hide original completely
+        isDragging && !isOverlay && 'opacity-0',
+
+        // Overlay style (drag preview)
+        isOverlay && 'opacity-100 scale-110 z-50 cursor-grabbing',
+
         // Selected state
-        isSelected && 'ring-2 ring-primary-500 ring-offset-2'
+        isSelected && 'scale-105'
       )}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Folder container with Infinity Pro style */}
+      {/* Folder container with glassmorphism style */}
       <div
         className={cn(
-          folderIconSize,
-          'relative flex items-center justify-center mb-1.5',
+          folderSize,
+          'relative flex items-center justify-center',
           'overflow-hidden',
-          'transition-all duration-200',
-          'group-hover:brightness-110',
-          iconStyle.shadow && 'shadow-lg shadow-black/10'
+          'transition-all duration-300 ease-out',
+          'group-hover:scale-110',
+          // Drop target ring
+          isOver && !isDragging && 'ring-2 ring-brand-orange-500 ring-offset-2 ring-offset-transparent',
+          // Selected ring
+          isSelected && 'ring-2 ring-brand-orange-500 ring-offset-2 ring-offset-transparent'
         )}
         style={{
-          background: 'var(--folder-bg)',
-          backdropFilter: `blur(var(--folder-backdrop-blur))`,
-          WebkitBackdropFilter: `blur(var(--folder-backdrop-blur))`,
+          background: 'var(--folder-bg, rgba(255,255,255,0.2))',
+          backdropFilter: 'blur(var(--folder-backdrop-blur, 10px))',
+          WebkitBackdropFilter: 'blur(var(--folder-backdrop-blur, 10px))',
           borderRadius: `${iconStyle.borderRadius}%`,
+          filter: 'drop-shadow(1px 1px 5px rgba(0, 0, 0, 0.25))',
         }}
       >
         {/* 3x3 Icon preview grid (Infinity Pro style) */}
@@ -157,7 +178,7 @@ export function FolderItem({
               : icon.icon.type === 'custom'
                 ? icon.icon.value
                 : validUrl
-                  ? getFaviconUrl(validUrl)
+                  ? getGoogleFaviconUrl(validUrl, 64) // Use 64px for mini previews
                   : '';
             const showImage = Boolean(iconSrc) && !previewErrors[icon.id];
 
@@ -227,17 +248,19 @@ export function FolderItem({
         )}
       </div>
 
-      {/* Folder name with CSS variable styling */}
+      {/* Folder name BELOW the folder container (matches IconItem style) */}
       {iconStyle.showName && (
         <span
           className={cn(
-            'font-medium text-center px-1',
-            'line-clamp-1 max-w-full'
+            containerWidth,
+            'mt-2 font-medium text-center',
+            'truncate', // Ellipsis for overflow
+            'transition-colors duration-200'
           )}
           style={{
-            fontSize: 'var(--icon-font-size)',
-            color: 'var(--icon-font-color)',
-            textShadow: 'var(--icon-text-shadow)',
+            fontSize: 'var(--icon-font-size, 12px)',
+            color: 'var(--icon-font-color, #ffffff)',
+            textShadow: 'var(--icon-text-shadow, 1px 1px 3px rgba(0,0,0,0.5))',
           }}
         >
           {folder.name}

@@ -59,7 +59,9 @@
     "https://api.openweathermap.org/*",
     "https://*.gstatic.com/*",
     "https://api.bigdatacloud.net/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://wallhaven.cc/*",
+    "https://w.wallhaven.cc/*"
   ],
   "oauth2": {
     "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",

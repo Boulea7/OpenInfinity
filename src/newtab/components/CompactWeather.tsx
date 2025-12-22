@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { RefreshCw, MapPinOff } from 'lucide-react';
 import { useSettingsStore } from '../stores';
 import { useWeather } from '../hooks';
 import { getWeatherIcon } from '../services/weather';
@@ -15,8 +17,9 @@ interface CompactWeatherProps {
  * Backend logic ready - awaiting frontend design from Gemini
  */
 export function CompactWeather({ className }: CompactWeatherProps) {
+  const { t } = useTranslation();
   const { weatherSettings } = useSettingsStore();
-  const { weather, isLoading, error } = useWeather();
+  const { weather, isLoading, error, forceRefresh } = useWeather();
   const [isExpanded, setIsExpanded] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -52,7 +55,56 @@ export function CompactWeather({ className }: CompactWeatherProps) {
   }, [isExpanded]);
 
 
-  if (!weather || isLoading || error) return null;
+  // Common pill styles for all states
+  const pillBaseStyles = cn(
+    'flex items-center gap-2 px-3 py-1.5 rounded-full',
+    'bg-black/20 dark:bg-white/10 border border-white/15 backdrop-blur-md shadow-sm',
+    'text-white select-none',
+    '[text-shadow:0_1px_3px_rgba(0,0,0,0.5)]'
+  );
+
+  // Loading state - show spinner while fetching
+  if (isLoading && !weather) {
+    return (
+      <div className={cn('relative', className)}>
+        <div className={pillBaseStyles} title={t('weather.loading')}>
+          <RefreshCw className="w-4 h-4 text-white/80 animate-spin" />
+          <span className="text-sm text-white/80">{t('weather.loading')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - show error with retry option
+  if (error && !weather) {
+    return (
+      <div className={cn('relative', className)}>
+        <div
+          className={cn(
+            pillBaseStyles,
+            'cursor-pointer hover:bg-black/30 dark:hover:bg-white/15 transition-colors duration-200'
+          )}
+          role="button"
+          tabIndex={0}
+          onClick={() => forceRefresh()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              forceRefresh();
+            }
+          }}
+          title={t('weather.clickToRetry')}
+          aria-label={t('weather.locationError')}
+        >
+          <MapPinOff className="w-4 h-4 text-white/70" />
+          <span className="text-sm text-white/70">{t('weather.locationFailed')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // No data and not loading/error - initial state, hide component
+  if (!weather) return null;
 
   const unitLabel = weatherSettings.unit === 'celsius' ? '°C' : '°F';
   const tempText = `${weather.current.temperature}${unitLabel}`;

@@ -237,6 +237,8 @@
       "animationNormal": "正常",
       "animationHeavy": "强烈",
       "showPinnedNotes": "显示固定便签",
+      "autoFillGrid": "自动补位",
+      "autoFillGridDesc": "开启后图标将自动填充空位，关闭则保留空白位置",
       "widgetSidebar": {
         "title": "小组件侧边栏",
         "show": "显示小组件侧边栏",
@@ -273,7 +275,12 @@
       "showForecast": "显示天气预报",
       "location": "位置",
       "auto": "自动定位",
-      "manual": "手动设置"
+      "manual": "手动设置",
+      "selectCity": "选择城市",
+      "searchCity": "搜索城市...",
+      "regionChina": "中国城市",
+      "regionIntl": "国际城市",
+      "noCityFound": "未找到匹配的城市"
     },
     "clock": {
       "title": "时钟",
@@ -368,6 +375,10 @@
     }
   },
   "weather": {
+    "loading": "加载中...",
+    "locationFailed": "位置获取失败",
+    "locationError": "位置错误",
+    "clickToRetry": "点击重试获取位置",
     "currentLocation": "当前位置",
     "feelsLike": "体感温度",
     "humidity": "湿度",
@@ -466,10 +477,26 @@
     "unsavedChangesConfirm": "有未保存的更改，确定要关闭吗？",
     "emptyNote": "（空便签）"
   },
+  "contextMenu": {
+    "open": "打开",
+    "edit": "编辑",
+    "editIcons": "编辑图标",
+    "delete": "删除",
+    "openFolder": "打开文件夹",
+    "rename": "重命名",
+    "deleteFolder": "删除文件夹",
+    "backup": "立即备份",
+    "randomWallpaper": "随机壁纸",
+    "favoriteWallpaper": "收藏当前壁纸",
+    "downloadWallpaper": "下载当前壁纸",
+    "nextWallpaper": "切换到下一张壁纸",
+    "searchIcons": "搜索图标"
+  },
   "common": {
     "cancel": "取消",
     "save": "保存",
     "delete": "删除",
-    "close": "关闭", "today": "今天"
+    "close": "关闭",
+    "today": "今天"
   }
 }

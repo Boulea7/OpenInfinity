@@ -85,6 +85,7 @@ export interface ViewSettings {
   animationIntensity: 'none' | 'light' | 'normal' | 'heavy';  // Animation intensity (default: 'normal')
   currentView: 'search' | 'notes';  // Current view mode (default: 'search')
   showPinnedNotes: boolean;         // Show pinned notes in search view (default: false)
+  autoFillGrid: boolean;            // Auto-fill grid gaps (default: true)
 }
 
 /**
@@ -361,8 +362,8 @@ const defaultSettings: SettingsState = {
   },
   viewSettings: {
     zoom: 100,
-    columns: 6,
-    rows: 4,
+    columns: 7,
+    rows: 3,
     columnGap: 50,  // Default 50%
     rowGap: 50,     // Default 50%
     iconScale: 80,  // Default 80%
@@ -382,6 +383,7 @@ const defaultSettings: SettingsState = {
     animationIntensity: 'normal',  // Default: normal animation
     currentView: 'search',          // Default: search view
     showPinnedNotes: false,         // Default: hide pinned notes
+    autoFillGrid: true,             // Default: auto-fill enabled
   },
   fontSettings: {
     family: 'Inter',
@@ -602,9 +604,17 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'openinfinity-settings',
-      version: 6, // V6: Add minimalModeSettings
+      version: 7, // V7: Add autoFillGrid setting
       migrate: (persistedState: any, version: number) => {
         const state = persistedState ?? {};
+
+        // Defense: First-time install or corrupted localStorage may have empty state
+        // Ensure required nested objects exist before spreading to avoid TypeError
+        if (!state.searchSettings) state.searchSettings = { ...defaultSettings.searchSettings };
+        if (!state.viewSettings) state.viewSettings = { ...defaultSettings.viewSettings };
+        if (!state.notificationSettings) state.notificationSettings = { ...defaultSettings.notificationSettings };
+        if (!state.changelogSettings) state.changelogSettings = { ...defaultSettings.changelogSettings };
+        if (!state.minimalModeSettings) state.minimalModeSettings = { ...defaultSettings.minimalModeSettings };
 
         // V3: Ensure default search engines are up-to-date
         if (version < 3) {
@@ -703,6 +713,14 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         if (version < 6) {
           state.minimalModeSettings = state?.minimalModeSettings ?? {
             showViewSwitcher: false,
+          };
+        }
+
+        // V7: Add autoFillGrid setting
+        if (version < 7) {
+          state.viewSettings = {
+            ...state.viewSettings,
+            autoFillGrid: state?.viewSettings?.autoFillGrid ?? true,
           };
         }
 

@@ -172,7 +172,7 @@ export async function fetchWeather(
 
     return {
       location: {
-        name: 'Current Location', // Will be updated by location service
+        name: '', // Empty - will be populated by geocoding or use i18n fallback
         latitude,
         longitude,
       },

@@ -229,6 +229,8 @@
       "showPagination": "Show Pagination",
       "showClock": "Show Clock",
       "showWeather": "Show Weather",
+      "autoFillGrid": "Auto Fill Grid",
+      "autoFillGridDesc": "When enabled, icons will automatically fill empty spaces; when disabled, empty positions will be preserved",
       "widgetSidebar": {
         "title": "Widget Sidebar",
         "show": "Show Widget Sidebar",
@@ -265,7 +267,12 @@
       "showForecast": "Show Weather Forecast",
       "location": "Location",
       "auto": "Auto Detect",
-      "manual": "Manual"
+      "manual": "Manual",
+      "selectCity": "Select City",
+      "searchCity": "Search cities...",
+      "regionChina": "China",
+      "regionIntl": "International",
+      "noCityFound": "No matching cities found"
     },
     "clock": {
       "title": "Clock",
@@ -360,6 +367,10 @@
     }
   },
   "weather": {
+    "loading": "Loading...",
+    "locationFailed": "Location failed",
+    "locationError": "Location error",
+    "clickToRetry": "Click to retry location",
     "currentLocation": "Current Location",
     "feelsLike": "Feels like",
     "humidity": "Humidity",
@@ -457,6 +468,21 @@
     "selectToView": "Select a note to view",
     "unsavedChangesConfirm": "You have unsaved changes. Are you sure you want to close?",
     "emptyNote": "(Empty note)"
+  },
+  "contextMenu": {
+    "open": "Open",
+    "edit": "Edit",
+    "editIcons": "Edit Icons",
+    "delete": "Delete",
+    "openFolder": "Open Folder",
+    "rename": "Rename",
+    "deleteFolder": "Delete Folder",
+    "backup": "Backup Now",
+    "randomWallpaper": "Random Wallpaper",
+    "favoriteWallpaper": "Favorite Current Wallpaper",
+    "downloadWallpaper": "Download Current Wallpaper",
+    "nextWallpaper": "Next Wallpaper",
+    "searchIcons": "Search Icons"
   },
   "common": {
     "cancel": "Cancel",

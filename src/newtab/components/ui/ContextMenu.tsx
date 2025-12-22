@@ -111,6 +111,11 @@ export function ContextMenu({
     }
   }, [getAdjustedPosition]);
 
+  // Pre-compute first and last non-divider items for rounded corners
+  const nonDividerItems = items.filter(i => !i.divider);
+  const firstItemId = nonDividerItems[0]?.id;
+  const lastItemId = nonDividerItems[nonDividerItems.length - 1]?.id;
+
   const menuContent = (
     <div
       ref={menuRef}
@@ -141,6 +146,10 @@ export function ContextMenu({
           );
         }
 
+        // Check if this is first or last non-divider item
+        const isFirst = item.id === firstItemId;
+        const isLast = item.id === lastItemId;
+
         // Menu item
         return (
           <button
@@ -148,6 +157,9 @@ export function ContextMenu({
             className={cn(
               'w-full px-3 py-2 flex items-center gap-3',
               'text-sm text-left transition-colors duration-100',
+              // Rounded corners for first and last items to match container
+              isFirst && 'rounded-t-lg',
+              isLast && 'rounded-b-lg',
               item.disabled
                 ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 : item.danger

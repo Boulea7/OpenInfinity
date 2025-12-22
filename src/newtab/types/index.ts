@@ -264,29 +264,9 @@ export interface SearchResult {
   relevance: number;
 }
 
-/**
- * Weather data
- */
-export interface WeatherData {
-  location: string;
-  temperature: number;
-  condition: string;
-  icon: string;
-  humidity: number;
-  windSpeed: number;
-  forecast?: WeatherForecast[];
-}
-
-/**
- * Weather forecast
- */
-export interface WeatherForecast {
-  date: string;
-  high: number;
-  low: number;
-  condition: string;
-  icon: string;
-}
+// Re-export weather types from canonical location
+// See: services/weather/types.ts for WeatherData, IWeatherProvider, etc.
+export type { WeatherData } from '../services/weather/types';
 
 /**
  * Calendar event

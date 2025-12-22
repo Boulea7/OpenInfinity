@@ -109,6 +109,19 @@ class GmailService {
    * Opens OAuth popup if not already authorized
    */
   async authorize(): Promise<boolean> {
+    // Check if OAuth client_id is properly configured
+    const manifest = typeof chrome !== 'undefined' ? chrome.runtime?.getManifest?.() : null;
+    const clientId = manifest?.oauth2?.client_id;
+    if (!clientId || clientId.includes('YOUR_CLIENT_ID') || clientId.includes('placeholder')) {
+      console.warn('[Gmail] OAuth client_id is not configured, skipping authorization.');
+      useSettingsStore.getState().setNotificationSettings({
+        gmailEnabled: false,
+        gmailAuthorized: false,
+        gmailEmail: null,
+      });
+      return false;
+    }
+
     const token = await this.getAuthToken(true);
     if (!token) {
       return false;
@@ -367,6 +380,13 @@ class GmailService {
 
       oscillator.start();
       oscillator.stop(audioContext.currentTime + 0.2);
+
+      // Close AudioContext after sound completes to prevent memory leak
+      oscillator.onended = () => {
+        audioContext.close().catch(() => {
+          // Ignore close errors (already closed, etc.)
+        });
+      };
     } catch (error) {
       console.error('Failed to play notification sound:', error);
     }

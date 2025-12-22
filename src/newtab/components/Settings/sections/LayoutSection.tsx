@@ -2,10 +2,7 @@
  * LayoutSection - Grid layout settings with preset cards and custom options
  * Features:
  * - Preset layout cards (2x4, 2x5, 2x6, 2x7, 3x3, custom)
- * - Custom layout: columns (1-8), rows (1-8)
- * - Column gap (0-100%)
- * - Row gap (0-100%)
- * - Icon size (10-100%)
+ * - Custom layout modal for detailed configuration
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,6 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { Settings2 } from 'lucide-react';
 import { CollapsibleSection } from './CollapsibleSection';
 import { useSettingsStore } from '../../../stores/settingsStore';
+import { CustomLayoutModal } from '../components/CustomLayoutModal';
+import { Toggle } from '../components/Toggle';
 
 // Preset layout options
 const LAYOUT_PRESETS = [
@@ -104,8 +103,6 @@ const CustomLayoutIcon: React.FC<{ selected: boolean }> = ({ selected }) => (
   </div>
 );
 
-import { Slider } from '../components/Slider';
-
 export const LayoutSection: React.FC = () => {
   const { t } = useTranslation();
   const viewSettings = useSettingsStore((state) => state.viewSettings);
@@ -115,15 +112,22 @@ export const LayoutSection: React.FC = () => {
   const currentPreset = LAYOUT_PRESETS.find(
     (p) => p.rows === viewSettings.rows && p.columns === viewSettings.columns
   );
+
+  // Custom mode is active if no preset matches
   const [isCustomMode, setIsCustomMode] = useState(!currentPreset);
 
-  // Sync isCustomMode when viewSettings changes externally (e.g., reset, import)
+  // Control modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Sync isCustomMode when viewSettings changes externally
   useEffect(() => {
     const matchesPreset = LAYOUT_PRESETS.some(
       (p) => p.rows === viewSettings.rows && p.columns === viewSettings.columns
     );
     if (matchesPreset && isCustomMode) {
       setIsCustomMode(false);
+    } else if (!matchesPreset && !isCustomMode) {
+      setIsCustomMode(true);
     }
   }, [viewSettings.rows, viewSettings.columns, isCustomMode]);
 
@@ -137,93 +141,75 @@ export const LayoutSection: React.FC = () => {
   };
 
   // Handle custom mode
-  const handleCustomSelect = () => {
+  const handleCustomClick = () => {
     setIsCustomMode(true);
+    setIsModalOpen(true);
   };
 
   return (
-    <CollapsibleSection
-      id="layout"
-      title={t('settings.layout.title', '布局')}
-    >
-      {/* Layout Presets */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {LAYOUT_PRESETS.map((preset) => (
-          <LayoutPreviewGrid
-            key={preset.label}
-            rows={preset.rows}
-            columns={preset.columns}
-            label={preset.label}
-            selected={!isCustomMode && currentPreset?.label === preset.label}
-            onClick={() => handlePresetSelect(preset)}
-          />
-        ))}
+    <>
+      <CollapsibleSection
+        id="layout"
+        title={t('settings.layout.title', '布局')}
+      >
+        {/* Layout Presets */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          {LAYOUT_PRESETS.map((preset) => (
+            <LayoutPreviewGrid
+              key={preset.label}
+              rows={preset.rows}
+              columns={preset.columns}
+              label={preset.label}
+              selected={!isCustomMode && currentPreset?.label === preset.label}
+              onClick={() => handlePresetSelect(preset)}
+            />
+          ))}
 
-        {/* Custom option */}
-        <button
-          type="button"
-          onClick={handleCustomSelect}
-          className="flex flex-col items-center gap-2"
-        >
-          <CustomLayoutIcon selected={isCustomMode} />
-          <span className={`text-xs ${isCustomMode ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-            {t('settings.layout.custom', '自定义')}
-          </span>
-        </button>
-      </div>
+          {/* Custom option */}
+          <button
+            type="button"
+            onClick={handleCustomClick}
+            className="flex flex-col items-center gap-2"
+          >
+            <CustomLayoutIcon selected={isCustomMode} />
+            <span className={`text-xs ${isCustomMode ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+              {t('settings.layout.custom', '自定义')}
+            </span>
+          </button>
+        </div>
 
-      {/* Custom Layout Options (shown when custom mode is active) */}
-      {isCustomMode && (
-        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          {/* Columns */}
-          <Slider
-            label={t('settings.layout.columns', '列数')}
-            value={viewSettings.columns}
-            min={1}
-            max={8}
-            unit=""
-            onChange={(value) => setViewSettings({ columns: value })}
-          />
+        {/* Info text when custom mode is active */}
+        {isCustomMode && (
+          <div className="flex items-center justify-between py-2 px-1 mb-4">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {viewSettings.rows} × {viewSettings.columns}
+            </span>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {t('settings.layout.editConfig', '编辑配置')}
+            </button>
+          </div>
+        )}
 
-          {/* Rows */}
-          <Slider
-            label={t('settings.layout.rows', '行数')}
-            value={viewSettings.rows}
-            min={1}
-            max={8}
-            unit=""
-            onChange={(value) => setViewSettings({ rows: value })}
-          />
-
-          {/* Column Gap */}
-          <Slider
-            label={t('settings.layout.columnGap', '列间距')}
-            value={viewSettings.columnGap}
-            min={0}
-            max={100}
-            onChange={(value) => setViewSettings({ columnGap: value })}
-          />
-
-          {/* Row Gap */}
-          <Slider
-            label={t('settings.layout.rowGap', '行间距')}
-            value={viewSettings.rowGap}
-            min={0}
-            max={100}
-            onChange={(value) => setViewSettings({ rowGap: value })}
-          />
-
-          {/* Icon Size */}
-          <Slider
-            label={t('settings.layout.iconSize', '图标大小')}
-            value={viewSettings.iconScale}
-            min={10}
-            max={100}
-            onChange={(value) => setViewSettings({ iconScale: value })}
+        {/* Auto Fill Grid Toggle */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Toggle
+            label={t('settings.layout.autoFillGrid', '自动补位')}
+            description={t('settings.layout.autoFillGridDesc', '开启后图标将自动填充空位，关闭则保留空白位置')}
+            checked={viewSettings.autoFillGrid}
+            onChange={(checked) => setViewSettings({ autoFillGrid: checked })}
           />
         </div>
-      )}
-    </CollapsibleSection>
+      </CollapsibleSection>
+
+      {/* Custom Layout Modal */}
+      <CustomLayoutModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
   );
 };
 

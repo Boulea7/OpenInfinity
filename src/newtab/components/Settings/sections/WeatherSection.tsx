@@ -7,11 +7,25 @@ import { useTranslation } from 'react-i18next';
 import { CollapsibleSection } from './CollapsibleSection';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { Toggle } from '../components/Toggle';
+import { CitySelector } from '../components/CitySelector';
+import type { City } from '../../../data/cities';
 
 export const WeatherSection: React.FC = () => {
   const { t } = useTranslation();
   const weatherSettings = useSettingsStore((state) => state.weatherSettings);
   const setWeatherSettings = useSettingsStore((state) => state.setWeatherSettings);
+
+  // Handle city selection
+  const handleCitySelect = (city: City) => {
+    setWeatherSettings({
+      location: {
+        type: 'manual',
+        name: city.name,
+        latitude: city.latitude,
+        longitude: city.longitude,
+      }
+    });
+  };
 
   return (
     <CollapsibleSection
@@ -93,6 +107,20 @@ export const WeatherSection: React.FC = () => {
               {t('settings.weather.manual', '手动设置')}
             </button>
           </div>
+
+          {/* City Selector - shown when manual mode is selected */}
+          {weatherSettings.location.type === 'manual' && (
+            <div className="mt-3">
+              <CitySelector
+                value={{
+                  name: weatherSettings.location.name,
+                  latitude: weatherSettings.location.latitude,
+                  longitude: weatherSettings.location.longitude,
+                }}
+                onChange={handleCitySelect}
+              />
+            </div>
+          )}
         </div>
       </div>
     </CollapsibleSection>
