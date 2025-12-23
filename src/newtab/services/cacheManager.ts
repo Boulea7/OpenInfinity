@@ -7,6 +7,21 @@ import { db } from './database';
 import { clearExpiredIconCache } from '../utils/iconCache';
 import { clearExpiredGeocodeCache } from './geocoding';
 
+/**
+ * Safely parse JSON from localStorage
+ * Returns empty object on parse failure to prevent crashes from corrupted data
+ */
+function safeJsonParse(value: string | null): Record<string, unknown> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === 'object' && parsed !== null ? parsed : {};
+  } catch {
+    console.warn('[CacheManager] Failed to parse cached data, treating as empty');
+    return {};
+  }
+}
+
 export interface CacheStats {
   weatherCache: number;
   iconCache: number;
@@ -63,15 +78,12 @@ export async function clearAllCaches(): Promise<void> {
 export async function getCacheStats(): Promise<CacheStats> {
   const weatherCount = await db.weatherCache.count();
 
-  const engineIconCache = localStorage.getItem('engine-icon-cache-v1');
-  const engineIconCount = engineIconCache
-    ? Object.keys(JSON.parse(engineIconCache) || {}).length
-    : 0;
+  // Use safe JSON parsing to prevent crashes from corrupted localStorage
+  const engineIconCache = safeJsonParse(localStorage.getItem('engine-icon-cache-v1'));
+  const engineIconCount = Object.keys(engineIconCache).length;
 
-  const geocodeCache = localStorage.getItem('geocode-cache-v1');
-  const geocodeCount = geocodeCache
-    ? Object.keys(JSON.parse(geocodeCache) || {}).length
-    : 0;
+  const geocodeCache = safeJsonParse(localStorage.getItem('geocode-cache-v1'));
+  const geocodeCount = Object.keys(geocodeCache).length;
 
   return {
     weatherCache: weatherCount,

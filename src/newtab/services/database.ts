@@ -459,6 +459,123 @@ class OpenInfinityDB extends Dexie {
       userFavorites: '++id, websiteId, addedAt',
       weatherCache: 'id, fetchedAt, expiresAt',
     });
+
+    // Version 9: Fix primary key type - change ++id (auto-increment number) to id (string UUID)
+    // This fixes DataError when using generateId() which returns string UUIDs
+    this.version(9)
+      .stores({
+        icons: 'id, type, url, folderId, createdAt',
+        folders: 'id, name, createdAt',
+        wallpapers: 'id, type, createdAt',
+        todos: 'id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+        notes: 'id, isPinned, *tags, createdAt, updatedAt',
+        settings: 'key',
+        emailAccounts: 'id, provider, email, enabled, lastChecked',
+        todoIntegrations: 'id, provider, enabled, lastSynced',
+        rssSubscriptions: 'id, url, category, enabled, lastFetched',
+        rssItems: 'id, subscriptionId, pubDate, isRead, isStarred',
+        notificationLogs: 'id, type, source, isRead, createdAt',
+        presetWebsites: 'id, category, region, popularity, *tags',
+        userFavorites: 'id, websiteId, addedAt',
+        weatherCache: 'id, fetchedAt, expiresAt',
+      })
+      .upgrade(async (trans) => {
+        // Migrate numeric IDs to string UUIDs for all tables
+        // Build folder ID mapping first (old number -> new UUID)
+        const folderIdMap = new Map<number | string, string>();
+
+        // Migrate folders first (icons reference folders via folderId)
+        const folders = await trans.table('folders').toArray();
+        for (const folder of folders) {
+          const oldId = folder.id;
+          // Skip if already string UUID
+          if (typeof oldId === 'string' && oldId.includes('-')) continue;
+
+          const newId = crypto.randomUUID();
+          folderIdMap.set(oldId, newId);
+
+          // Delete old record and insert with new ID
+          await trans.table('folders').delete(oldId);
+          await trans.table('folders').add({ ...folder, id: newId });
+        }
+
+        // Migrate icons (update folderId references)
+        const icons = await trans.table('icons').toArray();
+        for (const icon of icons) {
+          const oldId = icon.id;
+          const needsIdMigration = typeof oldId === 'number';
+          const needsFolderIdMigration = icon.folderId && folderIdMap.has(icon.folderId);
+
+          if (needsIdMigration || needsFolderIdMigration) {
+            const newId = needsIdMigration ? crypto.randomUUID() : oldId;
+            const newFolderId = needsFolderIdMigration
+              ? folderIdMap.get(icon.folderId)
+              : icon.folderId;
+
+            await trans.table('icons').delete(oldId);
+            await trans.table('icons').add({
+              ...icon,
+              id: newId,
+              folderId: newFolderId,
+            });
+          }
+        }
+
+        // Migrate other tables with simple ID conversion
+        const simpleTables = [
+          'wallpapers',
+          'todos',
+          'notes',
+          'emailAccounts',
+          'todoIntegrations',
+          'rssSubscriptions',
+          'notificationLogs',
+          'presetWebsites',
+          'userFavorites',
+        ];
+
+        for (const tableName of simpleTables) {
+          const records = await trans.table(tableName).toArray();
+          for (const record of records) {
+            if (typeof record.id === 'number') {
+              const newId = crypto.randomUUID();
+              await trans.table(tableName).delete(record.id);
+              await trans.table(tableName).add({ ...record, id: newId });
+            }
+          }
+        }
+
+        // Migrate rssItems (has subscriptionId foreign key)
+        const rssIdMap = new Map<number | string, string>();
+        const rssSubscriptions = await trans.table('rssSubscriptions').toArray();
+        for (const sub of rssSubscriptions) {
+          if (typeof sub.id === 'number') {
+            rssIdMap.set(sub.id, crypto.randomUUID());
+          }
+        }
+
+        const rssItems = await trans.table('rssItems').toArray();
+        for (const item of rssItems) {
+          const needsIdMigration = typeof item.id === 'number';
+          const needsSubIdMigration = item.subscriptionId && rssIdMap.has(item.subscriptionId);
+
+          if (needsIdMigration || needsSubIdMigration) {
+            const newId = needsIdMigration ? crypto.randomUUID() : item.id;
+            const newSubId = needsSubIdMigration
+              ? rssIdMap.get(item.subscriptionId)
+              : item.subscriptionId;
+
+            await trans.table('rssItems').delete(item.id);
+            await trans.table('rssItems').add({
+              ...item,
+              id: newId,
+              subscriptionId: newSubId,
+            });
+          }
+        }
+
+        console.log('[Database] Version 9 migration completed: numeric IDs converted to UUIDs');
+      });
   }
 }
 

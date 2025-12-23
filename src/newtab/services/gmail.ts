@@ -47,6 +47,7 @@ class GmailService {
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private cachedToken: string | null = null;
   private tokenExpiry: number = 0;
+  private isPollingInFlight: boolean = false; // Prevent concurrent poll() calls
 
   /**
    * Get OAuth token using Chrome Identity API
@@ -288,19 +289,32 @@ class GmailService {
     this.stopPolling();
 
     const poll = async () => {
+      // Prevent concurrent poll() calls (race condition if request takes longer than interval)
+      if (this.isPollingInFlight) {
+        console.log('[Gmail] Skipping poll - previous request still in flight');
+        return;
+      }
+
       const settings = useSettingsStore.getState();
       if (!settings.notificationSettings.gmailEnabled) {
         this.stopPolling();
         return;
       }
 
-      const count = await this.getUnreadCount();
+      this.isPollingInFlight = true;
+      try {
+        const count = await this.getUnreadCount();
 
-      // Show notification if enabled and there are new unread emails
-      if (settings.notificationSettings.showUnreadCount && count > 0) {
-        this.showBadge(count);
-      } else {
-        this.clearBadge();
+        // Show notification if enabled and there are new unread emails
+        if (settings.notificationSettings.showUnreadCount && count > 0) {
+          this.showBadge(count);
+        } else {
+          this.clearBadge();
+        }
+      } catch (error) {
+        console.error('[Gmail] Polling error:', error);
+      } finally {
+        this.isPollingInFlight = false;
       }
     };
 

@@ -72,15 +72,74 @@ async function handleGetCurrentTab(): Promise<Response> {
   };
 }
 
+// Default grid columns for position calculation
+const DEFAULT_GRID_COLUMNS = 6;
+
+/**
+ * Calculate next available position in the grid
+ * Similar logic to iconStore.ts getNextPosition
+ */
+async function calculateNextPosition(): Promise<{ x: number; y: number }> {
+  try {
+    // Get current icons and folders
+    const icons = await db.icons.toArray();
+    const folders = await db.folders.toArray();
+
+    // Get grid columns from settings, default to 6
+    let columns = DEFAULT_GRID_COLUMNS;
+    try {
+      const settings = await db.settings.get('viewSettings');
+      if (settings?.value && typeof settings.value === 'object') {
+        const viewSettings = settings.value as { columns?: number };
+        if (viewSettings.columns && viewSettings.columns > 0) {
+          columns = viewSettings.columns;
+        }
+      }
+    } catch {
+      // Use default columns on error
+    }
+
+    // Filter root icons (not in folders)
+    const rootIcons = icons.filter(i => !i.folderId);
+    const allItems = [...rootIcons, ...folders];
+
+    if (allItems.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    // Find max y, then find max x in that row
+    const maxY = Math.max(...allItems.map(item => item.position?.y ?? 0));
+    const itemsInLastRow = allItems.filter(item => (item.position?.y ?? 0) === maxY);
+    const maxX = Math.max(...itemsInLastRow.map(item => item.position?.x ?? 0));
+
+    // If last row is full, start new row
+    if (maxX >= columns - 1) {
+      return { x: 0, y: maxY + 1 };
+    }
+
+    return { x: maxX + 1, y: maxY };
+  } catch (error) {
+    console.error('Failed to calculate next position:', error);
+    return { x: 0, y: 0 };
+  }
+}
+
 // Add icon (core logic)
 async function handleAddIcon(iconData: any): Promise<Response> {
   const now = Date.now();
   const id = `icon_${now}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // Calculate position if not provided or is default {0, 0}
+  let position = iconData.position;
+  if (!position || (position.x === 0 && position.y === 0)) {
+    position = await calculateNextPosition();
+  }
+
   const newIcon = {
     ...iconData,
     id,
     type: 'icon' as const,
+    position,
     createdAt: now,
     updatedAt: now,
   };

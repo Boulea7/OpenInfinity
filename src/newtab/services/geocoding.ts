@@ -140,11 +140,10 @@ async function fetchCityName(
 
     const url = `${NOMINATIM_BASE_URL}/reverse?${params}`;
 
+    // Note: User-Agent header removed as browsers don't allow setting it in fetch
+    // The Nominatim API will use the browser's default User-Agent
     const response = await fetch(url, {
       signal: AbortSignal.timeout(GEOCODE_TIMEOUT_MS),
-      headers: {
-        'User-Agent': 'OpenInfinity/1.0',
-      },
     });
 
     if (!response.ok) {

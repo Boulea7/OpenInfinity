@@ -3,7 +3,7 @@
  * Allows users to selectively clear different types of cache
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, RefreshCw } from 'lucide-react';
 import {
@@ -23,9 +23,9 @@ export function ClearCacheSection() {
   const [lastCleared, setLastCleared] = useState<string | null>(null);
 
   // Load cache stats on mount
-  useState(() => {
-    getCacheStats().then(setStats);
-  });
+  useEffect(() => {
+    void getCacheStats().then(setStats);
+  }, []);
 
   const handleClearCache = async (type: 'weather' | 'geocode' | 'searchIcons' | 'all') => {
     setIsClearing(true);

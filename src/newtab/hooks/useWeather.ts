@@ -26,6 +26,15 @@ const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
 let weatherFetchInFlight: Promise<void> | null = null;
 
 /**
+ * Module-level singleton interval to prevent duplicate polling
+ * when multiple useWeather hook instances are mounted.
+ */
+let sharedIntervalId: ReturnType<typeof setInterval> | null = null;
+let sharedIntervalMs = 0;
+let activeHookCount = 0;
+let sharedFetchCallback: (() => Promise<void>) | null = null;
+
+/**
  * Generate cache key from location coordinates and temperature unit
  * Includes unit to prevent cache mismatches when switching between celsius/fahrenheit
  */
@@ -142,9 +151,17 @@ export function useWeather(): UseWeatherReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
-  const updateIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const isMountedRef = useRef(true); // Prevent setState after unmount
   const prevUnitRef = useRef<'celsius' | 'fahrenheit'>(weatherSettings.unit);
   const prevLangRef = useRef<string>(i18n.language);
+
+  // Track mount state to prevent setState after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Real-time query for weather cache
   // Filter by current unit to prevent showing data with wrong temperature unit
@@ -177,7 +194,7 @@ export function useWeather(): UseWeatherReturn {
 
     const task = (async () => {
       isFetchingRef.current = true;
-      setError(null);
+      if (isMountedRef.current) setError(null);
 
       try {
         // Get location (manual or auto)
@@ -208,7 +225,7 @@ export function useWeather(): UseWeatherReturn {
           return;
         }
 
-        setIsLoading(true);
+        if (isMountedRef.current) setIsLoading(true);
         const weatherData = await weatherManager.fetchWeather(
           location.latitude,
           location.longitude,
@@ -219,9 +236,9 @@ export function useWeather(): UseWeatherReturn {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch weather data';
         console.error('Weather fetch error:', err);
-        setError(message);
+        if (isMountedRef.current) setError(message);
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) setIsLoading(false);
         isFetchingRef.current = false;
       }
     })();
@@ -273,8 +290,10 @@ export function useWeather(): UseWeatherReturn {
 
     const task = (async () => {
       isFetchingRef.current = true;
-      setIsLoading(true);
-      setError(null);
+      if (isMountedRef.current) {
+        setIsLoading(true);
+        setError(null);
+      }
 
       try {
         // Get location
@@ -304,9 +323,9 @@ export function useWeather(): UseWeatherReturn {
         await upsertWeatherCache(location, weatherSettings.unit, weatherData);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to refresh weather data';
-        setError(message);
+        if (isMountedRef.current) setError(message);
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) setIsLoading(false);
         isFetchingRef.current = false;
       }
     })();
@@ -330,21 +349,55 @@ export function useWeather(): UseWeatherReturn {
   }, [weather, isLoading, error, fetchWeatherData]);
 
   /**
-   * Setup periodic updates
+   * Setup periodic updates using module-level singleton interval
+   * This prevents duplicate polling when multiple components use useWeather
    */
   useEffect(() => {
     const intervalMs = weatherSettings.updateInterval * 60 * 1000; // Convert minutes to ms
 
-    if (intervalMs > 0) {
-      updateIntervalRef.current = setInterval(() => {
-        fetchWeatherData();
-      }, intervalMs);
-    }
+    // Increment active hook count
+    activeHookCount++;
+
+    // Update shared fetch callback to latest
+    sharedFetchCallback = fetchWeatherData;
+
+    // Setup or update shared interval
+    const setupInterval = () => {
+      if (intervalMs > 0) {
+        // Only create interval if none exists or interval changed
+        if (!sharedIntervalId || sharedIntervalMs !== intervalMs) {
+          if (sharedIntervalId) {
+            clearInterval(sharedIntervalId);
+          }
+          sharedIntervalMs = intervalMs;
+          sharedIntervalId = setInterval(() => {
+            if (sharedFetchCallback) {
+              sharedFetchCallback();
+            }
+          }, intervalMs);
+        }
+      } else {
+        // Clear interval if disabled
+        if (sharedIntervalId) {
+          clearInterval(sharedIntervalId);
+          sharedIntervalId = null;
+          sharedIntervalMs = 0;
+        }
+      }
+    };
+
+    setupInterval();
 
     // Cleanup
     return () => {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
+      activeHookCount--;
+
+      // Only clear shared interval when no hooks are active
+      if (activeHookCount === 0 && sharedIntervalId) {
+        clearInterval(sharedIntervalId);
+        sharedIntervalId = null;
+        sharedIntervalMs = 0;
+        sharedFetchCallback = null;
       }
     };
   }, [weatherSettings.updateInterval, fetchWeatherData]);

@@ -204,6 +204,8 @@ export default function IconTypeSelector({
               if (file) {
                 if (file.size > 2 * 1024 * 1024) {
                   alert('图片大小不能超过 2MB');
+                  // P2 Fix: Clear input even on size error so same file can be re-selected
+                  e.target.value = '';
                   return;
                 }
                 const reader = new FileReader();

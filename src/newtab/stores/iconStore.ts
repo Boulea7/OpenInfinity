@@ -294,22 +294,77 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const folder = folders.find(f => f.id === id);
 
     if (folder) {
-      // Move all children icons back to root
-      const childIcons = icons.filter(icon => icon.folderId === id);
-      await Promise.all(
-        childIcons.map(icon =>
-          db.icons.update(icon.id, { folderId: undefined, updatedAt: Date.now() })
-        )
-      );
+      // P2 Fix: Use transaction for cross-table updates
+      await db.transaction('rw', [db.icons, db.folders], async () => {
+        // Move all children icons back to root with recalculated positions
+        const childIcons = icons.filter(icon => icon.folderId === id);
 
-      // Delete the folder
-      await db.folders.delete(id);
+        if (childIcons.length > 0) {
+          // P2 Fix: Calculate new positions for displaced icons
+          // Get current root items (excluding the folder being deleted)
+          const rootIcons = icons.filter(i => !i.folderId);
+          const otherFolders = folders.filter(f => f.id !== id);
+          const existingRootItems = [...rootIcons, ...otherFolders];
+
+          // Read columns from settings
+          const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
+
+          // Find the next available position after all existing root items
+          let nextPosition = { x: 0, y: 0 };
+          if (existingRootItems.length > 0) {
+            const maxY = Math.max(...existingRootItems.map(item => item.position.y));
+            const itemsInLastRow = existingRootItems.filter(item => item.position.y === maxY);
+            const maxX = Math.max(...itemsInLastRow.map(item => item.position.x));
+
+            if (maxX >= columns - 1) {
+              nextPosition = { x: 0, y: maxY + 1 };
+            } else {
+              nextPosition = { x: maxX + 1, y: maxY };
+            }
+          }
+
+          // Assign new positions to each displaced icon
+          const now = Date.now();
+          for (let i = 0; i < childIcons.length; i++) {
+            const x = (nextPosition.x + i) % columns;
+            const y = nextPosition.y + Math.floor((nextPosition.x + i) / columns);
+            await db.icons.update(childIcons[i].id, {
+              folderId: undefined,
+              position: { x, y },
+              updatedAt: now,
+            });
+          }
+        }
+
+        // Delete the folder
+        await db.folders.delete(id);
+      });
+
+      // Update local state with recalculated positions
+      const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
+      const childIcons = icons.filter(icon => icon.folderId === id);
+      const rootIcons = icons.filter(i => !i.folderId);
+      const otherFolders = folders.filter(f => f.id !== id);
+      const existingRootItems = [...rootIcons, ...otherFolders];
+
+      let nextPosition = { x: 0, y: 0 };
+      if (existingRootItems.length > 0) {
+        const maxY = Math.max(...existingRootItems.map(item => item.position.y));
+        const itemsInLastRow = existingRootItems.filter(item => item.position.y === maxY);
+        const maxX = Math.max(...itemsInLastRow.map(item => item.position.x));
+        nextPosition = maxX >= columns - 1 ? { x: 0, y: maxY + 1 } : { x: maxX + 1, y: maxY };
+      }
 
       set(state => ({
         folders: state.folders.filter(f => f.id !== id),
-        icons: state.icons.map(icon =>
-          icon.folderId === id ? { ...icon, folderId: undefined } : icon
-        ),
+        icons: state.icons.map((icon) => {
+          if (icon.folderId !== id) return icon;
+          // Find this icon's index among child icons
+          const childIndex = childIcons.findIndex(c => c.id === icon.id);
+          const x = (nextPosition.x + childIndex) % columns;
+          const y = nextPosition.y + Math.floor((nextPosition.x + childIndex) / columns);
+          return { ...icon, folderId: undefined, position: { x, y } };
+        }),
         selectedItems: state.selectedItems.filter(itemId => itemId !== id),
       }));
 
@@ -357,19 +412,49 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       folders.some(folder => folder.id === id)
     );
 
-    // Delete icons
-    await db.icons.bulkDelete(iconIds);
+    // P2 Fix: Use transaction for cross-table updates
+    await db.transaction('rw', [db.icons, db.folders], async () => {
+      // Delete icons
+      await db.icons.bulkDelete(iconIds);
 
-    // Delete folders (and move their children to root)
-    for (const folderId of folderIds) {
-      const childIcons = icons.filter(icon => icon.folderId === folderId);
-      await Promise.all(
-        childIcons.map(icon =>
-          db.icons.update(icon.id, { folderId: undefined, updatedAt: Date.now() })
-        )
-      );
-    }
-    await db.folders.bulkDelete(folderIds);
+      // Delete folders (and move their children to root with recalculated positions)
+      if (folderIds.length > 0) {
+        // Get all child icons from folders being deleted
+        const allDisplacedIcons = icons.filter(
+          icon => icon.folderId && folderIds.includes(icon.folderId)
+        );
+
+        if (allDisplacedIcons.length > 0) {
+          // Calculate new positions for displaced icons
+          const rootIcons = icons.filter(i => !i.folderId && !iconIds.includes(i.id));
+          const remainingFolders = folders.filter(f => !folderIds.includes(f.id));
+          const existingRootItems = [...rootIcons, ...remainingFolders];
+
+          const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
+
+          let nextPosition = { x: 0, y: 0 };
+          if (existingRootItems.length > 0) {
+            const maxY = Math.max(...existingRootItems.map(item => item.position.y));
+            const itemsInLastRow = existingRootItems.filter(item => item.position.y === maxY);
+            const maxX = Math.max(...itemsInLastRow.map(item => item.position.x));
+            nextPosition = maxX >= columns - 1 ? { x: 0, y: maxY + 1 } : { x: maxX + 1, y: maxY };
+          }
+
+          const now = Date.now();
+          for (let i = 0; i < allDisplacedIcons.length; i++) {
+            const x = (nextPosition.x + i) % columns;
+            const y = nextPosition.y + Math.floor((nextPosition.x + i) / columns);
+            await db.icons.update(allDisplacedIcons[i].id, {
+              folderId: undefined,
+              position: { x, y },
+              updatedAt: now,
+            });
+          }
+        }
+
+        await db.folders.bulkDelete(folderIds);
+      }
+    });
 
     set(state => ({
       icons: state.icons
@@ -449,14 +534,16 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const iconUpdates = updates.filter(item => item.type === 'icon') as Icon[];
     const folderUpdates = updates.filter(item => item.type === 'folder') as Folder[];
 
-    await Promise.all([
-      ...iconUpdates.map(icon =>
-        db.icons.update(icon.id, { position: icon.position, updatedAt: Date.now() })
-      ),
-      ...folderUpdates.map(folder =>
-        db.folders.update(folder.id, { position: folder.position, updatedAt: Date.now() })
-      ),
-    ]);
+    // P2 Fix: Use transaction for cross-table updates
+    await db.transaction('rw', [db.icons, db.folders], async () => {
+      const now = Date.now();
+      for (const icon of iconUpdates) {
+        await db.icons.update(icon.id, { position: icon.position, updatedAt: now });
+      }
+      for (const folder of folderUpdates) {
+        await db.folders.update(folder.id, { position: folder.position, updatedAt: now });
+      }
+    });
 
     set(state => ({
       icons: state.icons.map(icon => {

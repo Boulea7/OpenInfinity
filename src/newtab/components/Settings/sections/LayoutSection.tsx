@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Settings2 } from 'lucide-react';
 import { CollapsibleSection } from './CollapsibleSection';
 import { useSettingsStore } from '../../../stores/settingsStore';
-import { CustomLayoutModal } from '../components/CustomLayoutModal';
+import { CustomLayoutPanel } from '../components/CustomLayoutPanel';
 import { Toggle } from '../components/Toggle';
 
 // Preset layout options
@@ -178,20 +178,11 @@ export const LayoutSection: React.FC = () => {
           </button>
         </div>
 
-        {/* Info text when custom mode is active */}
-        {isCustomMode && (
-          <div className="flex items-center justify-between py-2 px-1 mb-4">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {viewSettings.rows} × {viewSettings.columns}
-            </span>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {t('settings.layout.editConfig', '编辑配置')}
-            </button>
-          </div>
-        )}
+        {/* Custom Layout Panel - inline sidebar-embedded panel */}
+        <CustomLayoutPanel
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
 
         {/* Auto Fill Grid Toggle */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -203,12 +194,6 @@ export const LayoutSection: React.FC = () => {
           />
         </div>
       </CollapsibleSection>
-
-      {/* Custom Layout Modal */}
-      <CustomLayoutModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </>
   );
 };
