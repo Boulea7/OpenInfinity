@@ -223,7 +223,16 @@ export class QWeatherProvider implements IWeatherProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`QWeather API error: ${response.status} ${response.statusText}`);
+      // Clear JWT cache on auth errors so next request can retry with fresh token
+      if (response.status === 401 || response.status === 403) {
+        this.jwtCache = null;
+        console.warn(
+          '[QWeatherProvider] Authentication failed (403/401). ' +
+            'Please check your VITE_QWEATHER_* environment variables. ' +
+            'Falling back to other weather providers.'
+        );
+      }
+      throw new Error(`QWeather API error: ${response.status}`);
     }
 
     return response.json() as Promise<T>;

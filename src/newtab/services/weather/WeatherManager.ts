@@ -65,30 +65,40 @@ export class WeatherManager {
     const providers = this.getProviderChain(latitude, longitude);
     const errors: Array<{ provider: string; message: string }> = [];
 
-    for (const provider of providers) {
+    for (let i = 0; i < providers.length; i++) {
+      const provider = providers[i];
+      const isLastProvider = i === providers.length - 1;
+
       try {
         const weatherData = await provider.fetchWeather(latitude, longitude, unit);
 
-        // Fetch city name via reverse geocoding (await to ensure it updates before return)
-        console.log('[WeatherManager] Fetching city name for:', { latitude, longitude, language });
+        // Log success with provider info (helpful for debugging)
+        if (i > 0) {
+          console.log(`[WeatherManager] Successfully fetched weather using fallback provider: ${provider.name}`);
+        }
+
+        // Fetch city name via reverse geocoding
         try {
           const cityName = await getCityName(latitude, longitude, language);
-          console.log('[WeatherManager] City name resolved:', cityName);
           if (cityName) {
             weatherData.location.name = cityName;
-          } else {
-            console.warn('[WeatherManager] getCityName returned empty string');
           }
         } catch (error) {
-          console.error('[WeatherManager] Failed to get city name:', error);
-          // Keep "Current Location" as fallback
+          // Silently use default location name
+          console.debug('[WeatherManager] Geocoding failed, using default location name');
         }
 
         return weatherData;
       } catch (error) {
         const message = toErrorMessage(error);
         errors.push({ provider: provider.name, message });
-        console.warn(`[WeatherManager] Provider "${provider.name}" failed: ${message}`);
+
+        // Only log warning if not the last provider (since fallback will handle it)
+        if (!isLastProvider) {
+          console.debug(`[WeatherManager] Provider "${provider.name}" failed, trying next provider...`);
+        } else {
+          console.warn(`[WeatherManager] All providers failed. Last error: ${message}`);
+        }
       }
     }
 
