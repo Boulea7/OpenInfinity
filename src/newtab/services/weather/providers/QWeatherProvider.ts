@@ -7,9 +7,27 @@ import { SignJWT, importPKCS8 } from 'jose';
 import { getWeatherCondition } from '../../weather';
 import type { IWeatherProvider, WeatherData } from '../types';
 
-const QWEATHER_BASE_URL = 'https://devapi.qweather.com';
 const QWEATHER_TIMEOUT_MS = 15000; // Increased for network stability
 const JWT_TTL_SEC = 30 * 60;
+
+/**
+ * Get QWeather API base URL
+ * Prefers custom API Host (required for JWT auth), falls back to deprecated devapi
+ */
+function getQWeatherBaseUrl(): string {
+  const apiHost = import.meta.env.VITE_QWEATHER_API_HOST;
+  if (apiHost) {
+    // Custom API Host (recommended for JWT authentication)
+    const host = apiHost.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return `https://${host}`;
+  }
+  // Fallback to deprecated public API (will be discontinued in 2026)
+  console.warn(
+    '[QWeather] Using deprecated devapi.qweather.com. ' +
+      'Please set VITE_QWEATHER_API_HOST for JWT authentication.'
+  );
+  return 'https://devapi.qweather.com';
+}
 
 function getPrivateKeyPem(): string {
   const raw = String(import.meta.env.VITE_QWEATHER_PRIVATE_KEY || '').trim();
@@ -258,8 +276,9 @@ export class QWeatherProvider implements IWeatherProvider {
         lang: 'en',
       });
 
-      const nowUrl = `${QWEATHER_BASE_URL}/v7/weather/now?${baseParams}`;
-      const dailyUrl = `${QWEATHER_BASE_URL}/v7/weather/7d?${baseParams}`;
+      const baseUrl = getQWeatherBaseUrl();
+      const nowUrl = `${baseUrl}/v7/weather/now?${baseParams}`;
+      const dailyUrl = `${baseUrl}/v7/weather/7d?${baseParams}`;
 
       const [nowData, dailyData] = await Promise.all([
         this.fetchJson<QWeatherNowResponse>(nowUrl, token),

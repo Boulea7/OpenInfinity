@@ -78,7 +78,8 @@ async function getCachedWeather(
 
     return cached;
   } catch (error) {
-    console.error('Failed to get cached weather:', error);
+    const msg = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('Failed to get cached weather:', msg);
     return null;
   }
 }
@@ -173,7 +174,8 @@ export function useWeather(): UseWeatherReturn {
         .sortBy('fetchedAt');
       return caches.length > 0 ? caches[caches.length - 1] : null;
     } catch (err) {
-      console.error('Failed to query weather cache:', err);
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('Failed to query weather cache:', msg);
       return null;
     }
   }, [weatherSettings.unit]);

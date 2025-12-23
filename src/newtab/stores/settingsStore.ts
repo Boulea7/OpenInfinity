@@ -477,7 +477,8 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
             });
           }
         } catch (error) {
-          console.error('Failed to load settings from IndexedDB:', error);
+          const msg = error instanceof Error ? error.message : JSON.stringify(error);
+          console.error('Failed to load settings from IndexedDB:', msg);
         }
 
         set({ isInitialized: true });

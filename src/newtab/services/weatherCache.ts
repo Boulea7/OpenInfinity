@@ -14,6 +14,18 @@ import { fetchWeather } from './weather';
 const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
 
 /**
+ * Convert error to readable string (handles DOMException, objects, etc.)
+ */
+function toErrorString(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+/**
  * Generate cache key from location coordinates and temperature unit
  * Includes unit to prevent cache mismatches when switching between celsius/fahrenheit
  */
@@ -60,7 +72,7 @@ export async function getCachedWeather(
 
     return cached;
   } catch (error) {
-    console.error('Failed to get cached weather:', error);
+    console.error('Failed to get cached weather:', toErrorString(error));
     return null;
   }
 }
@@ -99,7 +111,7 @@ export async function fetchAndCacheWeather(
 
     return cacheEntry;
   } catch (error) {
-    console.error('Failed to fetch and cache weather:', error);
+    console.error('Failed to fetch and cache weather:', toErrorString(error));
     throw error;
   }
 }
@@ -144,7 +156,7 @@ export async function clearExpiredCaches(): Promise<void> {
       await db.weatherCache.bulkDelete(expiredKeys);
     }
   } catch (error) {
-    console.error('Failed to clear expired caches:', error);
+    console.error('Failed to clear expired caches:', toErrorString(error));
   }
 }
 
@@ -156,7 +168,7 @@ export async function clearAllCaches(): Promise<void> {
   try {
     await db.weatherCache.clear();
   } catch (error) {
-    console.error('Failed to clear all caches:', error);
+    console.error('Failed to clear all caches:', toErrorString(error));
     throw error;
   }
 }
@@ -182,7 +194,7 @@ export async function getCacheStats(): Promise<{
       valid,
     };
   } catch (error) {
-    console.error('Failed to get cache stats:', error);
+    console.error('Failed to get cache stats:', toErrorString(error));
     return { total: 0, expired: 0, valid: 0 };
   }
 }
