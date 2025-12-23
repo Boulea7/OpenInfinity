@@ -23,6 +23,7 @@ import {
   Key,
   Plus,
 } from 'lucide-react';
+import { Modal } from '../ui/Modal';
 import { useWallpaperStore } from '../../stores/wallpaperStore';
 import {
   WALLPAPER_SOURCES,
@@ -312,27 +313,15 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
     );
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-8">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
-
-      {/* Modal - Centered large panel (Infinity Pro size: 960px x 85vh) */}
-      <div className="
-        relative
-        w-full max-w-[960px]
-        max-h-[85vh]
-        bg-white dark:bg-gray-900
-        rounded-xl
-        shadow-2xl
-        flex flex-col
-        overflow-hidden
-      ">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
+      className="max-w-[960px] max-h-[85vh]"
+      showCloseButton={false}
+    >
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Header with tabs */}
         <div className="flex-shrink-0 px-6 pt-5 pb-0">
           {/* Tab headers and close button */}
@@ -679,7 +668,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 
