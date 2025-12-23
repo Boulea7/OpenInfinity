@@ -32,8 +32,8 @@ export const Slider: React.FC<SliderProps> = ({
     const fillPercent = ((value - min) / (max - min)) * 100;
 
     return (
-        <div className={`py-3 ${className}`}>
-            <div className="flex items-center justify-between mb-3">
+        <div className={`py-2 ${className}`}>
+            <div className="flex items-center justify-between mb-2">
                 <label
                     id={labelId}
                     htmlFor={sliderId}
@@ -53,7 +53,12 @@ export const Slider: React.FC<SliderProps> = ({
                     max={max}
                     step={step}
                     value={value}
-                    onChange={(e) => onChange(Number(e.target.value))}
+                    onChange={(e) => {
+                        e.stopPropagation();
+                        onChange(Number(e.target.value));
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
                     aria-labelledby={labelId}
                     aria-valuemin={min}
                     aria-valuemax={max}

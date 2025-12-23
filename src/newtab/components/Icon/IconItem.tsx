@@ -46,9 +46,10 @@ export const IconItem = React.memo(function IconItem({
     }))
   );
   // Multi-source fallback chain for maximum icon clarity:
-  // none (primary) → clearbit → google256 → duckduckgo → text
+  // primary → clearbit → duckduckgo → text
+  // Note: If primary is already Google, we skip directly to clearbit/duckduckgo
   const [imageFallback, setImageFallback] = useState<
-    'none' | 'clearbit' | 'google256' | 'duckduckgo' | 'text'
+    'none' | 'clearbit' | 'duckduckgo' | 'text'
   >('none');
 
   // dnd-kit sortable hook
@@ -106,8 +107,6 @@ export const IconItem = React.memo(function IconItem({
     switch (imageFallback) {
       case 'clearbit':
         return getClearbitLogoUrl(icon.url);
-      case 'google256':
-        return getGoogleFaviconUrl(icon.url, 256);
       case 'duckduckgo':
         return getFaviconUrl(icon.url);
       default:
@@ -297,14 +296,13 @@ export const IconItem = React.memo(function IconItem({
                   loading="lazy"
                   decoding="async"
                   onError={() => {
-                    // Progressive fallback chain for maximum icon availability
+                    // Progressive fallback chain: primary → clearbit → duckduckgo → text
+                    // Simplified chain removes redundant google256 step
                     setImageFallback((prev) => {
                       switch (prev) {
                         case 'none':
                           return 'clearbit';
                         case 'clearbit':
-                          return 'google256';
-                        case 'google256':
                           return 'duckduckgo';
                         default:
                           return 'text';

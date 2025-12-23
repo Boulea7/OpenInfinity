@@ -194,17 +194,20 @@ export class QWeatherProvider implements IWeatherProvider {
 
     const now = Math.floor(Date.now() / 1000);
 
-    if (this.jwtCache && this.jwtCache.exp - now > 30) {
+    if (this.jwtCache && this.jwtCache.exp - now > 60) {
       return this.jwtCache.token;
     }
 
     const privateKey = await this.getPrivateKey();
+    // QWeather docs: iat should be set to 30 seconds before current time
+    // to account for clock drift between client and server
+    const iat = now - 30;
     const exp = now + JWT_TTL_SEC;
 
     const token = await new SignJWT({})
       .setProtectedHeader({ alg: 'EdDSA', kid: credentialId })
       .setSubject(projectId)
-      .setIssuedAt(now)
+      .setIssuedAt(iat)
       .setExpirationTime(exp)
       .sign(privateKey);
 

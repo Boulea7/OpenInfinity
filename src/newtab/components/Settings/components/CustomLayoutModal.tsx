@@ -55,42 +55,34 @@ export const CustomLayoutModal: React.FC<CustomLayoutModalProps> = ({
             size="xl"
             className="max-w-4xl"
         >
-            <div className="flex flex-col md:flex-row gap-6 p-1">
+            <div className="flex flex-col md:flex-row gap-4 p-1">
                 {/* Left: Preview */}
-                <div className="flex-1 min-h-[300px] bg-gray-100 dark:bg-gray-900/50 rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden border border-gray-100 dark:border-gray-800">
+                <div className="flex-1 min-h-[220px] bg-gray-100 dark:bg-gray-900/50 rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden border border-gray-100 dark:border-gray-800">
                     <div className="absolute top-3 left-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {t('settings.layout.preview', '预览')}
                     </div>
 
-                    {/* Grid Preview Container */}
-                    <div
-                        className="w-full max-w-[500px] aspect-video bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-sm backdrop-blur-sm p-4 transition-all duration-300"
-                        style={{
-                            padding: '20px',
-                        }}
-                    >
+                    {/* Grid Preview - No fixed aspect ratio, each cell is square */}
+                    <div className="w-full max-w-[400px] pt-4">
                         <div
-                            className="w-full h-full grid transition-all duration-300"
+                            className="grid transition-all duration-300"
                             style={{
                                 gridTemplateColumns: `repeat(${localSettings.columns}, 1fr)`,
-                                gridTemplateRows: `repeat(${localSettings.rows}, 1fr)`,
-                                columnGap: `${localSettings.columnGap / 5}px`, // Scaled down for preview
-                                rowGap: `${localSettings.rowGap / 5}px`,     // Scaled down for preview
+                                columnGap: `${localSettings.columnGap / 5}px`,
+                                rowGap: `${localSettings.rowGap / 5}px`,
                             }}
                         >
                             {Array.from({ length: localSettings.rows * localSettings.columns }).map((_, i) => (
                                 <div
                                     key={i}
-                                    className="bg-gray-200 dark:bg-gray-600 rounded-md transition-all duration-300 flex items-center justify-center"
+                                    className="aspect-square flex items-center justify-center"
                                 >
-                                    {/* Icon Placeholder */}
+                                    {/* Circular icon placeholder - always round */}
                                     <div
                                         className="bg-gray-300 dark:bg-gray-500 rounded-full transition-all duration-300"
                                         style={{
                                             width: `${localSettings.iconScale}%`,
                                             height: `${localSettings.iconScale}%`,
-                                            maxWidth: '80%',
-                                            maxHeight: '80%',
                                         }}
                                     />
                                 </div>
@@ -98,16 +90,16 @@ export const CustomLayoutModal: React.FC<CustomLayoutModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
                         {localSettings.rows} × {localSettings.columns} • {localSettings.iconScale}% {t('settings.layout.size', '大小')}
                     </div>
                 </div>
 
                 {/* Right: Controls */}
-                <div className="w-full md:w-80 space-y-6 flex flex-col">
-                    <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+                <div className="w-full md:w-80 space-y-4 flex flex-col">
+                    <div className="space-y-4 flex-1 overflow-y-auto pr-2">
                         {/* Grid Dimensions */}
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {t('settings.layout.gridDimensions', '网格尺寸')}
                             </h3>
@@ -134,7 +126,7 @@ export const CustomLayoutModal: React.FC<CustomLayoutModalProps> = ({
                         <div className="h-px bg-gray-100 dark:bg-gray-800" />
 
                         {/* Spacing */}
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {t('settings.layout.spacing', '间距与大小')}
                             </h3>

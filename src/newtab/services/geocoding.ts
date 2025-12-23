@@ -9,6 +9,17 @@ const CACHE_KEY = 'geocode-cache-v1';
 const CACHE_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
 const FAILURE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes for failed requests
 
+// China's four municipalities (直辖市) have special administrative structure
+// In Nominatim: state = city name, city = district name
+const CHINA_MUNICIPALITIES = ['北京', '上海', '天津', '重庆'];
+
+/**
+ * Check if a state name represents a Chinese municipality
+ */
+function isChinaMunicipality(state: string): boolean {
+  return CHINA_MUNICIPALITIES.some((m) => state.includes(m));
+}
+
 interface GeocodeCache {
   [key: string]: {
     cityName: string;
@@ -146,26 +157,37 @@ async function fetchCityName(
     // Extract location components from address
     const addr = data.address || {};
 
-    // District/county level (most specific)
-    const district = addr.suburb || addr.district || addr.county || addr.borough || '';
-
-    // City level - note: for municipalities (直辖市) like Beijing, city may be empty
+    // Raw values from Nominatim API
+    const rawDistrict = addr.suburb || addr.district || addr.county || addr.borough || '';
     const rawCity = addr.city || addr.town || addr.village || addr.municipality || '';
-
-    // State/province level
     const state = addr.state || addr.province || '';
-
-    // Country info
     const country = addr.country || '';
     const countryCode = (addr.country_code || '').toUpperCase();
 
     // Check if location is in Greater China (CN, HK, MO, TW)
     const isGreaterChina = ['CN', 'HK', 'MO', 'TW'].includes(countryCode);
 
-    // For China's municipalities (北京、上海、天津、重庆), state IS the city
-    // Clean up "市" suffix for display (e.g., "北京市" -> "北京")
+    // Clean up "市/省" suffix for display (e.g., "北京市" -> "北京")
     const cleanState = state.replace(/[市省]$/, '');
-    const city = rawCity || (isGreaterChina ? cleanState : '');
+
+    // Determine city and district based on administrative structure
+    let city: string;
+    let district: string;
+
+    if (isGreaterChina && isChinaMunicipality(state)) {
+      // For municipalities (直辖市): state = city, rawCity = district
+      // e.g., state="北京市", rawCity="海淀区" → city="北京", district="海淀区"
+      city = cleanState;
+      district = rawCity; // rawCity is actually the district for municipalities
+    } else if (isGreaterChina) {
+      // For regular Chinese cities: use normal hierarchy
+      city = rawCity || cleanState;
+      district = rawDistrict;
+    } else {
+      // For non-Chinese locations
+      city = rawCity;
+      district = rawDistrict;
+    }
 
     // Format location name with smart hierarchy
     let locationName = '';
