@@ -22,6 +22,7 @@ import { SidePanel } from '../ui/SidePanel';
 import { cn } from '../../utils';
 import { ImportBookmarksButton } from './ImportBookmarksButton';
 import { ClearCacheSection } from './ClearCacheSection';
+import { ensureFeaturePermissions, PERMISSION_GROUPS } from '../../../shared/permissions';
 
 // Settings tab definitions
 const SETTINGS_TABS = [
@@ -267,6 +268,33 @@ function GeneralSettings({ theme, setTheme, language, setLanguage }: GeneralSett
           </button>
         </div>
       </div>
+
+      {/* Optional permissions: browser quick add (context menu + current tab) */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          快捷添加
+        </label>
+        <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 px-4 py-3">
+          <div className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">
+            启用浏览器右键菜单「添加到 OpenInfinity」
+          </div>
+          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            将在使用时申请权限：读取当前标签页（tabs）与右键菜单（contextMenus）。
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void ensureFeaturePermissions(
+                [...PERMISSION_GROUPS.contextMenu, ...PERMISSION_GROUPS.tabs],
+                []
+              );
+            }}
+            className="mt-3 w-full px-4 py-2 rounded-lg text-sm font-medium bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+          >
+            立即启用
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -468,7 +496,23 @@ function WallpaperSettings({ activeSource, setActiveSource, effects, setEffects,
 
         {/* Manual Refresh Button */}
         <button
-          onClick={() => void fetchRandomWallpaper()}
+          onClick={() => {
+            void (async () => {
+              const requiredOrigins =
+                activeSource === 'unsplash'
+                  ? PERMISSION_GROUPS.wallpaperUnsplash
+                  : activeSource === 'bing'
+                    ? PERMISSION_GROUPS.wallpaperBing
+                    : null;
+
+              if (requiredOrigins) {
+                const ok = await ensureFeaturePermissions([], requiredOrigins);
+                if (!ok) return;
+              }
+
+              await fetchRandomWallpaper(activeSource);
+            })();
+          }}
           className={cn(
             'w-full px-4 py-2 rounded-lg text-sm',
             'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900',

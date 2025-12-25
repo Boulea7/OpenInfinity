@@ -56,6 +56,11 @@ export async function handleMessage(
 
 // Get current tab info
 async function handleGetCurrentTab(): Promise<Response> {
+  const hasTabs = await chrome.permissions.contains({ permissions: ['tabs'] });
+  if (!hasTabs) {
+    return { success: false, error: 'TAB_PERMISSION_REQUIRED' };
+  }
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   if (!tab) {

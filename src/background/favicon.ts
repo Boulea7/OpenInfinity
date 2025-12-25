@@ -8,13 +8,67 @@ const FAVICON_TIMEOUT_MS = 10000; // 10 seconds
 const FAVICON_MAX_SIZE_BYTES = 512 * 1024; // 512 KB
 const ALLOWED_PROTOCOLS = ['http:', 'https:'];
 
+// Allowlist for favicon fetch targets (defense-in-depth)
+const ALLOWED_HOSTS = new Set(['icons.duckduckgo.com', 'www.google.com']);
+const ALLOWED_HOST_SUFFIXES = ['.gstatic.com'];
+
+// SSRF protection: blocked hosts and private IP ranges
+const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'];
+const PRIVATE_IP_RANGES = [
+  /^10\./, // 10.0.0.0/8
+  /^172\.(1[6-9]|2\d|3[01])\./, // 172.16.0.0/12
+  /^192\.168\./, // 192.168.0.0/16
+  /^169\.254\./, // 169.254.0.0/16 (link-local)
+];
+
+function isAllowedHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (ALLOWED_HOSTS.has(lower)) return true;
+  return ALLOWED_HOST_SUFFIXES.some((suffix) => lower.endsWith(suffix));
+}
+
+/**
+ * Check if hostname is a private/internal IP address
+ */
+function isPrivateHost(hostname: string): boolean {
+  // Check blocked hosts list
+  if (BLOCKED_HOSTS.includes(hostname.toLowerCase())) {
+    return true;
+  }
+
+  // Check private IP ranges
+  for (const pattern of PRIVATE_IP_RANGES) {
+    if (pattern.test(hostname)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /**
  * Validate URL to prevent SSRF and malicious requests
  */
 function isValidFaviconUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
-    return ALLOWED_PROTOCOLS.includes(url.protocol);
+
+    // Check protocol
+    if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
+      return false;
+    }
+
+    // Check for private/internal hosts (SSRF protection)
+    if (isPrivateHost(url.hostname)) {
+      return false;
+    }
+
+    // Restrict to a small, known allowlist (prevents abuse even if host permissions expand)
+    if (!isAllowedHost(url.hostname)) {
+      return false;
+    }
+
+    return true;
   } catch {
     return false;
   }
@@ -33,6 +87,11 @@ export async function fetchFaviconAsDataUrl(url: string): Promise<string> {
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
+    }
+
+    const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+    if (contentType && !contentType.startsWith('image/')) {
+      throw new Error(`Invalid content-type for favicon: ${contentType}`);
     }
 
     // Check Content-Length header if available

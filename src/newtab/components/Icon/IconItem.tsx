@@ -1,21 +1,89 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { X } from 'lucide-react';
-import type { Icon } from '../../services/database';
+import { X, Edit3 } from 'lucide-react';
+import type { Icon, WeatherCache } from '../../services/database';
 import { useShallow } from 'zustand/shallow';
 import { useSettingsStore } from '../../stores';
 import { cn, getFaviconUrl, getGoogleFaviconUrl, getClearbitLogoUrl } from '../../utils';
 import { openWebsite, isSafeUrl } from '../../utils/navigation';
+import { handleSystemIconClick, isSystemIcon } from '../../utils/systemIconHandlers';
+import { getSystemIconComponent } from '../../assets/icons/system';
+
+/**
+ * Get weather background color based on condition
+ */
+function getWeatherBackgroundColor(condition?: string): string {
+  if (!condition) return '#60a5fa, #3b82f6'; // Default blue
+
+  const lower = condition.toLowerCase();
+
+  if (lower.includes('晴') || lower.includes('clear') || lower.includes('sunny')) {
+    return '#fcd34d, #f59e0b'; // Yellow/Orange
+  }
+  if (lower.includes('云') || lower.includes('cloud') || lower.includes('overcast')) {
+    return '#9ca3af, #6b7280'; // Gray
+  }
+  if (lower.includes('雨') || lower.includes('rain') || lower.includes('shower')) {
+    return '#60a5fa, #3b82f6'; // Blue
+  }
+  if (lower.includes('雪') || lower.includes('snow')) {
+    return '#e0f2fe, #7dd3fc'; // Light blue
+  }
+  if (lower.includes('雾') || lower.includes('fog') || lower.includes('mist') || lower.includes('霾')) {
+    return '#d1d5db, #9ca3af'; // Light gray
+  }
+  if (lower.includes('雷') || lower.includes('storm') || lower.includes('thunder')) {
+    return '#6b7280, #374151'; // Dark gray
+  }
+
+  return '#60a5fa, #3b82f6'; // Default blue
+}
+
+/**
+ * Render system icon content
+ */
+function renderSystemIcon(icon: Icon, weather?: WeatherCache | null): React.ReactNode {
+  const iconName = icon.icon.value || icon.systemIconId?.replace('system-', '');
+  const IconComponent = getSystemIconComponent(iconName || '');
+
+  if (!IconComponent) {
+    // Fallback to first letter
+    return (
+      <span className="text-2xl font-bold text-gray-600 select-none">
+        {icon.title.charAt(0).toUpperCase()}
+      </span>
+    );
+  }
+
+  // Special rendering for weather icon
+  if (icon.systemIconId === 'system-weather' && weather?.current) {
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
+        <span className="text-xl font-bold text-white drop-shadow-md">
+          {Math.round(weather.current.temperature)}°
+        </span>
+        <span className="text-[10px] text-white/90 truncate max-w-full px-1 drop-shadow-sm">
+          {weather.current.condition}
+        </span>
+      </div>
+    );
+  }
+
+  return <IconComponent size={32} />;
+}
 
 interface IconItemProps {
   icon: Icon;
+  weather?: WeatherCache | null; // P0 Fix: Passed from parent to avoid N subscriptions
   isDragging?: boolean;
   isSelected?: boolean;
   isOverlay?: boolean;
   isDeleteMode?: boolean;
+  isDeleting?: boolean; // Exit animation state
   onContextMenu?: (_e: React.MouseEvent, _icon: Icon) => void;
   onClick?: (_icon: Icon) => void;
+  onEdit?: (_icon: Icon) => void;
   onDelete?: (_iconId: string) => void;
 }
 
@@ -30,12 +98,15 @@ interface IconItemProps {
  */
 export const IconItem = React.memo(function IconItem({
   icon,
+  weather,
   isDragging: externalDragging,
   isSelected = false,
   isOverlay = false,
   isDeleteMode = false,
+  isDeleting = false,
   onContextMenu,
   onClick,
+  onEdit,
   onDelete,
 }: IconItemProps) {
   const { iconStyle, viewSettings, openBehavior } = useSettingsStore(
@@ -86,6 +157,7 @@ export const IconItem = React.memo(function IconItem({
     [transform, transition, isOverlay]
   );
 
+  // P0 Fix: weather is now passed from parent (IconGrid) to avoid N subscriptions
   // Get icon source URL (adapt to new icon structure)
   const iconSrc = useMemo(() => {
     if (icon.icon.type === 'custom' || icon.icon.type === 'favicon') {
@@ -93,8 +165,8 @@ export const IconItem = React.memo(function IconItem({
       const value = (icon.icon.value || '').trim();
       if (value) return value;
     }
-    if (icon.icon.type === 'text') {
-      // Text icons rendered separately
+    if (icon.icon.type === 'text' || icon.icon.type === 'system') {
+      // Text and system icons rendered separately
       return null;
     }
     // Fallback to high-resolution favicon service (256px for Retina displays)
@@ -120,6 +192,12 @@ export const IconItem = React.memo(function IconItem({
 
     // In delete mode, clicking does nothing (use X button to delete)
     if (isDeleteMode || isDragging) return;
+
+    // Check if this is a system icon and handle it
+    if (isSystemIcon(icon)) {
+      handleSystemIconClick(icon);
+      return;
+    }
 
     if (onClick) {
       onClick(icon);
@@ -217,18 +295,21 @@ export const IconItem = React.memo(function IconItem({
         // NO background on container (transparent)
 
         // Hover effect: lift up (disabled in delete mode to avoid animation conflict)
-        !isDeleteMode && 'hover:-translate-y-1',
+        !isDeleteMode && !isDeleting && 'hover:-translate-y-1',
 
         // NOTE: shake animation moved to inner wrapper to avoid conflicting with dnd-kit transform
 
         // Selected state
-        isSelected && 'scale-105',
+        isSelected && !isDeleting && 'scale-105',
 
         // Dragging state: hide original completely (overlay shows the dragged item)
         isDragging && !isOverlay && 'opacity-0',
 
         // Overlay state (drag preview): full opacity, elevated
-        isOverlay && 'opacity-100 scale-110 z-50 cursor-grabbing'
+        isOverlay && 'opacity-100 scale-110 z-50 cursor-grabbing',
+
+        // Exit animation: scale down and fade out
+        isDeleting && 'scale-75 opacity-0 pointer-events-none'
       )}
       {...sortableAttrs}
       onClick={handleClick}
@@ -244,22 +325,37 @@ export const IconItem = React.memo(function IconItem({
           <div
             className={cn(
               'flex items-center justify-center',
-              'transition-transform duration-300 ease-out',
-              'group-hover:scale-110',
+              'transition-all duration-300 ease-out',
+              // In edit mode: no scale, use shadow for hover feedback
+              // In normal mode: scale up on hover
+              isDeleteMode
+                ? 'group-hover:shadow-lg group-hover:shadow-black/30'
+                : 'group-hover:scale-110',
               // Selected ring
               isSelected && 'ring-2 ring-brand-orange-500 ring-offset-2 ring-offset-transparent'
             )}
             style={{
               ...iconSizeStyle,
               borderRadius: borderRadiusValue,
-              // Transparent bg for favicon, colored bg for text icons
-              backgroundColor: icon.icon.type === 'text' ? (icon.icon.color || '#3b82f6') : 'transparent',
+              // Transparent bg for favicon, colored bg for text icons, white bg for system icons
+              backgroundColor: icon.icon.type === 'text'
+                ? (icon.icon.color || '#3b82f6')
+                : icon.icon.type === 'system'
+                  ? (icon.systemIconId === 'system-weather' ? undefined : '#ffffff')
+                  : 'transparent',
+              // Weather icon uses gradient background
+              background: icon.systemIconId === 'system-weather' && weather
+                ? `linear-gradient(135deg, ${getWeatherBackgroundColor(weather.current?.condition)})`
+                : undefined,
               // Drop shadow for visibility on any wallpaper
               filter: 'drop-shadow(1px 1px 5px rgba(0, 0, 0, 0.25))',
             }}
           >
             {/* Icon content */}
-            {icon.icon.type === 'text' ? (
+            {icon.icon.type === 'system' ? (
+              // System icon: render SVG component
+              renderSystemIcon(icon, weather)
+            ) : icon.icon.type === 'text' ? (
               // Text icon: letter/emoji centered
               <span className="text-2xl font-bold text-white select-none">
                 {icon.icon.value}
@@ -342,6 +438,32 @@ export const IconItem = React.memo(function IconItem({
             >
               <X className="w-3 h-3 text-gray-700 dark:text-gray-300" />
             </button>
+          )}
+
+          {/* Edit Overlay - Only visible in delete mode on hover, covers only the icon circle */}
+          {isDeleteMode && (
+            <div
+              className={cn(
+                'absolute inset-0 z-10',
+                'flex items-center justify-center',
+                'bg-gray-400/50 dark:bg-gray-600/50',
+                'backdrop-blur-[2px]',
+                'opacity-0 group-hover:opacity-100',
+                'transition-opacity duration-200',
+                'cursor-pointer'
+              )}
+              style={{ borderRadius: borderRadiusValue }}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // Prefer explicit edit handler; fallback to onClick for backward compatibility.
+                onEdit?.(icon) ?? onClick?.(icon);
+              }}
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/90 dark:bg-gray-800/90 shadow-md flex items-center justify-center">
+                <Edit3 size={18} strokeWidth={2.5} className="text-gray-700 dark:text-gray-200" />
+              </div>
+            </div>
           )}
         </div>
 

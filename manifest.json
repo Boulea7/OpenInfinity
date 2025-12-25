@@ -24,17 +24,18 @@
   },
   "permissions": [
     "storage",
-    "alarms",
+    "alarms"
+  ],
+  "optional_permissions": [
     "tabs",
     "contextMenus",
     "activeTab",
     "identity",
-    "notifications"
-  ],
-  "optional_permissions": [
+    "identity.email",
+    "notifications",
     "bookmarks",
     "history",
-    "identity.email"
+    "management"
   ],
   "commands": {
     "add-current-page": {
@@ -45,7 +46,8 @@
       "description": "添加当前页面到 OpenInfinity"
     }
   },
-  "host_permissions": [
+  "host_permissions": [],
+  "optional_host_permissions": [
     "https://api.unsplash.com/*",
     "https://images.unsplash.com/*",
     "https://source.unsplash.com/*",

@@ -1,7 +1,7 @@
 /**
  * Re-export widget-specific hooks
  */
-export { useTodos } from './useTodos';
+export { useTodos, type TodoPriority } from './useTodos';
 export { useNotes } from './useNotes';
 export { useWeather } from './useWeather';
 export { useBookmarks } from './useBookmarks';

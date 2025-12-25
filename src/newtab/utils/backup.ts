@@ -43,8 +43,14 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 /**
  * Convert Base64 string back to Blob
+ * Only allows data:image/ URLs to prevent security issues
  */
 async function base64ToBlob(base64: string): Promise<Blob> {
+  // Security: Only allow data:image/ URLs to prevent SSRF and other attacks
+  if (!base64.startsWith('data:image/')) {
+    throw new Error('Invalid base64 data: must be a data:image/ URL');
+  }
+
   const response = await fetch(base64);
   return response.blob();
 }
@@ -114,8 +120,16 @@ export async function exportAllData(): Promise<string> {
  *
  * @param jsonString - JSON backup string
  */
+// Security: Maximum backup file size (50MB)
+const MAX_BACKUP_SIZE = 50 * 1024 * 1024;
+
 export async function importAllData(jsonString: string): Promise<void> {
   try {
+    // Security: Check file size limit to prevent DoS attacks
+    if (jsonString.length > MAX_BACKUP_SIZE) {
+      throw new Error('Backup file exceeds 50MB limit');
+    }
+
     // 1. Parse and validate backup
     const backup: BackupData = JSON.parse(jsonString);
 

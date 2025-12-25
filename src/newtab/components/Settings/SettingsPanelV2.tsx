@@ -16,7 +16,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 // All section IDs for checking collapse state
 const ALL_SECTION_IDS = [
   'wallpaper', 'openBehavior', 'notification', 'view', 'minimalMode', 'layout',
-  'icon', 'search', 'font', 'animation', 'reset',
+  'icon', 'system-icons', 'search', 'font', 'animation', 'reset',
   'general', 'clock', 'weather', 'backup', 'about',
 ];
 
@@ -30,6 +30,7 @@ import { ViewSection } from './sections/ViewSection';
 import { MinimalModeSection } from './sections/MinimalModeSection';
 import { LayoutSection } from './sections/LayoutSection';
 import { IconSection } from './sections/IconSection';
+import { SystemIconsSection } from './sections/SystemIconsSection';
 import { SearchSection } from './sections/SearchSection';
 import { FontSection } from './sections/FontSection';
 import { AnimationSection } from './sections/AnimationSection';
@@ -118,6 +119,7 @@ export const SettingsPanelV2: React.FC<SettingsPanelV2Props> = ({ className = ''
           <MinimalModeSection />
           <LayoutSection />
           <IconSection />
+          <SystemIconsSection />
           <SearchSection />
           <FontSection />
           <AnimationSection />

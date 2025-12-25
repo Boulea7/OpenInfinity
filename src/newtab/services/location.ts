@@ -143,7 +143,15 @@ async function getLocationByIP(): Promise<LocationData> {
  * @returns LocationData with coordinates and name
  * @throws Error if permission denied or geolocation fails
  */
-export async function getLocation(): Promise<LocationData> {
+// Beijing coordinates for fallback when location is denied
+const BEIJING_FALLBACK: LocationData = {
+  type: 'auto',
+  name: '北京',
+  latitude: 39.9042,
+  longitude: 116.4074,
+};
+
+export async function getLocation(): Promise<LocationData & { isFallback?: boolean }> {
   try {
     // Try Geolocation API
     const location = await getGeolocation();
@@ -151,17 +159,16 @@ export async function getLocation(): Promise<LocationData> {
   } catch (geoError) {
     const message = geoError instanceof Error ? geoError.message : 'Unknown error';
 
-    // P0-8: If user explicitly denies permission, do NOT fall back to IP
-    // This respects user privacy - if they deny location, we shouldn't use IP to approximate it
+    // If user explicitly denies permission, fall back to Beijing
+    // This ensures weather features still work while respecting that user denied precise location
     if (message.includes('denied')) {
-      console.info('Location permission denied by user - respecting privacy choice');
-      throw new Error('Location permission required. Please enable location access in your browser settings to use weather features.');
+      console.info('Location permission denied - using Beijing as fallback');
+      return { ...BEIJING_FALLBACK, isFallback: true };
     }
 
-    // For other errors (timeout, unavailable), we could theoretically fall back
-    // But for maximum privacy, we also throw here
-    console.error('Geolocation failed:', geoError);
-    throw new Error('Unable to get location. Please check your device location settings.');
+    // For other errors (timeout, unavailable), also use Beijing fallback
+    console.warn('Geolocation failed, using Beijing fallback:', geoError);
+    return { ...BEIJING_FALLBACK, isFallback: true };
   }
 }
 

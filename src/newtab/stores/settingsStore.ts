@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { db } from '../services/database';
+import { db, type SystemIconId } from '../services/database';
 import { isUserLocaleChina } from '../utils/regionUtils';
 
 /**
@@ -178,6 +178,18 @@ export interface MinimalModeSettings {
 }
 
 /**
+ * System icon settings - controls visibility and state of default system shortcuts
+ */
+export interface SystemIconSettings {
+  // Visibility state for each system icon (true = visible, false = hidden)
+  visibility: Record<SystemIconId, boolean>;
+  // Whether system icons have been initialized (injected on first load)
+  initialized: boolean;
+  // Whether location denied prompt has been shown for weather icon
+  locationDeniedPromptShown: boolean;
+}
+
+/**
  * Settings store state
  */
 interface SettingsState {
@@ -202,6 +214,9 @@ interface SettingsState {
   // Minimal mode (shows only search bar on homepage)
   minimalMode: boolean;
   minimalModeSettings: MinimalModeSettings;
+
+  // System icons (default shortcuts)
+  systemIconSettings: SystemIconSettings;
 
   // Settings panel section collapse state
   collapsedSections: Record<string, boolean>;
@@ -240,6 +255,10 @@ interface SettingsActions {
   // Minimal mode
   setMinimalMode: (enabled: boolean) => void;
   setMinimalModeSettings: (settings: Partial<MinimalModeSettings>) => void;
+
+  // System icons
+  setSystemIconSettings: (settings: Partial<SystemIconSettings>) => void;
+  setSystemIconVisibility: (iconId: SystemIconId, visible: boolean) => void;
 
   // Settings panel section collapse
   toggleSectionCollapse: (sectionId: string) => void;
@@ -442,6 +461,21 @@ const defaultSettings: SettingsState = {
   minimalModeSettings: {
     showViewSwitcher: false,  // Default: hide ViewSwitcher in minimal mode
   },
+  systemIconSettings: {
+    visibility: {
+      'system-weather': true,
+      'system-todo': true,
+      'system-notes': true,
+      'system-settings': true,
+      'system-wallpaper': true,
+      'system-openinfinity': true,
+      'system-bookmarks': true,
+      'system-history': true,
+      'system-extensions': true,
+    },
+    initialized: false,  // Will be set to true after first injection
+    locationDeniedPromptShown: false,
+  },
   collapsedSections: {},  // Default: all sections expanded
   isInitialized: false,
 };
@@ -565,6 +599,24 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         }));
       },
 
+      setSystemIconSettings: (settings) => {
+        set((state) => ({
+          systemIconSettings: { ...state.systemIconSettings, ...settings },
+        }));
+      },
+
+      setSystemIconVisibility: (iconId, visible) => {
+        set((state) => ({
+          systemIconSettings: {
+            ...state.systemIconSettings,
+            visibility: {
+              ...state.systemIconSettings.visibility,
+              [iconId]: visible,
+            },
+          },
+        }));
+      },
+
       toggleSectionCollapse: (sectionId) => {
         set((state) => ({
           collapsedSections: {
@@ -605,7 +657,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'openinfinity-settings',
-      version: 7, // V7: Add autoFillGrid setting
+      version: 8, // V8: Add system icon settings
       migrate: (persistedState: any, version: number) => {
         const state = persistedState ?? {};
 
@@ -616,6 +668,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         if (!state.notificationSettings) state.notificationSettings = { ...defaultSettings.notificationSettings };
         if (!state.changelogSettings) state.changelogSettings = { ...defaultSettings.changelogSettings };
         if (!state.minimalModeSettings) state.minimalModeSettings = { ...defaultSettings.minimalModeSettings };
+        if (!state.systemIconSettings) state.systemIconSettings = { ...defaultSettings.systemIconSettings };
 
         // V3: Ensure default search engines are up-to-date
         if (version < 3) {
@@ -725,6 +778,25 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
           };
         }
 
+        // V8: Add system icon settings for default shortcuts
+        if (version < 8) {
+          state.systemIconSettings = state?.systemIconSettings ?? {
+            visibility: {
+              'system-weather': true,
+              'system-todo': true,
+              'system-notes': true,
+              'system-settings': true,
+              'system-wallpaper': true,
+              'system-openinfinity': true,
+              'system-bookmarks': true,
+              'system-history': true,
+              'system-extensions': true,
+            },
+            initialized: false,
+            locationDeniedPromptShown: false,
+          };
+        }
+
         return state;
       },
       partialize: (state) => ({
@@ -742,6 +814,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         notificationSettings: state.notificationSettings,
         minimalMode: state.minimalMode,
         minimalModeSettings: state.minimalModeSettings,
+        systemIconSettings: state.systemIconSettings,
         collapsedSections: state.collapsedSections,
       }),
     }

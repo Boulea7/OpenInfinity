@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import { useNavigationStore } from './stores/navigationStore';
 import type { Icon, Folder } from './services/database';
 import { clearExpiredIconCache } from './utils/iconCache';
+import { hasOrigins, PERMISSION_GROUPS } from '../shared/permissions';
 import {
   WallpaperBackground,
   SearchBar,
@@ -11,15 +12,16 @@ import {
   PageDots,
   ClockWidget,
   CompactWeather,
-  IconEditor,
   FolderModal,
   WidgetContainer,
   NotesView,
   PinnedNotesPanel,
   // ViewSwitcher removed here as it is integrated into SearchBar
 } from './components';
+import { IconEditorSidebar } from './components/Icon/IconEditorSidebar';
 import { InfinityLogo } from './components/Navigation/InfinityLogo';
 import { InfinityNavPanel } from './components/Navigation/InfinityNavPanel';
+import { SidebarRouter } from './components/Sidebar/SidebarRouter';
 
 /**
  * OpenInfinity New Tab Application
@@ -36,7 +38,7 @@ function App() {
     minimalMode,
     minimalModeSettings,
   } = useSettingsStore();
-  const { loadIcons, isLoading } = useIconStore();
+  const { loadIcons, isLoading, initializeSystemIcons } = useIconStore();
   const { openPanel } = useNavigationStore();
 
   // layout state
@@ -62,6 +64,11 @@ function App() {
     loadIcons();
   }, [initializeSettings, loadIcons]);
 
+  // Initialize system icons after icons are loaded (first-time setup)
+  useEffect(() => {
+    initializeSystemIcons();
+  }, [initializeSystemIcons]);
+
   useEffect(() => {
     setViewSettings({ currentView: 'search' });
   }, []);
@@ -81,11 +88,21 @@ function App() {
     const initializeWallpaper = async () => {
       const { activeSource } = useWallpaperStore.getState();
       if (activeSource === 'unsplash' || activeSource === 'pexels') {
-        console.log(`[Wallpaper] Fetching fresh ${activeSource} wallpaper...`);
-        await useWallpaperStore.getState().fetchRandomWallpaper();
-      } else {
-        await useWallpaperStore.getState().loadWallpaper();
+        const requiredOrigins =
+          activeSource === 'unsplash'
+            ? PERMISSION_GROUPS.wallpaperUnsplash
+            : PERMISSION_GROUPS.wallpaperPexels;
+
+        // Minimal-permissions mode: only fetch if the user has already granted origins.
+        // Do not request here (no user gesture).
+        const permitted = await hasOrigins(requiredOrigins);
+        if (permitted) {
+          await useWallpaperStore.getState().fetchRandomWallpaper();
+          return;
+        }
       }
+
+      await useWallpaperStore.getState().loadWallpaper();
     };
     initializeWallpaper();
   }, []);
@@ -166,8 +183,24 @@ function App() {
     setOpenedFolder(null);
   }, []);
 
+  // Dynamic layout animation based on grid rows
+  // When user adjusts rows, search bar and content smoothly transition
+  const layoutStyle = useMemo(() => {
+    // Base padding for header (5rem = 80px)
+    const basePadding = 80;
+    // Row factor: fewer rows = more top padding to center content better
+    // Reference row count is 4 (default), adjust by 20px per row difference
+    const rowDiff = Math.max(0, 4 - viewSettings.rows);
+    const dynamicPadding = basePadding + rowDiff * 20;
+
+    return {
+      headerPaddingTop: minimalMode ? 'calc(38vh - 60px)' : `${dynamicPadding}px`,
+      contentPaddingBottom: minimalMode ? '2rem' : `${dynamicPadding}px`,
+    };
+  }, [viewSettings.rows, minimalMode]);
+
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative h-screen w-full overflow-hidden">
       {/* Wallpaper Background Layer */}
       <WallpaperBackground />
 
@@ -189,7 +222,7 @@ function App() {
       )}
 
       <div
-        className="relative z-10 min-h-screen flex flex-col transition-all duration-300"
+        className="relative z-10 h-screen flex flex-col transition-all duration-300 overflow-hidden"
         style={{
           marginLeft:
             !minimalMode &&
@@ -216,10 +249,11 @@ function App() {
         )}
 
         {/* Layout Header & Search: Persistent across views */}
+        {/* Dynamic padding based on grid rows for visual balance */}
         <header
-          className="flex flex-col items-center w-full max-w-7xl mx-auto px-4 pb-2 minimal-mode-search-transition"
+          className="flex flex-col items-center w-full max-w-7xl mx-auto px-4 pb-2 layout-adaptive-transition"
           style={{
-            paddingTop: minimalMode ? 'calc(38vh - 60px)' : '5rem',
+            paddingTop: layoutStyle.headerPaddingTop,
           }}
         >
           {/* Persistent Search Bar */}
@@ -236,14 +270,18 @@ function App() {
         {/* Content Area - hidden in minimal mode with animation */}
         <main
           className={`
-            flex-1 flex flex-col w-full max-w-7xl mx-auto px-4 relative
+            flex-1 min-h-0 flex flex-col w-full max-w-7xl mx-auto px-4 relative overflow-hidden
             minimal-mode-content-transition
             ${minimalMode ? 'minimal-mode-content-hidden' : 'minimal-mode-content-visible'}
           `}
         >
           {viewSettings.currentView === 'search' ? (
             <>
-              <div className="flex-1 flex items-start justify-center pb-20">
+              {/* Icon grid container with dynamic padding that responds to layout changes */}
+              <div
+                className="flex-1 min-h-0 flex items-center justify-center layout-adaptive-transition"
+                style={{ paddingBottom: layoutStyle.contentPaddingBottom }}
+              >
                 {isLoading ? (
                   <div className="flex items-center justify-center h-40">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white/80" />
@@ -279,7 +317,7 @@ function App() {
 
       <div id="overlay-root" className="relative z-50" />
 
-      <IconEditor
+      <IconEditorSidebar
         isOpen={showIconEditor}
         onClose={handleCloseIconEditor}
         editingIcon={editingIcon}
@@ -295,6 +333,7 @@ function App() {
 
       <InfinityLogo />
       <InfinityNavPanel />
+      <SidebarRouter />
     </div>
   );
 }

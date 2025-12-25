@@ -8,6 +8,7 @@ import { preloadEngineIcons } from '../../utils/iconCache';
 import { cn } from '../../utils';
 import { isSafeUrl } from '../../utils/navigation';
 import { ViewSwitcher } from '../ViewSwitcher/ViewSwitcher';
+import { ensureFeaturePermissions, hasOrigins, PERMISSION_GROUPS } from '../../../shared/permissions';
 
 interface SearchBarProps {
   className?: string;
@@ -134,6 +135,7 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
   const [showEngineSelector, setShowEngineSelector] = useState(false);
   const [iconLoadFailed, setIconLoadFailed] = useState(false);
   const [iconCache, setIconCache] = useState<Record<string, string>>({});
+  const [hasFaviconOrigins, setHasFaviconOrigins] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -147,6 +149,13 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
   // Preload and cache engine icons
   useEffect(() => {
     const loadIcons = async () => {
+      // Only do background fetch + base64 caching if user granted host permissions.
+      const permitted = await hasOrigins(PERMISSION_GROUPS.favicon);
+      setHasFaviconOrigins(permitted);
+      if (!permitted) {
+        setIconCache({});
+        return;
+      }
       const cache = await preloadEngineIcons(searchSettings.engines);
       setIconCache(cache);
     };
@@ -492,7 +501,19 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
           ) : (
             <button
               type="button"
-              onClick={() => setShowEngineSelector(!showEngineSelector)}
+              onClick={async () => {
+                // Request favicon host permissions only when user opens the engine selector.
+                // If denied, we still open the selector but will use direct icon URLs.
+                if (!hasFaviconOrigins) {
+                  const granted = await ensureFeaturePermissions([], PERMISSION_GROUPS.favicon);
+                  setHasFaviconOrigins(granted);
+                  if (granted) {
+                    const cache = await preloadEngineIcons(searchSettings.engines);
+                    setIconCache(cache);
+                  }
+                }
+                setShowEngineSelector(!showEngineSelector);
+              }}
               className={cn(
                 "flex items-center gap-2 pl-2 pr-1 py-1.5 rounded-full transition-colors",
                 "hover:bg-black/5 dark:hover:bg-white/10",

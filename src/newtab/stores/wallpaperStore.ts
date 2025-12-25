@@ -3,9 +3,13 @@ import { persist } from 'zustand/middleware';
 import { db, generateId, type Wallpaper } from '../services/database';
 import { compressImage, validateImageFile } from '../utils/imageCompression';
 import { wallpaperManager, type WallpaperMetadata as ProviderWallpaperMetadata } from '../services/wallpaper';
+import { hasOrigins, PERMISSION_GROUPS } from '../../shared/permissions';
 
 // Module-level auto-change timer management
 let autoChangeTimer: ReturnType<typeof setInterval> | null = null;
+
+// Visibility change handler reference for cleanup
+let visibilityChangeHandler: (() => void) | null = null;
 
 // Module-level next-wallpaper preloading state (avoid duplicate work across rapid triggers)
 let nextPreloadToken = 0;
@@ -14,13 +18,19 @@ let nextPreloadToken = 0;
 const MAX_WALLPAPER_HISTORY = 50;
 
 /**
- * Stop auto-change timer safely
+ * Stop auto-change timer safely and remove visibility listener
  */
 function stopAutoChangeTimer(): void {
   if (autoChangeTimer) {
     clearInterval(autoChangeTimer);
     autoChangeTimer = null;
     console.info('Auto-change timer stopped');
+  }
+
+  // Clean up visibility change listener
+  if (visibilityChangeHandler) {
+    document.removeEventListener('visibilitychange', visibilityChangeHandler);
+    visibilityChangeHandler = null;
   }
 }
 
@@ -63,6 +73,30 @@ function preloadImageUrl(url: string): Promise<void> {
 
 function isPreloadableWallpaperSource(source: WallpaperSource): boolean {
   return source === 'unsplash' || source === 'pexels' || source === 'bing' || source === 'wallhaven' || source === 'preset';
+}
+
+function getRequiredOriginsForWallpaperSource(source: WallpaperSource): readonly string[] | null {
+  switch (source) {
+    case 'unsplash':
+      return PERMISSION_GROUPS.wallpaperUnsplash;
+    case 'pexels':
+      return PERMISSION_GROUPS.wallpaperPexels;
+    case 'bing':
+      return PERMISSION_GROUPS.wallpaperBing;
+    case 'wallhaven':
+      return PERMISSION_GROUPS.wallpaperWallhaven;
+    default:
+      return null;
+  }
+}
+
+async function assertWallpaperOriginsGranted(source: WallpaperSource): Promise<void> {
+  const origins = getRequiredOriginsForWallpaperSource(source);
+  if (!origins) return;
+  const ok = await hasOrigins(origins);
+  if (!ok) {
+    throw new Error('Wallpaper network permission required. Open Settings → Wallpaper and click refresh to authorize.');
+  }
 }
 
 /**
@@ -526,6 +560,32 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         autoChangeTimer = setInterval(() => {
           void state.fetchRandomWallpaper();
         }, intervalMs);
+
+        // P1 Performance: Pause timer when tab is hidden, resume when visible
+        visibilityChangeHandler = () => {
+          if (document.hidden) {
+            // Tab hidden - pause timer
+            if (autoChangeTimer) {
+              clearInterval(autoChangeTimer);
+              autoChangeTimer = null;
+              console.info('Auto-change timer paused (tab hidden)');
+            }
+          } else {
+            // Tab visible - resume timer if auto-change is still enabled
+            const currentState = get();
+            if (currentState.autoChange.enabled && !autoChangeTimer) {
+              const currentIntervalMs = getIntervalMs(currentState.autoChange.interval);
+              if (currentIntervalMs > 0) {
+                autoChangeTimer = setInterval(() => {
+                  void currentState.fetchRandomWallpaper();
+                }, currentIntervalMs);
+                console.info('Auto-change timer resumed (tab visible)');
+              }
+            }
+          }
+        };
+
+        document.addEventListener('visibilitychange', visibilityChangeHandler);
       },
 
       stopAutoChange: () => {
@@ -556,6 +616,10 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
 
         try {
           const query = get().searchQuery || 'nature';
+
+          // Minimal-permissions mode: do not attempt network fetch without granted origins.
+          // Do NOT request permissions here; callers must do it in a user gesture.
+          await assertWallpaperOriginsGranted(preferredSource);
 
           // If we already have a compatible preloaded wallpaper, use it immediately.
           const preloaded = get().preloadedNext;
@@ -641,6 +705,14 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       preloadNextWallpaper: async (source) => {
         const requestedSource = source || get().activeSource;
         if (!isPreloadableWallpaperSource(requestedSource)) return;
+
+        // Background preload must stay silent if permissions are missing.
+        try {
+          await assertWallpaperOriginsGranted(requestedSource);
+        } catch {
+          set({ isPreloadingNext: false });
+          return;
+        }
 
         const token = ++nextPreloadToken;
         const query = get().searchQuery || 'nature';

@@ -3,6 +3,8 @@
  * Cache search engine icons to localStorage for instant loading
  */
 
+import { hasOrigins, PERMISSION_GROUPS } from '../../shared/permissions';
+
 const CACHE_VERSION = 'v1';
 const CACHE_KEY = `engine-icon-cache-${CACHE_VERSION}`;
 const MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -32,6 +34,13 @@ export async function getCachedEngineIcon(
   engineId: string,
   iconUrl: string
 ): Promise<string> {
+  // If the user hasn't granted host permissions, skip background fetching and just use the URL.
+  // This avoids noisy errors in "minimal permissions at install" mode.
+  const permitted = await hasOrigins(PERMISSION_GROUPS.favicon);
+  if (!permitted) {
+    return iconUrl;
+  }
+
   const cache = readIconCache();
 
   const entry = cache[engineId];

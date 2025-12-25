@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useCurrentTab } from '../hooks/useCurrentTab';
 import { useAddIcon } from '../hooks/useAddIcon';
-import IconTypeSelector from './IconTypeSelector';
+import IconTypeSelectorContainer from './IconTypeSelectorContainer';
 import IconEditPage from './IconEditPage';
 
-import type { EditRequest, IconDraft } from '../types/iconDraft';
+import type { EditRequest } from '../types/iconDraft';
+import type { IconDraft, IconType } from '../../shared/icon';
+import { ensureFeaturePermissions, PERMISSION_GROUPS } from '../../shared/permissions';
 import { GlassButton } from './UI/GlassComponents';
 import PopupLayout from './PopupLayout';
 
 export default function AddIconForm() {
-  const { tabInfo, isLoading } = useCurrentTab();
+  const { tabInfo, isLoading, needsPermission, reload } = useCurrentTab();
   const { addIcon, isAdding } = useAddIcon();
 
   const [title, setTitle] = useState('');
-  const [iconType, setIconType] = useState<'text' | 'favicon' | 'upload' | 'custom'>('text');
+  const [iconType, setIconType] = useState<IconType>('text');
   const [iconData, setIconData] = useState<IconDraft | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
+  const [isGranting, setIsGranting] = useState(false);
 
   // Auto-fill title
   useEffect(() => {
@@ -106,6 +109,32 @@ export default function AddIconForm() {
 
       <form onSubmit={handleSubmit} className="w-full space-y-2 flex-1 overflow-y-auto scrollbar-hide">
 
+        {/* Permission gate for reading current tab */}
+        {needsPermission && !tabInfo?.url && (
+          <div className="rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2">
+            <div className="text-xs text-zinc-600">
+              需要授权读取当前标签页信息，才能自动获取网址并添加到主页。
+            </div>
+            <button
+              type="button"
+              className="mt-2 w-full px-3 py-2 rounded-lg bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={isGranting}
+              onClick={async () => {
+                setIsGranting(true);
+                try {
+                  const ok = await ensureFeaturePermissions(PERMISSION_GROUPS.tabs, []);
+                  if (ok) {
+                    await reload();
+                  }
+                } finally {
+                  setIsGranting(false);
+                }
+              }}
+            >
+              {isGranting ? '授权中...' : '授权并读取当前页面'}
+            </button>
+          </div>
+        )}
 
         {/* Website Info */}
         <div className="space-y-2">
@@ -124,7 +153,7 @@ export default function AddIconForm() {
         {/* Icon Type Selection */}
         <div className="flex-1 min-h-0 pt-1">
           <label className="block text-xs font-semibold mb-2 text-zinc-400">选择图标</label>
-          <IconTypeSelector
+          <IconTypeSelectorContainer
             type={iconType}
             onTypeChange={setIconType}
             url={tabInfo?.url || ''}
@@ -153,7 +182,7 @@ export default function AddIconForm() {
         <GlassButton
           variant="primary"
           onClick={handleSubmit}
-          disabled={isAdding || !title || !iconData}
+          disabled={isAdding || !title || !iconData || !tabInfo?.url}
           isLoading={isAdding}
           className="w-full"
         >
@@ -185,4 +214,3 @@ export default function AddIconForm() {
     </PopupLayout>
   );
 }
-

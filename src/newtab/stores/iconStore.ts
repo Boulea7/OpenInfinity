@@ -1,7 +1,14 @@
 import { create } from 'zustand';
-import { db, generateId, type Icon, type Folder, type GridItem, isValidPosition, ensurePosition, isValidIcon, ensureIcon } from '../services/database';
+import { db, generateId, type Icon, type Folder, type GridItem, type SystemIconId, isValidPosition, ensurePosition, isValidIcon, ensureIcon } from '../services/database';
 import { syncIcon, syncFolder, listenForSync, type SyncMessage } from '../utils/sync';
 import { useSettingsStore } from './settingsStore';
+import {
+  hideSystemIcon as hideSystemIconService,
+  restoreSystemIcon as restoreSystemIconService,
+  reinjectSystemIcon,
+  injectSystemIcons,
+  hasSystemIcons,
+} from '../services/systemIcons';
 
 // Default grid columns for folders (fixed layout inside folder modal)
 const FOLDER_GRID_COLUMNS = 6;
@@ -72,6 +79,11 @@ interface IconActions {
   // Delete mode (iOS-style)
   enterDeleteMode: () => void;
   exitDeleteMode: () => void;
+
+  // System icons
+  hideSystemIcon: (iconId: SystemIconId) => Promise<void>;
+  restoreSystemIcon: (iconId: SystemIconId) => Promise<void>;
+  initializeSystemIcons: () => Promise<void>;
 }
 
 /**
@@ -240,6 +252,15 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   deleteIcon: async (id) => {
+    const { icons } = get();
+    const icon = icons.find(i => i.id === id);
+
+    // System icons are hidden instead of deleted
+    if (icon?.isSystemIcon && icon.systemIconId) {
+      await get().hideSystemIcon(icon.systemIconId);
+      return;
+    }
+
     await db.icons.delete(id);
 
     set(state => ({
@@ -405,17 +426,34 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const { selectedItems, icons, folders } = get();
 
     // Separate icons and folders
-    const iconIds = selectedItems.filter(id =>
+    const allIconIds = selectedItems.filter(id =>
       icons.some(icon => icon.id === id)
     );
     const folderIds = selectedItems.filter(id =>
       folders.some(folder => folder.id === id)
     );
 
+    // Separate system icons from regular icons
+    const systemIcons = icons.filter(
+      icon => allIconIds.includes(icon.id) && icon.isSystemIcon && icon.systemIconId
+    );
+    const regularIconIds = allIconIds.filter(
+      id => !systemIcons.some(si => si.id === id)
+    );
+
+    // Hide system icons instead of deleting
+    for (const sysIcon of systemIcons) {
+      if (sysIcon.systemIconId) {
+        await get().hideSystemIcon(sysIcon.systemIconId);
+      }
+    }
+
     // P2 Fix: Use transaction for cross-table updates
     await db.transaction('rw', [db.icons, db.folders], async () => {
-      // Delete icons
-      await db.icons.bulkDelete(iconIds);
+      // Delete regular icons only
+      if (regularIconIds.length > 0) {
+        await db.icons.bulkDelete(regularIconIds);
+      }
 
       // Delete folders (and move their children to root with recalculated positions)
       if (folderIds.length > 0) {
@@ -426,7 +464,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
         if (allDisplacedIcons.length > 0) {
           // Calculate new positions for displaced icons
-          const rootIcons = icons.filter(i => !i.folderId && !iconIds.includes(i.id));
+          const rootIcons = icons.filter(i => !i.folderId && !regularIconIds.includes(i.id));
           const remainingFolders = folders.filter(f => !folderIds.includes(f.id));
           const existingRootItems = [...rootIcons, ...remainingFolders];
 
@@ -458,7 +496,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     set(state => ({
       icons: state.icons
-        .filter(icon => !iconIds.includes(icon.id))
+        .filter(icon => !regularIconIds.includes(icon.id))
         .map(icon =>
           folderIds.includes(icon.folderId || '')
             ? { ...icon, folderId: undefined }
@@ -681,6 +719,114 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
   exitDeleteMode: () => {
     set({ isDeleteMode: false });
+  },
+
+  // System icon actions
+  hideSystemIcon: async (iconId: SystemIconId) => {
+    await hideSystemIconService(iconId);
+
+    // Update local state: mark as hidden
+    set(state => ({
+      icons: state.icons.map(icon =>
+        icon.systemIconId === iconId
+          ? {
+              ...icon,
+              isHidden: true,
+              originalPosition: icon.position,
+              originalFolderId: icon.folderId,
+              folderId: undefined,
+            }
+          : icon
+      ),
+      selectedItems: state.selectedItems.filter(id => id !== iconId),
+    }));
+
+    // Sync visibility to settings store for UI consistency
+    const { systemIconSettings, setSystemIconSettings } = useSettingsStore.getState();
+    setSystemIconSettings({
+      visibility: {
+        ...systemIconSettings.visibility,
+        [iconId]: false,
+      },
+    });
+
+    // Broadcast to other tabs
+    syncIcon.updated({ id: iconId, isHidden: true });
+  },
+
+  restoreSystemIcon: async (iconId: SystemIconId) => {
+    // Check if icon exists in DB - if not, reinject it
+    const existingIcon = await db.icons.get(iconId);
+    if (!existingIcon) {
+      // Icon was deleted from DB - reinject it
+      await reinjectSystemIcon(iconId);
+      // Reload icons to get the new one
+      await get().loadIcons();
+    } else {
+      // Icon exists, just restore it
+      await restoreSystemIconService(iconId);
+
+      // Update local state: restore from hidden
+      set(state => ({
+        icons: state.icons.map(i =>
+          i.systemIconId === iconId
+            ? {
+                ...i,
+                isHidden: false,
+                position: i.originalPosition || { x: 0, y: 0 },
+                folderId: i.originalFolderId,
+                originalPosition: undefined,
+                originalFolderId: undefined,
+              }
+            : i
+        ),
+      }));
+    }
+
+    // Sync visibility to settings store
+    const { systemIconSettings, setSystemIconSettings } = useSettingsStore.getState();
+    setSystemIconSettings({
+      visibility: {
+        ...systemIconSettings.visibility,
+        [iconId]: true,
+      },
+    });
+
+    // Broadcast to other tabs
+    syncIcon.updated({ id: iconId, isHidden: false });
+  },
+
+  initializeSystemIcons: async () => {
+    try {
+      const settingsStore = useSettingsStore.getState();
+      const { systemIconSettings } = settingsStore;
+
+      // P0 Fix: Even if initialized=true, verify DB actually has system icons
+      // This handles cases where user cleared IndexedDB but not LocalStorage
+      const hasExisting = await hasSystemIcons();
+
+      if (systemIconSettings.initialized && hasExisting) {
+        // Both settings and DB are consistent, nothing to do
+        return;
+      }
+
+      if (hasExisting) {
+        // DB has icons but settings not marked - just sync the flag
+        settingsStore.setSystemIconSettings({ initialized: true });
+        return;
+      }
+
+      // DB is empty - inject system icons regardless of initialized flag
+      await injectSystemIcons(systemIconSettings.visibility);
+
+      // Mark as initialized
+      settingsStore.setSystemIconSettings({ initialized: true });
+
+      // Reload icons to include newly injected system icons
+      await get().loadIcons();
+    } catch (error) {
+      console.error('[iconStore] Failed to initialize system icons:', error);
+    }
   },
 }));
 

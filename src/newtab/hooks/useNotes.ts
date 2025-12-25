@@ -12,8 +12,8 @@ export interface UseNotesReturn {
   notes: Note[];
   isLoading: boolean;
   error: string | null;
-  addNote: (content: string, tags?: string[]) => Promise<string>;
-  updateNote: (id: string, content: string, tags?: string[]) => Promise<void>;
+  addNote: (content: string, tags?: string[]) => Promise<Note | null>;
+  updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   searchNotes: (query: string) => Promise<Note[]>;
 }
@@ -37,41 +37,43 @@ export function useNotes(): UseNotesReturn {
     return query.toArray();
   }, [widgetSettings.notesWidget]);
 
-  // Add new note - returns the new note ID for selection
-  const addNote = useCallback(async (content: string, tags: string[] = []): Promise<string> => {
-    if (!content.trim()) return '';
-
+  // Add new note - returns the new note for selection
+  const addNote = useCallback(async (content: string, tags: string[] = []): Promise<Note | null> => {
     try {
       const id = crypto.randomUUID();
-      const newNote: Omit<Note, 'id' | 'createdAt' | 'updatedAt'> = {
+      const now = Date.now();
+      const newNote: Note = {
+        id,
         title: '',
-        content: content.trim(),
+        content: content.trim() || '',
         isPinned: false,
-        tags: tags.filter(tag => tag.trim()), // Filter out empty tags
+        tags: tags.filter(tag => tag.trim()),
+        createdAt: now,
+        updatedAt: now,
       };
 
-      await db.notes.add({
-        ...newNote,
-        id,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-      return id;
+      await db.notes.add(newNote);
+      return newNote;
     } catch (error) {
       console.error('Failed to add note:', error);
       throw error;
     }
   }, []);
 
-  // Update existing note - allows empty content (user may want to clear note)
-  const updateNote = useCallback(async (id: string, content: string, tags?: string[]) => {
+  // Update existing note - accepts partial updates
+  const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
       const payload: Partial<Note> = {
-        content: content.trim(), // Allow empty string
+        ...updates,
         updatedAt: Date.now(),
       };
-      if (tags !== undefined) {
-        payload.tags = tags.filter(tag => tag.trim());
+      // Trim content if provided
+      if (payload.content !== undefined) {
+        payload.content = payload.content.trim();
+      }
+      // Filter tags if provided
+      if (payload.tags !== undefined) {
+        payload.tags = payload.tags.filter(tag => tag.trim());
       }
       await db.notes.update(id, payload);
     } catch (error) {

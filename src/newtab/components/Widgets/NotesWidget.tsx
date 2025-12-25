@@ -40,9 +40,9 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
   // Handle adding new note - must be defined before early return
   const handleAddNote = useCallback(async () => {
     try {
-      const id = await addNote('# New Note\n\nStart writing...');
-      if (id) {
-        setSelectedNoteId(id); // Auto-select the newly created note
+      const newNote = await addNote('# New Note\n\nStart writing...');
+      if (newNote) {
+        setSelectedNoteId(newNote.id); // Auto-select the newly created note
         setIsEditMode(true);
       }
     } catch (error) {
@@ -73,7 +73,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
     const next = value ?? '';
     setDraftContent(next); // Keep UI responsive
     try {
-      await updateNote(selectedNote.id, next);
+      await updateNote(selectedNote.id, { content: next });
     } catch (error) {
       console.error('Failed to update note:', error);
     }

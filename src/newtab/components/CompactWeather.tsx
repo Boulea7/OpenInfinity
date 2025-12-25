@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, MapPinOff } from 'lucide-react';
 import { useSettingsStore } from '../stores';
+import { useWeatherUiStore } from '../stores/weatherUiStore';
 import { useWeather } from '../hooks';
+import type { WeatherCache } from '../services/database';
 import { getWeatherIcon } from '../services/weather';
 import { WeatherWidget } from './Widgets/WeatherWidget';
 import { cn } from '../utils';
+import { ensureFeaturePermissions, PERMISSION_GROUPS } from '../../shared/permissions';
 
 interface CompactWeatherProps {
   className?: string;
@@ -20,9 +23,17 @@ export function CompactWeather({ className }: CompactWeatherProps) {
   const { t } = useTranslation();
   const { weatherSettings } = useSettingsStore();
   const { weather, isLoading, error, forceRefresh } = useWeather();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { isExpanded, setExpanded, toggle } = useWeatherUiStore();
   const buttonRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Anti-flicker: preserve last valid weather data during refetch
+  // This prevents UI from flickering when cache is temporarily unavailable
+  const prevWeatherRef = useRef<WeatherCache | null>(null);
+  if (weather) {
+    prevWeatherRef.current = weather;
+  }
+  const displayWeather = weather || prevWeatherRef.current;
 
   // Close on click outside
   useEffect(() => {
@@ -35,13 +46,13 @@ export function CompactWeather({ className }: CompactWeatherProps) {
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
       ) {
-        setIsExpanded(false);
+        setExpanded(false);
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsExpanded(false);
+        setExpanded(false);
       }
     };
 
@@ -63,8 +74,8 @@ export function CompactWeather({ className }: CompactWeatherProps) {
     '[text-shadow:0_1px_3px_rgba(0,0,0,0.5)]'
   );
 
-  // Loading state - show spinner while fetching
-  if (isLoading && !weather) {
+  // Loading state - show spinner only when no cached data is available
+  if (isLoading && !displayWeather) {
     return (
       <div className={cn('relative', className)}>
         <div className={pillBaseStyles} title={t('weather.loading')}>
@@ -75,8 +86,8 @@ export function CompactWeather({ className }: CompactWeatherProps) {
     );
   }
 
-  // Error state - show error with retry option
-  if (error && !weather) {
+  // Error state - show error only when no cached data is available
+  if (error && !displayWeather) {
     return (
       <div className={cn('relative', className)}>
         <div
@@ -86,11 +97,18 @@ export function CompactWeather({ className }: CompactWeatherProps) {
           )}
           role="button"
           tabIndex={0}
-          onClick={() => forceRefresh()}
+          onClick={async () => {
+            const ok = await ensureFeaturePermissions([], PERMISSION_GROUPS.weather);
+            if (!ok) return;
+            await forceRefresh();
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              forceRefresh();
+              // Optional: keep keyboard behavior consistent with click.
+              void ensureFeaturePermissions([], PERMISSION_GROUPS.weather).then((ok) => {
+                if (ok) void forceRefresh();
+              });
             }
           }}
           title={t('weather.clickToRetry')}
@@ -104,11 +122,11 @@ export function CompactWeather({ className }: CompactWeatherProps) {
   }
 
   // No data and not loading/error - initial state, hide component
-  if (!weather) return null;
+  if (!displayWeather) return null;
 
   const unitLabel = weatherSettings.unit === 'celsius' ? '°C' : '°F';
-  const tempText = `${weather.current.temperature}${unitLabel}`;
-  const WeatherIcon = getWeatherIcon(weather.current.conditionCode);
+  const tempText = `${displayWeather.current.temperature}${unitLabel}`;
+  const WeatherIcon = getWeatherIcon(displayWeather.current.conditionCode);
 
   return (
     <div className={cn('relative', className)}>
@@ -127,15 +145,15 @@ export function CompactWeather({ className }: CompactWeatherProps) {
         )}
         role="button"
         tabIndex={0}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggle}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            setIsExpanded(!isExpanded);
+            toggle();
           }
         }}
-        title={`${weather.location.name} · ${weather.current.condition}`}
-        aria-label={`Weather: ${weather.current.condition}, ${tempText}`}
+        title={`${displayWeather.location.name} · ${displayWeather.current.condition}`}
+        aria-label={`Weather: ${displayWeather.current.condition}, ${tempText}`}
         aria-expanded={isExpanded}
       >
         <WeatherIcon className="w-5 h-5 text-white drop-shadow-sm" aria-hidden="true" />
@@ -183,7 +201,7 @@ export function CompactWeather({ className }: CompactWeatherProps) {
             <div className="relative z-10">
               <WeatherWidget
                 isExpanded={true}
-                onToggleExpand={() => setIsExpanded(false)}
+                onToggleExpand={() => setExpanded(false)}
                 hideHeader={true}
                 className="!bg-transparent !border-none !rounded-none !shadow-none !p-0"
               />

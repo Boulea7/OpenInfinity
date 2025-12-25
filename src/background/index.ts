@@ -84,33 +84,49 @@ function setupDefaultAlarms(): void {
 
 // Handle messages from content scripts or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Handle Popup messages
-  handleMessage(message, sender).then(sendResponse);
+  // Security boundary: only accept messages from this extension.
+  if (sender.id && sender.id !== chrome.runtime.id) {
+    sendResponse({ success: false, error: 'FORBIDDEN' });
+    return false;
+  }
 
-  // Handle legacy messages
+  if (!message || typeof message !== 'object' || typeof (message as any).type !== 'string') {
+    sendResponse({ success: false, error: 'INVALID_MESSAGE' });
+    return false;
+  }
+
   switch (message.type) {
     case 'GET_STORAGE_USAGE':
-      getStorageUsage().then(sendResponse);
+      getStorageUsage()
+        .then(sendResponse)
+        .catch((error) => sendResponse({ success: false, error: String(error) }));
       return true; // Indicates async response
 
     case 'CLEAR_CACHE':
-      clearCache().then(sendResponse);
+      clearCache()
+        .then(sendResponse)
+        .catch((error) => sendResponse({ success: false, error: String(error) }));
       return true;
 
     case 'EXPORT_DATA':
-      exportAllData().then(sendResponse);
+      exportAllData()
+        .then(sendResponse)
+        .catch((error) => sendResponse({ success: false, error: String(error) }));
       return true;
 
     case 'IMPORT_DATA':
-      importData(message.data).then(sendResponse);
+      importData((message as any).data)
+        .then(sendResponse)
+        .catch((error) => sendResponse({ success: false, error: String(error) }));
       return true;
 
     default:
-      // Already handled by handleMessage
-      break;
+      // Handle structured messages (popup/newtab)
+      handleMessage(message, sender)
+        .then(sendResponse)
+        .catch((error) => sendResponse({ success: false, error: String(error) }));
+      return true; // Keep message channel open for async response
   }
-
-  return true; // Keep message channel open for async response
 });
 
 /**

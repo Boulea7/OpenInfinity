@@ -5,8 +5,14 @@ import { db } from '../services/database';
 import { useSettingsStore } from '../stores';
 import type { TodoItem } from '../services/database';
 
-// Define TodoPriority type since it's not exported from database
-type TodoPriority = 'high' | 'medium' | 'low';
+// Priority levels: high/medium/low/none (none = no priority set)
+export type TodoPriority = 'high' | 'medium' | 'low' | 'none';
+
+// Options for useTodos hook
+export interface UseTodosOptions {
+  // Force include completed items regardless of widget settings (for Sidebar)
+  includeCompleted?: boolean;
+}
 
 /**
  * Hook for managing todo items
@@ -26,22 +32,27 @@ export interface UseTodosReturn {
 /**
  * Todo data management hook
  * Uses Dexie's useLiveQuery for real-time database synchronization
+ *
+ * @param options.includeCompleted - Force include completed items (for Sidebar use)
  */
-export function useTodos(): UseTodosReturn {
+export function useTodos(options?: UseTodosOptions): UseTodosReturn {
   // Only subscribe to the specific settings we need to avoid unnecessary re-renders
-  const { maxItems, showCompleted } = useSettingsStore(
+  const { maxItems, settingShowCompleted } = useSettingsStore(
     useShallow((state) => ({
       maxItems: state.widgetSettings.todoWidget.maxItems,
-      showCompleted: state.widgetSettings.todoWidget.showCompleted,
+      settingShowCompleted: state.widgetSettings.todoWidget.showCompleted,
     }))
   );
+
+  // Sidebar requires completed items regardless of widget settings
+  const showCompleted = options?.includeCompleted ?? settingShowCompleted;
 
   // Real-time query for todos
   const todos = useLiveQuery(() => {
     let query = db.todos.orderBy('createdAt').reverse();
 
-    // Apply max items limit from settings
-    if (maxItems > 0) {
+    // Apply max items limit only for widget (not for sidebar with includeCompleted)
+    if (maxItems > 0 && !options?.includeCompleted) {
       query = query.limit(maxItems);
     }
 
@@ -51,19 +62,23 @@ export function useTodos(): UseTodosReturn {
     }
 
     return query.toArray();
-  }, [maxItems, showCompleted]);
+  }, [maxItems, showCompleted, options?.includeCompleted]);
 
-  // Add new todo
-  const addTodo = useCallback(async (text: string, priority: TodoPriority = 'medium') => {
+  // Add new todo with automatic tag extraction
+  const addTodo = useCallback(async (text: string, priority: TodoPriority = 'none') => {
     if (!text.trim()) return;
 
     try {
+      // Extract #tags from text (supports Unicode word characters for CJK)
+      const tagMatches = text.match(/#[\w\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff-]+/g) || [];
+      const tags = tagMatches.map(t => t.substring(1)); // Remove # prefix
+
       const newTodo: Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'> = {
         text: text.trim(),
         done: false,
         priority,
         children: [],
-        tags: [],
+        tags,
       };
 
       await db.todos.add({

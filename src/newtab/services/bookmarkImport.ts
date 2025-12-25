@@ -39,18 +39,12 @@ export async function importBookmarks(
   const startTime = Date.now();
 
   try {
-    // Step 1: Check and request bookmarks permission
-    const hasPermission = await chrome.permissions.contains({
-      permissions: ['bookmarks'],
-    });
-
-    if (!hasPermission) {
-      const granted = await chrome.permissions.request({
-        permissions: ['bookmarks'],
-      });
-      if (!granted) {
-        throw new Error('Bookmark permission denied by user');
-      }
+    // Step 1: Request bookmarks permission (must be triggered by a user gesture)
+    // IMPORTANT: Avoid an async pre-check (contains) before request, as it can break the
+    // user-gesture requirement for permission prompts in some browsers.
+    const granted = await chrome.permissions.request({ permissions: ['bookmarks'] });
+    if (!granted) {
+      throw new Error('Bookmark permission denied by user');
     }
 
     // Step 2: Read bookmark tree

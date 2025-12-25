@@ -31,12 +31,14 @@ import {
 } from 'lucide-react';
 import type { GridItem, Icon, Folder } from '../../services/database';
 import { useIconStore, useSettingsStore, useWallpaperStore } from '../../stores';
+import { useWeather } from '../../hooks';
 import { IconItem } from '../Icon/IconItem';
 import { FolderItem } from '../Icon/FolderItem';
 import { FolderNameModal } from '../Icon/FolderNameModal';
 import { ContextMenu, type ContextMenuItem } from '../ui/ContextMenu';
 import { cn } from '../../utils';
 import { openUrlSafe } from '../../utils/navigation';
+import { handleSystemIconClick, isSystemIcon } from '../../utils/systemIconHandlers';
 import { exportAllData } from '../../utils/backup';
 
 interface IconGridProps {
@@ -111,6 +113,10 @@ export function IconGrid({
     }))
   );
 
+  // P0 Fix: Lift weather subscription here to avoid N subscriptions in IconItem
+  // Only the weather system icon needs this data
+  const { weather } = useWeather();
+
   // Use refs for values only needed at click time to avoid useMemo rebuilds
   type WallpaperState = Pick<
     ReturnType<typeof useWallpaperStore.getState>,
@@ -155,6 +161,10 @@ export function IconGrid({
   const [backgroundContextMenu, setBackgroundContextMenu] = useState<{
     position: { x: number; y: number };
   } | null>(null);
+
+  // Delete animation state: track items currently being deleted (for exit animation)
+  const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set());
+  const DELETE_ANIMATION_DURATION = 300; // ms, matches CSS transition
 
   // ESC key to exit delete mode
   useEffect(() => {
@@ -305,9 +315,9 @@ export function IconGrid({
   const safeRows = Math.max(1, viewSettings.rows || 4);
   const itemsPerPage = safeColumns * safeRows;
 
-  // Get root-level items (icons without folderId + folders)
+  // Get root-level items (icons without folderId + folders, excluding hidden icons)
   const rootItems = useMemo(() => {
-    const rootIcons = icons.filter((icon) => !icon.folderId);
+    const rootIcons = icons.filter((icon) => !icon.folderId && !icon.isHidden);
     const allItems: GridItem[] = [...rootIcons, ...folders];
     // Sort by position (row-major order: y first, then x)
     return allItems.sort((a, b) => {
@@ -466,6 +476,25 @@ export function IconGrid({
     setBackgroundContextMenu(null);
   }, []);
 
+  // Handle animated delete: first trigger exit animation, then remove after animation completes
+  const handleAnimatedDelete = useCallback((id: string) => {
+    // Add to deleting set to trigger exit animation
+    setDeletingItems(prev => new Set(prev).add(id));
+
+    // After animation completes, actually delete the item
+    setTimeout(() => {
+      void deleteIcon(id).catch(err => {
+        console.error('Failed to delete icon:', err);
+      });
+      // Remove from deleting set
+      setDeletingItems(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, DELETE_ANIMATION_DURATION);
+  }, [deleteIcon, DELETE_ANIMATION_DURATION]);
+
   // Context menu items
   const getContextMenuItems = useCallback(
     (item: GridItem): ContextMenuItem[] => {
@@ -476,6 +505,11 @@ export function IconGrid({
             id: 'open',
             label: t('contextMenu.open', 'Open'),
             onClick: () => {
+              // System icons use special handler (system:// URLs not safe for openUrlSafe)
+              if (isSystemIcon(icon)) {
+                handleSystemIconClick(icon);
+                return;
+              }
               // P1-5: Safe URL check before opening
               const opened = openUrlSafe(icon.url, 'current', openBehavior);
               if (!opened) {
@@ -503,10 +537,8 @@ export function IconGrid({
             label: t('contextMenu.delete', 'Delete'),
             danger: true,
             onClick: () => {
-              // P1-10: Promise error handling
-              void deleteIcon(item.id).catch(err => {
-                console.error('Failed to delete icon:', err);
-              });
+              // Use animated delete for smooth exit animation
+              handleAnimatedDelete(item.id);
             },
           },
         ];
@@ -540,18 +572,21 @@ export function IconGrid({
         },
       ];
     },
-    [t, onEditIcon, onOpenFolder, deleteIcon, deleteFolder, openBehavior, enterDeleteMode, closeContextMenu]
+    [t, onEditIcon, onOpenFolder, handleAnimatedDelete, deleteFolder, openBehavior, enterDeleteMode, closeContextMenu]
   );
 
   // Handle background click (P0-3: only deselect when clicking background itself)
   const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
-    // Only clear selection if clicking the background itself, not bubbled events
+    // In delete mode, any click that reaches here (not stopped by icon/folder) exits delete mode
+    // This works because IconItem and FolderItem call stopPropagation() on their click handlers
+    if (isDeleteMode) {
+      exitDeleteMode();
+      return;
+    }
+
+    // In normal mode, only clear selection if clicking the background itself (not bubbled events)
+    // This prevents accidental deselection when clicking on grid gaps
     if (e.target === e.currentTarget) {
-      // In delete mode, clicking background exits delete mode
-      if (isDeleteMode) {
-        exitDeleteMode();
-        return;
-      }
       clearSelection();
       closeContextMenu();
     }
@@ -727,6 +762,7 @@ export function IconGrid({
     return (
       <IconItem
         icon={activeItem as Icon}
+        weather={weather}
         isOverlay
       />
     );
@@ -747,9 +783,9 @@ export function IconGrid({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
-          {/* Grid container */}
+          {/* Grid container with smooth layout transitions */}
           <div
-            className="grid gap-4 justify-center mx-auto transition-all duration-300 ease-out"
+            className="grid gap-4 justify-center mx-auto grid-layout-transition"
             style={{
               gridTemplateColumns: `repeat(${safeColumns}, minmax(0, 1fr))`,
               // Dynamic width based on columns (Reference: Infinity Pro)
@@ -786,28 +822,37 @@ export function IconGrid({
                 <IconItem
                   key={item.id}
                   icon={item as Icon}
+                  weather={weather}
                   isSelected={selectedItems.includes(item.id)}
                   isDragging={activeItem?.id === item.id}
                   isDeleteMode={isDeleteMode}
-                  onContextMenu={(e) => handleContextMenu(e, item)}
+                  isDeleting={deletingItems.has(item.id)}
+                  onEdit={(icon) => onEditIcon?.(icon)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    // Right-click on icon directly enters edit mode (skip context menu)
+                    enterDeleteMode();
+                  }}
                   onClick={(icon) => {
-                    // P0-3: Select item (propagation already stopped in IconItem)
+                    // In edit mode, clicking icon opens edit sidebar
+                    if (isDeleteMode) {
+                      onEditIcon?.(icon);
+                      return;
+                    }
+                    // Normal mode: select and open URL
                     selectItem(icon.id);
                     const opened = openUrlSafe(icon.url, 'current', openBehavior);
                     if (!opened) {
                       console.error('Blocked unsafe URL:', icon.url);
                     }
                   }}
-                  onDelete={(id) => {
-                    void deleteIcon(id).catch(err => {
-                      console.error('Failed to delete icon:', err);
-                    });
-                  }}
+                  onDelete={handleAnimatedDelete}
                 />
               );
             })}
 
             {/* Add new icon button - LAST item in grid (after all icons) */}
+            {/* Wrapper structure matches IconItem for consistent grid alignment */}
             {pageItems.length < itemsPerPage && (() => {
               // Calculate dynamic size for add button to match icons
               // (Duplicated simplified logic from IconItem to ensure visual consistency)
@@ -820,32 +865,47 @@ export function IconGrid({
               const sizePx = Math.min(96, Math.max(48, densitySize * scaleMultiplier));
 
               return (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddIcon?.();
-                  }}
+                <div
                   className={cn(
-                    'flex items-center justify-center',
-                    'rounded-full border-2 border-dashed',
-                    'border-white/40 hover:border-white/60',
-                    'text-white/50 hover:text-white/80',
+                    // Match IconItem outer container structure
+                    'group relative flex flex-col items-center',
+                    'py-2 px-1',
                     'transition-all duration-300 ease-out',
-                    'hover:bg-white/10 hover:scale-110',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
-                    'self-center justify-self-center'
+                    'cursor-pointer select-none'
                   )}
-                  style={{
-                    width: `${sizePx}px`,
-                    height: `${sizePx}px`,
-                    filter: 'drop-shadow(1px 1px 3px rgba(0, 0, 0, 0.2))',
-                  }}
-                  aria-label={t('iconGrid.addIcon')}
                 >
-                  <Plus className="w-6 h-6" />
-                  <span className="sr-only">{t('iconGrid.addIcon')}</span>
-                </button>
+                  {/* Inner wrapper matches IconItem structure */}
+                  <div className="flex flex-col items-center">
+                    {/* Button positioning wrapper */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddIcon?.();
+                        }}
+                        className={cn(
+                          'flex items-center justify-center',
+                          'rounded-full border-2 border-dashed',
+                          'border-white/40 hover:border-white/60',
+                          'text-white/50 hover:text-white/80',
+                          'transition-all duration-300 ease-out',
+                          'hover:bg-white/10 hover:scale-110',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40'
+                        )}
+                        style={{
+                          width: `${sizePx}px`,
+                          height: `${sizePx}px`,
+                          filter: 'drop-shadow(1px 1px 3px rgba(0, 0, 0, 0.2))',
+                        }}
+                        aria-label={t('iconGrid.addIcon')}
+                      >
+                        <Plus className="w-6 h-6" />
+                        <span className="sr-only">{t('iconGrid.addIcon')}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               );
             })()}
           </div>

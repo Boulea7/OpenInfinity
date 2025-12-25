@@ -60,6 +60,18 @@ function ensureIcon(raw: any, title: string): Icon['icon'] {
   };
 }
 
+// System icon ID type - identifies default system shortcuts
+export type SystemIconId =
+  | 'system-weather'
+  | 'system-todo'
+  | 'system-notes'
+  | 'system-settings'
+  | 'system-wallpaper'
+  | 'system-openinfinity'
+  | 'system-bookmarks'
+  | 'system-history'
+  | 'system-extensions';
+
 // Icon type definition
 export interface Icon {
   id: string;
@@ -75,6 +87,13 @@ export interface Icon {
   folderId?: string;
   createdAt: number;
   updatedAt: number;
+
+  // System icon fields (only present for default system shortcuts)
+  isSystemIcon?: boolean;           // True if this is a system shortcut
+  systemIconId?: SystemIconId;      // Unique system icon identifier
+  isHidden?: boolean;               // Hidden state (delete = hide for system icons)
+  originalPosition?: { x: number; y: number }; // Original position for restore
+  originalFolderId?: string;        // Original folder for restore
 }
 
 // Folder type definition
@@ -117,7 +136,7 @@ export interface TodoItem {
   id: string;
   text: string;
   done: boolean;
-  priority: 'high' | 'medium' | 'low';
+  priority: 'high' | 'medium' | 'low' | 'none';
   parentId?: string;
   children: string[];
   dueDate?: number;
@@ -460,122 +479,27 @@ class OpenInfinityDB extends Dexie {
       weatherCache: 'id, fetchedAt, expiresAt',
     });
 
-    // Version 9: Fix primary key type - change ++id (auto-increment number) to id (string UUID)
-    // This fixes DataError when using generateId() which returns string UUIDs
-    this.version(9)
-      .stores({
-        icons: 'id, type, url, folderId, createdAt',
-        folders: 'id, name, createdAt',
-        wallpapers: 'id, type, createdAt',
-        todos: 'id, done, parentId, dueDate, *tags, createdAt, updatedAt',
-        notes: 'id, isPinned, *tags, createdAt, updatedAt',
-        settings: 'key',
-        emailAccounts: 'id, provider, email, enabled, lastChecked',
-        todoIntegrations: 'id, provider, enabled, lastSynced',
-        rssSubscriptions: 'id, url, category, enabled, lastFetched',
-        rssItems: 'id, subscriptionId, pubDate, isRead, isStarred',
-        notificationLogs: 'id, type, source, isRead, createdAt',
-        presetWebsites: 'id, category, region, popularity, *tags',
-        userFavorites: 'id, websiteId, addedAt',
-        weatherCache: 'id, fetchedAt, expiresAt',
-      })
-      .upgrade(async (trans) => {
-        // Migrate numeric IDs to string UUIDs for all tables
-        // Build folder ID mapping first (old number -> new UUID)
-        const folderIdMap = new Map<number | string, string>();
+    // Version 9: NO-OP - Keep same schema as Version 8
+    // IMPORTANT: IndexedDB does NOT support changing primary key type (++id to id)
+    // The original Version 9 attempted this and caused "UpgradeError: Not yet support for changing primary key"
+    // We keep the ++id schema which works with both auto-increment and explicit string IDs
+    this.version(9).stores({
+      icons: '++id, type, url, folderId, createdAt',
+      folders: '++id, name, createdAt',
+      wallpapers: '++id, type, createdAt',
+      todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+      notes: '++id, isPinned, *tags, createdAt, updatedAt',
+      settings: 'key',
+      emailAccounts: '++id, provider, email, enabled, lastChecked',
+      todoIntegrations: '++id, provider, enabled, lastSynced',
+      rssSubscriptions: '++id, url, category, enabled, lastFetched',
+      rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+      notificationLogs: '++id, type, source, isRead, createdAt',
+      presetWebsites: '++id, category, region, popularity, *tags',
+      userFavorites: '++id, websiteId, addedAt',
+      weatherCache: 'id, fetchedAt, expiresAt', // weatherCache already uses string id, keep it
+    });
 
-        // Migrate folders first (icons reference folders via folderId)
-        const folders = await trans.table('folders').toArray();
-        for (const folder of folders) {
-          const oldId = folder.id;
-          // Skip if already string UUID
-          if (typeof oldId === 'string' && oldId.includes('-')) continue;
-
-          const newId = crypto.randomUUID();
-          folderIdMap.set(oldId, newId);
-
-          // Delete old record and insert with new ID
-          await trans.table('folders').delete(oldId);
-          await trans.table('folders').add({ ...folder, id: newId });
-        }
-
-        // Migrate icons (update folderId references)
-        const icons = await trans.table('icons').toArray();
-        for (const icon of icons) {
-          const oldId = icon.id;
-          const needsIdMigration = typeof oldId === 'number';
-          const needsFolderIdMigration = icon.folderId && folderIdMap.has(icon.folderId);
-
-          if (needsIdMigration || needsFolderIdMigration) {
-            const newId = needsIdMigration ? crypto.randomUUID() : oldId;
-            const newFolderId = needsFolderIdMigration
-              ? folderIdMap.get(icon.folderId)
-              : icon.folderId;
-
-            await trans.table('icons').delete(oldId);
-            await trans.table('icons').add({
-              ...icon,
-              id: newId,
-              folderId: newFolderId,
-            });
-          }
-        }
-
-        // Migrate other tables with simple ID conversion
-        const simpleTables = [
-          'wallpapers',
-          'todos',
-          'notes',
-          'emailAccounts',
-          'todoIntegrations',
-          'rssSubscriptions',
-          'notificationLogs',
-          'presetWebsites',
-          'userFavorites',
-        ];
-
-        for (const tableName of simpleTables) {
-          const records = await trans.table(tableName).toArray();
-          for (const record of records) {
-            if (typeof record.id === 'number') {
-              const newId = crypto.randomUUID();
-              await trans.table(tableName).delete(record.id);
-              await trans.table(tableName).add({ ...record, id: newId });
-            }
-          }
-        }
-
-        // Migrate rssItems (has subscriptionId foreign key)
-        const rssIdMap = new Map<number | string, string>();
-        const rssSubscriptions = await trans.table('rssSubscriptions').toArray();
-        for (const sub of rssSubscriptions) {
-          if (typeof sub.id === 'number') {
-            rssIdMap.set(sub.id, crypto.randomUUID());
-          }
-        }
-
-        const rssItems = await trans.table('rssItems').toArray();
-        for (const item of rssItems) {
-          const needsIdMigration = typeof item.id === 'number';
-          const needsSubIdMigration = item.subscriptionId && rssIdMap.has(item.subscriptionId);
-
-          if (needsIdMigration || needsSubIdMigration) {
-            const newId = needsIdMigration ? crypto.randomUUID() : item.id;
-            const newSubId = needsSubIdMigration
-              ? rssIdMap.get(item.subscriptionId)
-              : item.subscriptionId;
-
-            await trans.table('rssItems').delete(item.id);
-            await trans.table('rssItems').add({
-              ...item,
-              id: newId,
-              subscriptionId: newSubId,
-            });
-          }
-        }
-
-        console.log('[Database] Version 9 migration completed: numeric IDs converted to UUIDs');
-      });
   }
 }
 

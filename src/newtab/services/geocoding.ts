@@ -9,6 +9,13 @@ const CACHE_KEY = 'geocode-cache-v1';
 const CACHE_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
 const FAILURE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes for failed requests
 
+const IS_DEV = !!(import.meta as any)?.env?.DEV;
+function debugLog(...args: unknown[]) {
+  if (!IS_DEV) return;
+  // eslint-disable-next-line no-console
+  console.debug(...args);
+}
+
 // China's four municipalities (直辖市) have special administrative structure
 // In Nominatim: state = city name, city = district name
 const CHINA_MUNICIPALITIES = ['北京', '上海', '天津', '重庆'];
@@ -65,7 +72,8 @@ function saveCache(cache: GeocodeCache): void {
     memoryCache = cache;
     memoryCacheLoadedAt = Date.now();
   } catch (error) {
-    console.warn('[Geocoding] Failed to save cache:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn('[Geocoding] Failed to save cache:', msg);
   }
 }
 
@@ -92,10 +100,10 @@ export async function getCityName(
     const ttl = entry.failed ? FAILURE_CACHE_TTL_MS : CACHE_EXPIRATION_MS;
     if (now - entry.cachedAt < ttl) {
       if (entry.failed) {
-        console.log('[Geocoding] Skipping due to cached failure');
+        debugLog('[Geocoding] Skipping due to cached failure');
         return '';
       }
-      console.log('[Geocoding] Using cached city name:', entry.cityName);
+      debugLog('[Geocoding] Using cached city name:', entry.cityName);
       return entry.cityName;
     }
   }
@@ -103,7 +111,7 @@ export async function getCityName(
   // Check for in-flight request to deduplicate
   const inFlight = inFlightRequests.get(cacheKey);
   if (inFlight) {
-    console.log('[Geocoding] Reusing in-flight request');
+    debugLog('[Geocoding] Reusing in-flight request');
     return inFlight;
   }
 
@@ -127,7 +135,7 @@ async function fetchCityName(
   language: string,
   cacheKey: string
 ): Promise<string> {
-  console.log('[Geocoding] Fetching from Nominatim API:', { latitude, longitude, language });
+  debugLog('[Geocoding] Fetching from Nominatim API:', { latitude, longitude, language });
 
   try {
     const params = new URLSearchParams({
@@ -269,7 +277,8 @@ async function fetchCityName(
 
     throw new Error('No city name found in response');
   } catch (error) {
-    console.warn('[Geocoding] Failed:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn('[Geocoding] Failed:', msg);
 
     // Cache the failure to avoid repeated requests
     const cache = loadCache();
@@ -302,6 +311,7 @@ export function clearExpiredGeocodeCache(): void {
 
     saveCache(updated);
   } catch (error) {
-    console.warn('[Geocoding] Failed to clear expired cache:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn('[Geocoding] Failed to clear expired cache:', msg);
   }
 }

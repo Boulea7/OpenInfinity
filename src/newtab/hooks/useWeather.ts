@@ -11,8 +11,16 @@ import { useSettingsStore } from '../stores';
 import { getLocation } from '../services/location';
 import { watchLocationPermission } from '../services/locationPermission';
 import { weatherManager } from '../services/weather/WeatherManager';
+import { hasOrigins, PERMISSION_GROUPS } from '../../shared/permissions';
 import type { WeatherData } from '../services/weather/types';
 import type { LocationData } from '../types';
+
+const IS_DEV = !!(import.meta as any)?.env?.DEV;
+function debugLog(...args: unknown[]) {
+  if (!IS_DEV) return;
+  // eslint-disable-next-line no-console
+  console.debug(...args);
+}
 
 /**
  * Cache expiration time: 1 hour in milliseconds
@@ -63,13 +71,8 @@ async function getCachedWeather(
       return null;
     }
 
-    // If cache is missing location name, treat as invalid to force refresh
-    // This ensures we don't keep showing "当前位置" when geocoding should have worked
-    if (!cached.location?.name?.trim()) {
-      console.warn('[useWeather] Cached weather missing location name, forcing refresh:', cacheKey);
-      await db.weatherCache.delete(cacheKey);
-      return null;
-    }
+    // Empty location name is acceptable (geocoding may fail due to network issues)
+    // We'll display coordinates as fallback in the UI if name is missing
 
     if (isCacheExpired(cached)) {
       await db.weatherCache.delete(cacheKey);
@@ -96,13 +99,18 @@ async function upsertWeatherCache(
   // 1. For auto-location: use geocoded name from weatherData (set by WeatherManager)
   // 2. For manual location: use user-provided name
   // 3. Fallback to weatherData.location.name or location.name
+  // 4. Coordinate-based fallback (e.g., "39.90°N, 116.40°E")
+  const lat = location.latitude;
+  const lon = location.longitude;
+  const coordFallback = `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`;
+
   const resolvedName =
     (location.type === 'auto'
       ? weatherData.location.name?.trim()
       : location.name?.trim()) ||
     weatherData.location.name?.trim() ||
     location.name?.trim() ||
-    '';
+    coordFallback;
 
   // Sync back to weatherData for consistency in the call chain
   weatherData.location.name = resolvedName;
@@ -120,7 +128,7 @@ async function upsertWeatherCache(
     expiresAt: now + CACHE_EXPIRATION_MS,
   };
 
-  console.log('[useWeather] Upserting weather cache', {
+  debugLog('[useWeather] Upserting weather cache', {
     cacheKey,
     locationName: resolvedName,
     provider: weatherData.provider,
@@ -215,7 +223,21 @@ export function useWeather(): UseWeatherReturn {
           };
         } else {
           // Auto-detect location
-          location = await getLocation();
+          const autoLocation = await getLocation();
+          location = autoLocation;
+
+          // Show one-time notification when using Beijing fallback
+          if ('isFallback' in autoLocation && autoLocation.isFallback) {
+            const { systemIconSettings, setSystemIconSettings } = useSettingsStore.getState();
+            if (!systemIconSettings.locationDeniedPromptShown) {
+              // Mark as shown to prevent repeat notifications
+              setSystemIconSettings({ locationDeniedPromptShown: true });
+              // Set a user-friendly error message instead of throwing
+              if (isMountedRef.current) {
+                setError('定位被拒绝，已使用北京作为默认位置。您可以在设置中手动修改。');
+              }
+            }
+          }
         }
 
         // Use cached data when available, but also respect updateInterval setting
@@ -224,6 +246,18 @@ export function useWeather(): UseWeatherReturn {
         const isStaleByInterval = cached && intervalMs > 0 && (Date.now() - cached.fetchedAt) >= intervalMs;
 
         if (cached && !isStaleByInterval) {
+          return;
+        }
+
+        // Network fetch requires optional host permissions (minimal-install mode).
+        // Do not request permissions here (no user gesture). Surface an error for UI to handle.
+        const hasWeatherOrigins = await hasOrigins(PERMISSION_GROUPS.weather);
+        if (!hasWeatherOrigins) {
+          // No user gesture here: do not request permissions, and avoid noisy error logs.
+          // Surface a stable, actionable message for UI to render.
+          if (isMountedRef.current) {
+            setError('Weather network permission required. Click the weather widget to authorize.');
+          }
           return;
         }
 
@@ -313,6 +347,13 @@ export function useWeather(): UseWeatherReturn {
           };
         } else {
           location = await getLocation();
+        }
+
+        // Do not request permissions here (might not be a direct user gesture).
+        // If missing, surface an actionable error message.
+        const hasWeatherOrigins = await hasOrigins(PERMISSION_GROUPS.weather);
+        if (!hasWeatherOrigins) {
+          throw new Error('Weather network permission required. Click the weather widget to authorize.');
         }
 
         // Force fetch (bypass cache)
@@ -461,10 +502,10 @@ export function useWeather(): UseWeatherReturn {
     }
 
     const cleanup = watchLocationPermission((state) => {
-      console.log('[useWeather] Location permission changed to:', state);
+      debugLog('[useWeather] Location permission changed to:', state);
       if (state === 'granted') {
         // Permission granted, fetch weather data
-        console.log('[useWeather] Permission granted, fetching weather...');
+        debugLog('[useWeather] Permission granted, fetching weather...');
         forceRefresh();
       }
     });

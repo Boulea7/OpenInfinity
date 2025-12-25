@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink, Github, Heart } from 'lucide-react';
+import { ExternalLink, Github, Heart, Star } from 'lucide-react';
 import { CollapsibleSection } from './CollapsibleSection';
 
 // Get version from manifest
@@ -72,6 +72,30 @@ export const AboutSection: React.FC = () => {
             <ExternalLink className="w-3 h-3 opacity-50" />
           </a>
         ))}
+      </div>
+
+      {/* Star CTA Card */}
+      <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800">
+        <div className="flex items-center gap-3">
+          <Star className="w-6 h-6 text-yellow-500" />
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-900 dark:text-white">
+              {t('settings.about.starTitle', '喜欢 Open Infinity？')}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {t('settings.about.starDesc', '在 GitHub 给我们一个 ⭐ 支持开发')}
+            </div>
+          </div>
+          <a
+            href="https://github.com/Boulea7/OpenInfinity"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-1"
+          >
+            <Star className="w-4 h-4" />
+            Star
+          </a>
+        </div>
       </div>
 
       {/* Copyright */}
