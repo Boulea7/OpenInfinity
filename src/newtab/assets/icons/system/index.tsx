@@ -83,7 +83,7 @@ export function NotesIcon({ className, size = 48 }: IconProps) {
   );
 }
 
-// Settings icon
+// Settings icon - Grey gear design
 export function SettingsIcon({ className, size = 48 }: IconProps) {
   return (
     <svg
@@ -94,12 +94,19 @@ export function SettingsIcon({ className, size = 48 }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <circle cx="24" cy="24" r="6" fill="#F3F4F6" stroke="#6B7280" strokeWidth="2" />
+      <defs>
+        <linearGradient id="settingsGray" x1="24" y1="8" x2="24" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#9CA3AF" />
+          <stop offset="1" stopColor="#6B7280" />
+        </linearGradient>
+      </defs>
       <path
-        d="M24 4L26.5 10H21.5L24 4ZM24 44L21.5 38H26.5L24 44ZM4 24L10 21.5V26.5L4 24ZM44 24L38 26.5V21.5L44 24ZM8.5 8.5L14 12L12 14L8.5 8.5ZM39.5 39.5L34 36L36 34L39.5 39.5ZM39.5 8.5L36 14L34 12L39.5 8.5ZM8.5 39.5L12 34L14 36L8.5 39.5Z"
-        fill="#9CA3AF"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M38.97 22.14C38.58 21.16 38.07 20.24 37.45 19.39L39.02 17.82C39.46 17.38 39.46 16.67 39.02 16.23L36.23 13.44C35.79 13 35.08 13 34.64 13.44L33.07 15.01C32.21 14.39 31.29 13.88 30.31 13.49C29.87 11.73 28.31 10.45 26.45 10.45H21.55C19.69 10.45 18.13 11.73 17.69 13.48C16.71 13.87 15.79 14.38 14.93 15L13.36 13.43C12.92 12.99 12.21 12.99 11.77 13.43L8.98 16.22C8.54 16.66 8.54 17.37 8.98 17.81L10.55 19.38C9.93 20.23 9.42 21.15 9.03 22.13C7.27 22.56 6 24.13 6 26V28.74C6 30.6 7.27 32.17 9.03 32.6C9.42 33.58 9.94 34.5 10.56 35.36L8.98 36.94C8.54 37.38 8.54 38.09 8.98 38.53L11.77 41.32C12.21 41.76 12.92 41.76 13.36 41.32L14.94 39.74C15.8 40.37 16.73 40.9 17.72 41.31C18.16 43.06 19.72 44.34 21.58 44.34H26.48C28.34 44.34 29.9 43.06 30.33 41.31C31.32 40.9 32.25 40.37 33.11 39.74L34.69 41.31C35.13 41.75 35.84 41.75 36.28 41.31L39.07 38.52C39.51 38.08 39.51 37.37 39.07 36.93L37.49 35.35C38.11 34.49 38.63 33.57 39.02 32.59C40.78 32.16 42.04 30.59 42.04 28.73V26C42.04 24.14 40.78 22.57 39.02 22.14H38.97ZM24.02 31.87C21.53 31.87 19.52 29.85 19.52 27.37C19.52 24.88 21.53 22.86 24.02 22.86C26.5 22.86 28.52 24.88 28.52 27.37C28.52 29.85 26.5 31.87 24.02 31.87Z"
+        fill="url(#settingsGray)"
       />
-      <circle cx="24" cy="24" r="16" stroke="#6B7280" strokeWidth="2" fill="none" strokeDasharray="4 4" />
+      <circle cx="24" cy="27.37" r="4.5" fill="white" />
     </svg>
   );
 }
@@ -123,7 +130,7 @@ export function WallpaperIcon({ className, size = 48 }: IconProps) {
   );
 }
 
-// OpenInfinity icon
+// OpenInfinity icon - Pure black infinity symbol
 export function OpenInfinityIcon({ className, size = 48 }: IconProps) {
   return (
     <svg
@@ -134,20 +141,13 @@ export function OpenInfinityIcon({ className, size = 48 }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        <linearGradient id="infinityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#F97316" />
-          <stop offset="100%" stopColor="#EA580C" />
-        </linearGradient>
-      </defs>
       <path
-        d="M14 24C14 20 10 16 6 16C2 16 -2 20 -2 24C-2 28 2 32 6 32C10 32 14 28 14 24ZM14 24C14 20 18 16 24 16C30 16 34 20 34 24M34 24C34 28 38 32 42 32C46 32 50 28 50 24C50 20 46 16 42 16C38 16 34 20 34 24Z"
-        stroke="url(#infinityGrad)"
-        strokeWidth="4"
+        d="M14.5 30C19 30 21.5 27 24 24C26.5 21 29 18 33.5 18C38 18 41 20.5 41 24C41 27.5 38 30 33.5 30C29 30 26.5 27 24 24C21.5 21 19 18 14.5 18C10 18 7 20.5 7 24C7 27.5 10 30 14.5 30Z"
+        stroke="#18181B"
+        strokeWidth="3.5"
         strokeLinecap="round"
-        fill="none"
+        strokeLinejoin="round"
       />
-      <circle cx="24" cy="24" r="3" fill="#F97316" />
     </svg>
   );
 }

@@ -3,7 +3,7 @@
  * Handles permission management and history operations
  */
 
-import type { HistoryItem, HistoryTimeRange } from '../types';
+import type { HistoryItem } from '../types';
 
 /**
  * Safely get Chrome API
@@ -53,43 +53,19 @@ export async function requestHistoryPermission(): Promise<boolean> {
 }
 
 /**
- * Get start time for history search based on time range
- */
-function getStartTime(range: HistoryTimeRange): number {
-  const now = Date.now();
-
-  switch (range) {
-    case 'today': {
-      // Start of today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return today.getTime();
-    }
-
-    case 'week':
-      return now - 7 * 24 * 60 * 60 * 1000;
-
-    case 'month':
-      return now - 30 * 24 * 60 * 60 * 1000;
-
-    case 'all':
-      return 0;
-
-    default:
-      return now - 24 * 60 * 60 * 1000;
-  }
-}
-
-/**
- * Get history items for a given time range
+ * Search history items with precise time control
  *
- * @param timeRange - Time range filter ('today', 'week', 'month', 'all')
- * @param limit - Maximum number of items to return
+ * @param query - Text to search for
+ * @param startTime - Start time (epoch ms) - required for efficient paging
+ * @param endTime - End time (epoch ms) - optional, defaults to now
+ * @param maxResults - Maximum number of items to return
  * @returns Array of history items sorted by last visit time (newest first)
  */
-export async function getHistoryItems(
-  timeRange: HistoryTimeRange = 'today',
-  limit: number = 10
+export async function searchHistoryItems(
+  query: string = '',
+  startTime: number,
+  endTime?: number,
+  maxResults: number = 100
 ): Promise<HistoryItem[]> {
   const chromeApi = getChrome();
   if (!chromeApi?.history) {
@@ -97,10 +73,12 @@ export async function getHistoryItems(
   }
 
   try {
+    // Note: chrome.history.search sorts by lastVisitTime descending automatically
     const results = await chromeApi.history.search({
-      text: '',
-      startTime: getStartTime(timeRange),
-      maxResults: limit,
+      text: query,
+      startTime: startTime,
+      endTime: endTime || Date.now(),
+      maxResults: maxResults,
     });
 
     // Convert to HistoryItem format
@@ -140,20 +118,18 @@ export async function deleteHistoryItem(url: string): Promise<void> {
 }
 
 /**
- * Delete all history items in a time range
+ * Delete history items in a specific time range
  *
- * @param timeRange - Time range to delete
+ * @param startTime - Start time in ms
+ * @param endTime - End time in ms
  */
-export async function deleteHistoryRange(timeRange: HistoryTimeRange): Promise<void> {
+export async function deleteHistoryRange(startTime: number, endTime: number): Promise<void> {
   const chromeApi = getChrome();
   if (!chromeApi?.history) {
     throw new Error('Chrome history API not available');
   }
 
   try {
-    const startTime = getStartTime(timeRange);
-    const endTime = Date.now();
-
     await chromeApi.history.deleteRange({
       startTime,
       endTime,

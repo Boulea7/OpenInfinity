@@ -4,21 +4,19 @@ import { useSettingsStore } from '../../stores';
 import { useHistory } from '../../hooks';
 import { cn } from '../../utils';
 import { openHistoryItem, getFaviconUrl, formatRelativeTime } from '../../services/history';
-import type { BaseWidgetProps, HistoryTimeRange } from '../../types';
+import type { BaseWidgetProps } from '../../types';
 
 /**
  * History Widget component
  * Displays browsing history with permission management
  */
 export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
-  const { viewSettings, openBehavior, widgetSettings, setWidgetSettings } = useSettingsStore();
+  const { viewSettings, openBehavior } = useSettingsStore();
   const {
     historyItems,
     hasPermission,
     isLoading,
     error,
-    timeRange,
-    setTimeRange,
     requestPermission,
     deleteItem,
     refresh,
@@ -56,21 +54,6 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
       console.error('Permission request failed:', err);
     }
   }, [requestPermission]);
-
-  // Handle time range change - must be defined before early return
-  const handleTimeRangeChange = useCallback((e: React.MouseEvent, range: HistoryTimeRange) => {
-    e.stopPropagation();
-    setTimeRange(range);
-    // Persist to store (only for supported ranges)
-    if (range !== 'all') {
-      setWidgetSettings({
-        historyWidget: {
-          ...widgetSettings.historyWidget,
-          timeRange: range,
-        },
-      });
-    }
-  }, [setTimeRange, setWidgetSettings, widgetSettings.historyWidget]);
 
   // Don't render if widget is disabled
   if (!viewSettings.showHistoryWidget) return null;
@@ -142,28 +125,6 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
             </div>
           )}
 
-          {/* Time Range Selector */}
-          {hasPermission && (
-            <div className="flex gap-1 p-1 bg-white/5 rounded-lg">
-              {(['today', 'week', 'month'] as const).map((range) => (
-                <button
-                  key={range}
-                  onClick={(e) => handleTimeRangeChange(e, range)}
-                  className={cn(
-                    'flex-1 px-2 py-1 text-xs rounded transition-colors',
-                    timeRange === range
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/60 hover:text-white hover:bg-white/10'
-                  )}
-                >
-                  {range === 'today' && '今天'}
-                  {range === 'week' && '一周'}
-                  {range === 'month' && '一个月'}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Loading State */}
           {hasPermission && isLoading && historyItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-6">
@@ -188,8 +149,8 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
 
           {/* History List */}
           {hasPermission && historyItems.length > 0 && (
-            <div className="space-y-1">
-              {historyItems.map((item) => (
+            <div className="space-y-1 max-h-[300px] overflow-y-auto">
+              {historyItems.slice(0, 50).map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleHistoryClick(item.url)}
@@ -248,7 +209,6 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
             <div className="text-center py-6 text-white/40">
               <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm">暂无历史记录</p>
-              <p className="text-xs mt-1">在所选时间范围内没有浏览记录</p>
             </div>
           )}
         </div>

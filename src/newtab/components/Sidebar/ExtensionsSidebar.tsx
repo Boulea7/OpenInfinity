@@ -3,10 +3,21 @@
  *
  * Extension management sidebar with enable/disable controls.
  * Requires management permission.
+ * Redesigned to match modern "Zinc" aesthetic.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Puzzle, Trash2, Settings, ExternalLink, Search, ToggleLeft, ToggleRight, ChevronDown, ChevronRight, Shield } from 'lucide-react';
+import {
+  Puzzle,
+  Trash2,
+  Settings,
+  ExternalLink,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Shield,
+  Download
+} from 'lucide-react';
 import { PermissionGate } from '../ui/PermissionGate';
 import { hasPermissions, ensureOptionalPermissions, PERMISSION_GROUPS } from '../../../shared/permissions';
 import { cn } from '../../utils';
@@ -25,6 +36,31 @@ interface ExtensionInfo {
   mayDisable: boolean;
   permissions?: string[];
   hostPermissions?: string[];
+  installType: string;
+}
+
+// Custom Toggle Component to match design system
+function ToggleSwitch({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!disabled) onChange();
+      }}
+      className={cn(
+        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900",
+        checked ? "bg-zinc-800 dark:bg-zinc-100" : "bg-zinc-200 dark:bg-zinc-700",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block h-4 w-4 transform rounded-full bg-white dark:bg-zinc-900 transition-transform duration-200 shadow-sm",
+          checked ? "translate-x-6" : "translate-x-1"
+        )}
+      />
+    </button>
+  );
 }
 
 export function ExtensionsSidebar() {
@@ -52,8 +88,8 @@ export function ExtensionsSidebar() {
 
   if (isCheckingPermission) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-500" />
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-zinc-200 border-t-zinc-500" />
       </div>
     );
   }
@@ -64,7 +100,7 @@ export function ExtensionsSidebar() {
       permissionName="扩展管理"
       description="允许查看和管理已安装的浏览器扩展。"
       onRequestPermission={handleRequestPermission}
-      icon={<Puzzle className="w-8 h-8 text-purple-500" />}
+      icon={<Puzzle className="w-8 h-8 text-zinc-500" />}
     >
       <ExtensionsSidebarContent />
     </PermissionGate>
@@ -77,10 +113,13 @@ function ExtensionsSidebarContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [expandedPermissions, setExpandedPermissions] = useState<Set<string>>(new Set());
+  const [permissionWarnings, setPermissionWarnings] = useState<Record<string, string[]>>({});
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Toggle permissions expansion
-  const togglePermissions = useCallback((id: string) => {
+  // Toggle permissions expansion and fetch warnings if needed
+  const togglePermissions = useCallback(async (id: string) => {
+    const isExpanding = !expandedPermissions.has(id);
+
     setExpandedPermissions(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -90,7 +129,20 @@ function ExtensionsSidebarContent() {
       }
       return next;
     });
-  }, []);
+
+    // Fetch localized permission warnings if expanding and not yet loaded
+    if (isExpanding && !permissionWarnings[id]) {
+      try {
+        const warnings = await chrome.management.getPermissionWarningsById(id);
+        setPermissionWarnings(prev => ({
+          ...prev,
+          [id]: warnings
+        }));
+      } catch (e) {
+        console.error('Failed to fetch permission warnings for', id, e);
+      }
+    }
+  }, [expandedPermissions, permissionWarnings]);
 
   // Load extensions
   const loadExtensions = useCallback(async () => {
@@ -114,6 +166,7 @@ function ExtensionsSidebarContent() {
           mayDisable: ext.mayDisable,
           permissions: ext.permissions,
           hostPermissions: ext.hostPermissions,
+          installType: ext.installType,
         }));
 
       // Sort by name
@@ -128,6 +181,25 @@ function ExtensionsSidebarContent() {
 
   useEffect(() => {
     loadExtensions();
+
+    // Listen for extension events to keep list in sync
+    const handleEvent = () => loadExtensions();
+
+    if (chrome.management) {
+      chrome.management.onInstalled?.addListener(handleEvent);
+      chrome.management.onUninstalled?.addListener(handleEvent);
+      chrome.management.onEnabled?.addListener(handleEvent);
+      chrome.management.onDisabled?.addListener(handleEvent);
+    }
+
+    return () => {
+      if (chrome.management) {
+        chrome.management.onInstalled?.removeListener(handleEvent);
+        chrome.management.onUninstalled?.removeListener(handleEvent);
+        chrome.management.onEnabled?.removeListener(handleEvent);
+        chrome.management.onDisabled?.removeListener(handleEvent);
+      }
+    };
   }, [loadExtensions]);
 
   // Toggle extension
@@ -148,7 +220,6 @@ function ExtensionsSidebarContent() {
   const uninstallExtension = async (id: string) => {
     try {
       await chrome.management.uninstall(id, { showConfirmDialog: true });
-      setExtensions(prev => prev.filter(ext => ext.id !== id));
       setActionError(null);
     } catch (error) {
       // User cancelled or uninstall failed
@@ -159,6 +230,23 @@ function ExtensionsSidebarContent() {
       }
       setActionError(message || 'Failed to uninstall extension');
     }
+  };
+
+  // Open URL safely in new tab
+  const openUrl = (url: string) => {
+    if (chrome.tabs) {
+      chrome.tabs.create({ url });
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
+  // Get CRX Download Link
+  const getCrxUrl = (ext: ExtensionInfo) => {
+    if (ext.installType !== 'normal') return null; // Only for webstore extensions
+    // Construct CRX URL for the current Chrome version (generic fallback if version unknown)
+    const version = /Chrome\/([0-9.]+)/.exec(navigator.userAgent)?.[1] || '0.0.0.0';
+    return `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&prodversion=${version}&x=id%3D${ext.id}%26installsource%3Dondemand%26uc`;
   };
 
   // Get extension icon
@@ -173,16 +261,14 @@ function ExtensionsSidebarContent() {
 
   // Filter extensions
   const filteredExtensions = extensions.filter(ext => {
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       if (!ext.name.toLowerCase().includes(query) &&
-          !ext.description.toLowerCase().includes(query)) {
+        !ext.description.toLowerCase().includes(query)) {
         return false;
       }
     }
 
-    // Filter by status
     if (filter === 'enabled' && !ext.enabled) return false;
     if (filter === 'disabled' && ext.enabled) return false;
 
@@ -191,198 +277,248 @@ function ExtensionsSidebarContent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-500" />
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-zinc-200 border-t-zinc-500" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4">
-      {actionError && (
-        <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm">
-          {actionError}
-        </div>
-      )}
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="搜索扩展..."
-          className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+    <div className="h-full flex flex-col bg-white dark:bg-zinc-900">
+      <div className="flex-none p-3 space-y-3 z-10 relative border-b border-transparent dark:border-zinc-800/50">
 
-      {/* Filter */}
-      <div className="flex gap-2">
-        {(['all', 'enabled', 'disabled'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              'px-3 py-1.5 text-sm rounded-lg transition-colors',
-              filter === f
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            )}
-          >
-            {f === 'all' ? '全部' : f === 'enabled' ? '已启用' : '已禁用'}
-          </button>
-        ))}
+        {/* Error Message */}
+        {actionError && (
+          <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm animate-in fade-in slide-in-from-top-1">
+            {actionError}
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="bg-white dark:bg-zinc-800/40 border-2 border-zinc-300 dark:border-zinc-600 rounded-xl p-1 shadow-sm focus-within:border-zinc-800 dark:focus-within:border-zinc-400 focus-within:shadow-md transition-all duration-300 group">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3 w-4 h-4 text-zinc-400 group-focus-within:text-zinc-600 dark:group-focus-within:text-zinc-300 transition-colors" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索扩展..."
+              className={cn(
+                "w-full pl-9 pr-3 py-1.5 rounded-lg text-sm bg-transparent",
+                "text-gray-900 dark:text-gray-100",
+                "placeholder:text-gray-400 dark:placeholder:text-gray-500",
+                "focus:outline-none"
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Filter Segment Control */}
+        <div className="flex p-0.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg relative">
+          {(['all', 'enabled', 'disabled'] as const).map((f) => {
+            const isActive = filter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  'flex-1 relative px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200 z-10',
+                  isActive
+                    ? 'text-zinc-900 dark:text-zinc-100 shadow-sm bg-white dark:bg-zinc-700'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'
+                )}
+              >
+                {f === 'all' ? '全部' : f === 'enabled' ? '已启用' : '已禁用'}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Extensions List */}
-      {filteredExtensions.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          <Puzzle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>{searchQuery ? '未找到匹配的扩展' : '暂无扩展'}</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filteredExtensions.map((ext) => (
+      <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3 scroll-smooth">
+        {filteredExtensions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[50vh] text-center text-zinc-400 dark:text-zinc-500 animate-in fade-in duration-500">
+            <div className="w-12 h-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center mb-3">
+              {searchQuery ? (
+                <Search className="w-6 h-6 opacity-50" />
+              ) : (
+                <Puzzle className="w-6 h-6 opacity-50" />
+              )}
+            </div>
+            <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              {searchQuery ? '未找到相关扩展' : '暂无扩展'}
+            </p>
+          </div>
+        ) : (
+          filteredExtensions.map((ext) => (
             <div
               key={ext.id}
               className={cn(
-                'p-3 rounded-lg border transition-colors',
+                'group p-3 rounded-xl border transition-all duration-200',
                 ext.enabled
-                  ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-70'
+                  ? 'bg-white dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-sm'
+                  : 'bg-zinc-50 dark:bg-zinc-800/20 border-zinc-100 dark:border-zinc-800 grayscale-[0.5] hover:grayscale-0'
               )}
             >
+              {/* Header: Icon, Info, Toggle */}
               <div className="flex items-start gap-3">
                 {/* Icon */}
-                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white dark:bg-zinc-700 p-1 border border-zinc-100 dark:border-zinc-600 flex items-center justify-center">
                   {getIcon(ext) ? (
-                    <img src={getIcon(ext)!} alt="" className="w-6 h-6" />
+                    <img src={getIcon(ext)!} alt="" className="w-full h-full object-contain" />
                   ) : (
-                    <Puzzle className="w-5 h-5 text-gray-400" />
+                    <Puzzle className="w-5 h-5 text-zinc-400" />
                   )}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <h4 className={cn(
+                      "font-semibold text-sm truncate",
+                      ext.enabled ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-500 dark:text-zinc-400"
+                    )}>
                       {ext.name}
                     </h4>
-                    <span className="text-xs text-gray-400">v{ext.version}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                      v{ext.version}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
                     {ext.description}
                   </p>
                 </div>
 
                 {/* Toggle */}
                 {ext.mayDisable && (
-                  <button
-                    onClick={() => toggleExtension(ext.id, !ext.enabled)}
-                    className={cn(
-                      'flex-shrink-0 transition-colors',
-                      ext.enabled ? 'text-blue-500' : 'text-gray-400'
-                    )}
-                  >
-                    {ext.enabled ? (
-                      <ToggleRight className="w-8 h-8" />
-                    ) : (
-                      <ToggleLeft className="w-8 h-8" />
-                    )}
-                  </button>
+                  <div className="flex-shrink-0 ml-1">
+                    <ToggleSwitch
+                      checked={ext.enabled}
+                      onChange={() => toggleExtension(ext.id, !ext.enabled)}
+                    />
+                  </div>
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-2 mt-2 pt-2 border-t dark:border-gray-700">
-                {ext.optionsUrl && (
+              {/* Actions Divider */}
+              <div className="my-3 border-t border-zinc-100 dark:border-zinc-800" />
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1">
+                  {/* Settings */}
+                  {ext.optionsUrl && (
+                    <button
+                      onClick={() => openUrl(ext.optionsUrl!)}
+                      className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                      title="扩展选项"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Homepage */}
                   <button
-                    onClick={() => window.open(ext.optionsUrl, '_blank')}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    onClick={() => openUrl(ext.homepageUrl || `https://chrome.google.com/webstore/detail/${ext.id}`)}
+                    className="p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    title="打开主页/商店"
                   >
-                    <Settings className="w-3 h-3" />
-                    选项
+                    <ExternalLink className="w-4 h-4" />
                   </button>
-                )}
-                {ext.homepageUrl && (
-                  <a
-                    href={ext.homepageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    主页
-                  </a>
-                )}
-                {/* Permissions toggle */}
-                {((ext.permissions && ext.permissions.length > 0) ||
-                  (ext.hostPermissions && ext.hostPermissions.length > 0)) && (
+
+                  {/* Permissions Toggle */}
                   <button
                     onClick={() => togglePermissions(ext.id)}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                      expandedPermissions.has(ext.id)
+                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    )}
                   >
-                    <Shield className="w-3 h-3" />
+                    <Shield className="w-3.5 h-3.5" />
                     权限
                     {expandedPermissions.has(ext.id) ? (
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="w-3.5 h-3.5" />
                     ) : (
-                      <ChevronRight className="w-3 h-3" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     )}
                   </button>
-                )}
+                </div>
+
+                {/* Uninstall */}
                 <button
                   onClick={() => uninstallExtension(ext.id)}
-                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition-colors ml-auto"
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                  title="卸载扩展"
                 >
-                  <Trash2 className="w-3 h-3" />
-                  卸载
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>卸载</span>
                 </button>
               </div>
 
-              {/* Expanded Permissions */}
+              {/* Expanded Layout: Details Table */}
               {expandedPermissions.has(ext.id) && (
-                <div className="mt-2 pt-2 border-t dark:border-gray-700 space-y-2">
-                  {ext.permissions && ext.permissions.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        权限
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {ext.permissions.map((perm, i) => (
-                          <span
-                            key={i}
-                            className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
-                          >
-                            {perm}
-                          </span>
-                        ))}
+                <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 -mx-3 -mb-3 p-3 rounded-b-xl space-y-3 animate-in fade-in slide-in-from-top-1">
+
+                  {/* 1. Download CRX Link */}
+                  {getCrxUrl(ext) && (
+                    <div className="flex items-start text-xs">
+                      <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">下载CRX</span>
+                      <div className="flex-1">
+                        <a
+                          href={getCrxUrl(ext)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-500 hover:underline hover:text-blue-600"
+                        >
+                          {ext.name}.crx
+                          <Download className="w-3 h-3" />
+                        </a>
                       </div>
                     </div>
                   )}
+
+                  {/* 2. Host Permissions */}
                   {ext.hostPermissions && ext.hostPermissions.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        网站访问
-                      </p>
-                      <div className="flex flex-wrap gap-1">
+                    <div className="flex items-start text-xs">
+                      <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">Host权限</span>
+                      <div className="flex-1 flex flex-col gap-1">
                         {ext.hostPermissions.map((host, i) => (
-                          <span
-                            key={i}
-                            className="px-1.5 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded"
-                          >
+                          <span key={i} className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] bg-white dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 w-fit">
                             {host}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
+
+                  {/* 3. General Permissions (Warnings) */}
+                  <div className="flex items-start text-xs">
+                    <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">权限</span>
+                    <div className="flex-1 flex flex-col gap-1">
+                      {permissionWarnings[ext.id]?.length ? (
+                        permissionWarnings[ext.id].map((warning, i) => (
+                          <span key={i} className="text-zinc-700 dark:text-zinc-300 py-0.5">
+                            {warning}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-zinc-400 italic py-0.5">
+                          {(ext.permissions && ext.permissions.length > 0) ? '无特殊警告权限' : '此扩展不需要特殊权限'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+        <div className="h-4" /> {/* Bottom spacer */}
+      </div>
     </div>
   );
 }

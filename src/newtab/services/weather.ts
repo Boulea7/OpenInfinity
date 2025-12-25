@@ -13,55 +13,55 @@ import { Sun, Cloud, CloudSun, CloudFog, CloudRain, CloudSnow, CloudLightning, H
  */
 export const WMO_CODES: Record<number, { condition: string; icon: LucideIcon }> = {
   // Clear sky
-  0: { condition: 'Clear', icon: Sun },
+  0: { condition: '晴', icon: Sun },
 
   // Mainly clear, partly cloudy, and overcast
-  1: { condition: 'Mainly Clear', icon: CloudSun },
-  2: { condition: 'Partly Cloudy', icon: CloudSun },
-  3: { condition: 'Overcast', icon: Cloud },
+  1: { condition: '晴间多云', icon: CloudSun },
+  2: { condition: '多云', icon: CloudSun },
+  3: { condition: '阴', icon: Cloud },
 
   // Fog
-  45: { condition: 'Fog', icon: CloudFog },
-  48: { condition: 'Depositing Rime Fog', icon: CloudFog },
+  45: { condition: '雾', icon: CloudFog },
+  48: { condition: '冻雾', icon: CloudFog },
 
   // Drizzle
-  51: { condition: 'Light Drizzle', icon: CloudRain },
-  53: { condition: 'Moderate Drizzle', icon: CloudRain },
-  55: { condition: 'Dense Drizzle', icon: CloudRain },
-  56: { condition: 'Light Freezing Drizzle', icon: CloudRain },
-  57: { condition: 'Dense Freezing Drizzle', icon: CloudRain },
+  51: { condition: '小毛毛雨', icon: CloudRain },
+  53: { condition: '毛毛雨', icon: CloudRain },
+  55: { condition: '大毛毛雨', icon: CloudRain },
+  56: { condition: '冻毛毛雨', icon: CloudRain },
+  57: { condition: '大冻毛毛雨', icon: CloudRain },
 
   // Rain
-  61: { condition: 'Slight Rain', icon: CloudRain },
-  63: { condition: 'Moderate Rain', icon: CloudRain },
-  65: { condition: 'Heavy Rain', icon: CloudRain },
-  66: { condition: 'Light Freezing Rain', icon: CloudRain },
-  67: { condition: 'Heavy Freezing Rain', icon: CloudRain },
+  61: { condition: '小雨', icon: CloudRain },
+  63: { condition: '中雨', icon: CloudRain },
+  65: { condition: '大雨', icon: CloudRain },
+  66: { condition: '小冻雨', icon: CloudRain },
+  67: { condition: '大冻雨', icon: CloudRain },
 
   // Snow
-  71: { condition: 'Slight Snow', icon: CloudSnow },
-  73: { condition: 'Moderate Snow', icon: CloudSnow },
-  75: { condition: 'Heavy Snow', icon: CloudSnow },
-  77: { condition: 'Snow Grains', icon: CloudSnow },
+  71: { condition: '小雪', icon: CloudSnow },
+  73: { condition: '中雪', icon: CloudSnow },
+  75: { condition: '大雪', icon: CloudSnow },
+  77: { condition: '雪粒', icon: CloudSnow },
 
   // Showers
-  80: { condition: 'Slight Rain Showers', icon: CloudRain },
-  81: { condition: 'Moderate Rain Showers', icon: CloudRain },
-  82: { condition: 'Violent Rain Showers', icon: CloudRain },
-  85: { condition: 'Slight Snow Showers', icon: CloudSnow },
-  86: { condition: 'Heavy Snow Showers', icon: CloudSnow },
+  80: { condition: '小阵雨', icon: CloudRain },
+  81: { condition: '阵雨', icon: CloudRain },
+  82: { condition: '大阵雨', icon: CloudRain },
+  85: { condition: '小阵雪', icon: CloudSnow },
+  86: { condition: '大阵雪', icon: CloudSnow },
 
   // Thunderstorm
-  95: { condition: 'Thunderstorm', icon: CloudLightning },
-  96: { condition: 'Thunderstorm with Slight Hail', icon: CloudLightning },
-  99: { condition: 'Thunderstorm with Heavy Hail', icon: CloudLightning },
+  95: { condition: '雷暴', icon: CloudLightning },
+  96: { condition: '雷暴冰雹', icon: CloudLightning },
+  99: { condition: '强雷暴冰雹', icon: CloudLightning },
 };
 
 /**
  * Get weather condition text from WMO code
  */
 export function getWeatherCondition(code: number): string {
-  return WMO_CODES[code]?.condition || 'Unknown';
+  return WMO_CODES[code]?.condition || '未知';
 }
 
 /**

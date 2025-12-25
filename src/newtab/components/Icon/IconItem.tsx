@@ -71,7 +71,7 @@ function renderSystemIcon(icon: Icon, weather?: WeatherCache | null): React.Reac
     );
   }
 
-  return <IconComponent size={32} />;
+  return <IconComponent size={38} />;
 }
 
 interface IconItemProps {
@@ -338,22 +338,21 @@ export const IconItem = React.memo(function IconItem({
             style={{
               ...iconSizeStyle,
               borderRadius: borderRadiusValue,
-              // Transparent bg for favicon, colored bg for text icons, white bg for system icons
-              backgroundColor: icon.icon.type === 'text'
-                ? (icon.icon.color || '#3b82f6')
-                : icon.icon.type === 'system'
-                  ? (icon.systemIconId === 'system-weather' ? undefined : '#ffffff')
-                  : 'transparent',
-              // Weather icon uses gradient background
-              background: icon.systemIconId === 'system-weather' && weather
-                ? `linear-gradient(135deg, ${getWeatherBackgroundColor(weather.current?.condition)})`
-                : undefined,
+              // Background logic: weather uses gradient, system icons use white, text uses color, others transparent
+              // Use isSystemIcon flag for reliable detection (supports legacy DB entries)
+              background: icon.systemIconId === 'system-weather'
+                ? `linear-gradient(135deg, ${getWeatherBackgroundColor(weather?.current?.condition)})`
+                : (icon.isSystemIcon || icon.icon.type === 'system')
+                  ? '#ffffff'
+                  : icon.icon.type === 'text'
+                    ? (icon.icon.color || '#3b82f6')
+                    : 'transparent',
               // Drop shadow for visibility on any wallpaper
               filter: 'drop-shadow(1px 1px 5px rgba(0, 0, 0, 0.25))',
             }}
           >
             {/* Icon content */}
-            {icon.icon.type === 'system' ? (
+            {(icon.isSystemIcon || icon.icon.type === 'system') ? (
               // System icon: render SVG component
               renderSystemIcon(icon, weather)
             ) : icon.icon.type === 'text' ? (

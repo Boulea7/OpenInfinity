@@ -500,6 +500,80 @@ class OpenInfinityDB extends Dexie {
       weatherCache: 'id, fetchedAt, expiresAt', // weatherCache already uses string id, keep it
     });
 
+    // Version 10: Add default todo items for existing users (if list is empty)
+    this.version(10)
+      .stores({
+        icons: '++id, type, url, folderId, createdAt',
+        folders: '++id, name, createdAt',
+        wallpapers: '++id, type, createdAt',
+        todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+        notes: '++id, isPinned, *tags, createdAt, updatedAt',
+        settings: 'key',
+        emailAccounts: '++id, provider, email, enabled, lastChecked',
+        todoIntegrations: '++id, provider, enabled, lastSynced',
+        rssSubscriptions: '++id, url, category, enabled, lastFetched',
+        rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+        notificationLogs: '++id, type, source, isRead, createdAt',
+        presetWebsites: '++id, category, region, popularity, *tags',
+        userFavorites: '++id, websiteId, addedAt',
+        weatherCache: 'id, fetchedAt, expiresAt',
+      })
+      .upgrade(async (trans) => {
+        // Only add defaults if table is empty to avoid annoying existing users
+        const count = await trans.table('todos').count();
+        if (count === 0) {
+          const now = Date.now();
+          await trans.table('todos').bulkAdd([
+            {
+              id: crypto.randomUUID(),
+              text: '欢迎使用Open Infinity新标签页，这是一条示例待办事项。',
+              done: false,
+              priority: 'high',
+              children: [],
+              tags: [],
+              createdAt: now,
+              updatedAt: now,
+            },
+            {
+              id: crypto.randomUUID(),
+              text: '尝试输入 #工作 或 #生活 来分类你的任务',
+              done: false,
+              priority: 'medium',
+              children: [],
+              tags: ['工作', '生活'],
+              createdAt: now - 1000,
+              updatedAt: now - 1000,
+            },
+          ]);
+        }
+      });
+
+    // Populate hook for fresh installs
+    this.on('populate', (trans) => {
+      const now = Date.now();
+      trans.table('todos').bulkAdd([
+        {
+          id: crypto.randomUUID(),
+          text: '欢迎使用Open Infinity新标签页，这是一条示例待办事项。',
+          done: false,
+          priority: 'high',
+          children: [],
+          tags: [],
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: crypto.randomUUID(),
+          text: '尝试输入 #工作 或 #生活 来分类你的任务',
+          done: false,
+          priority: 'medium',
+          children: [],
+          tags: ['工作', '生活'],
+          createdAt: now - 1000,
+          updatedAt: now - 1000,
+        },
+      ]);
+    });
   }
 }
 
