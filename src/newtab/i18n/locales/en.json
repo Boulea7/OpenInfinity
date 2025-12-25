@@ -368,6 +368,9 @@
   },
   "weather": {
     "loading": "Loading...",
+    "networkPermissionRequired": "Weather network permission required. Click the weather widget to authorize.",
+    "locationDeniedUsingBeijing": "Location permission denied. Using Beijing as the default location. You can change it in Settings.",
+    "authorizeAndRetry": "Authorize & Retry",
     "locationFailed": "Location failed",
     "locationError": "Location error",
     "clickToRetry": "Click to retry location",

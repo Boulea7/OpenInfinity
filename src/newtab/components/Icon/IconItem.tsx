@@ -44,7 +44,8 @@ function getWeatherBackgroundColor(condition?: string): string {
  * Render system icon content
  */
 function renderSystemIcon(icon: Icon, weather?: WeatherCache | null): React.ReactNode {
-  const iconName = icon.icon.value || icon.systemIconId?.replace('system-', '');
+  // Prefer systemIconId for stable mapping (supports legacy DB values like "system-weather").
+  const iconName = icon.systemIconId?.replace('system-', '') || icon.icon.value;
   const IconComponent = getSystemIconComponent(iconName || '');
 
   if (!IconComponent) {

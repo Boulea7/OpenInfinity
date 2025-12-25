@@ -376,6 +376,9 @@
   },
   "weather": {
     "loading": "加载中...",
+    "networkPermissionRequired": "需要授权天气网络权限，请点击天气组件进行授权。",
+    "locationDeniedUsingBeijing": "定位被拒绝，已使用北京作为默认位置。您可以在设置中手动修改。",
+    "authorizeAndRetry": "授权并重试",
     "locationFailed": "位置获取失败",
     "locationError": "位置错误",
     "clickToRetry": "点击重试获取位置",

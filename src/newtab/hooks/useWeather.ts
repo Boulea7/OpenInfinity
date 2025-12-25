@@ -156,7 +156,7 @@ export interface UseWeatherReturn {
  */
 export function useWeather(): UseWeatherReturn {
   const { weatherSettings } = useSettingsStore();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
@@ -234,7 +234,7 @@ export function useWeather(): UseWeatherReturn {
               setSystemIconSettings({ locationDeniedPromptShown: true });
               // Set a user-friendly error message instead of throwing
               if (isMountedRef.current) {
-                setError('定位被拒绝，已使用北京作为默认位置。您可以在设置中手动修改。');
+                setError(t('weather.locationDeniedUsingBeijing', '定位被拒绝，已使用北京作为默认位置。您可以在设置中手动修改。'));
               }
             }
           }
@@ -256,7 +256,7 @@ export function useWeather(): UseWeatherReturn {
           // No user gesture here: do not request permissions, and avoid noisy error logs.
           // Surface a stable, actionable message for UI to render.
           if (isMountedRef.current) {
-            setError('Weather network permission required. Click the weather widget to authorize.');
+            setError(t('weather.networkPermissionRequired', '需要授权天气网络权限，请点击天气组件进行授权。'));
           }
           return;
         }
@@ -285,7 +285,7 @@ export function useWeather(): UseWeatherReturn {
     } finally {
       weatherFetchInFlight = null;
     }
-  }, [weatherSettings, i18n.language]);
+  }, [weatherSettings, i18n.language, t]);
 
   /**
    * Manual refetch
@@ -353,7 +353,7 @@ export function useWeather(): UseWeatherReturn {
         // If missing, surface an actionable error message.
         const hasWeatherOrigins = await hasOrigins(PERMISSION_GROUPS.weather);
         if (!hasWeatherOrigins) {
-          throw new Error('Weather network permission required. Click the weather widget to authorize.');
+          throw new Error(t('weather.networkPermissionRequired', '需要授权天气网络权限，请点击天气组件进行授权。'));
         }
 
         // Force fetch (bypass cache)
@@ -379,7 +379,7 @@ export function useWeather(): UseWeatherReturn {
     } finally {
       weatherFetchInFlight = null;
     }
-  }, [weatherSettings, i18n.language]);
+  }, [weatherSettings, i18n.language, t]);
 
   /**
    * Initial fetch and periodic updates

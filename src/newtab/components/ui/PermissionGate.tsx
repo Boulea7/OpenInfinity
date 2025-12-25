@@ -6,7 +6,7 @@
  * on user gesture (button click).
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '../../utils';
 
@@ -20,9 +20,9 @@ interface PermissionGateProps {
   /** Callback to request permission - must be called from user gesture */
   onRequestPermission: () => Promise<boolean>;
   /** Content to render when permission is granted */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Optional icon to show */
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   /** Optional className */
   className?: string;
 }

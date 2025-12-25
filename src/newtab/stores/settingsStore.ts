@@ -639,7 +639,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         // All possible section IDs for the settings panel
         const sectionIds = [
           'wallpaper', 'openBehavior', 'notification', 'view', 'minimalMode', 'layout',
-          'icon', 'search', 'font', 'animation', 'reset',
+          'icon', 'system-icons', 'search', 'font', 'animation', 'reset',
           'general', 'clock', 'weather', 'backup', 'about',
         ];
         const newCollapsedSections: Record<string, boolean> = {};

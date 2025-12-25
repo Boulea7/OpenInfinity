@@ -63,8 +63,8 @@ export function executeSystemIconAction(action: SystemIconAction, iconId: System
       break;
 
     case 'toggleWeatherExpand':
-      // Toggle the CompactWeather expanded state
-      useWeatherUiStore.getState().toggle();
+      // Always open the CompactWeather expanded state (system weather shortcut behavior)
+      useWeatherUiStore.getState().setExpanded(true);
       break;
 
     default:

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import { useNavigationStore } from './stores/navigationStore';
+import { useWeatherUiStore } from './stores/weatherUiStore';
 import type { Icon, Folder } from './services/database';
 import { clearExpiredIconCache } from './utils/iconCache';
 import { hasOrigins, PERMISSION_GROUPS } from '../shared/permissions';
@@ -40,6 +41,7 @@ function App() {
   } = useSettingsStore();
   const { loadIcons, isLoading, initializeSystemIcons } = useIconStore();
   const { openPanel } = useNavigationStore();
+  const isWeatherExpanded = useWeatherUiStore((state) => state.isExpanded);
 
   // layout state
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
@@ -241,10 +243,10 @@ function App() {
         }}
       >
         {/* Fixed Clock & Weather - Top Left Corner (symmetric with InfinityLogo) */}
-        {viewSettings.showClock && (
+        {(viewSettings.showClock || viewSettings.showWeather || isWeatherExpanded) && (
           <div className="fixed top-4 left-4 z-40 flex items-center gap-4">
-            <ClockWidget showDate onClick={handleClockClick} />
-            <CompactWeather />
+            {viewSettings.showClock && <ClockWidget showDate onClick={handleClockClick} />}
+            {(viewSettings.showWeather || isWeatherExpanded) && <CompactWeather />}
           </div>
         )}
 

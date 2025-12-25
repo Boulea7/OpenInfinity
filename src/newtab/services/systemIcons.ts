@@ -41,6 +41,8 @@ export const SYSTEM_ICONS: SystemIconDefinition[] = [
     nameEn: 'Weather',
     action: { type: 'toggleWeatherExpand' },
     iconType: 'dynamic',
+    // Keep a stable icon name for rendering (DB may contain legacy values).
+    svgName: 'weather',
     defaultColor: '#60a5fa', // sky-400 default
   },
   {

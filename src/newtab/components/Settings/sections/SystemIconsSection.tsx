@@ -25,11 +25,17 @@ export const SystemIconsSection: React.FC = () => {
     // Update settings store
     setSystemIconVisibility(iconId, visible);
 
-    // Update icon store (show/hide the actual icon)
-    if (visible) {
-      await restoreSystemIcon(iconId);
-    } else {
-      await hideSystemIcon(iconId);
+    try {
+      // Update icon store (show/hide the actual icon)
+      if (visible) {
+        await restoreSystemIcon(iconId);
+      } else {
+        await hideSystemIcon(iconId);
+      }
+    } catch (error) {
+      // Revert UI state on failure
+      setSystemIconVisibility(iconId, !visible);
+      console.error('Failed to toggle system icon visibility:', error);
     }
   }, [setSystemIconVisibility, restoreSystemIcon, hideSystemIcon]);
 

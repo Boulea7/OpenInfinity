@@ -61,7 +61,7 @@ export function TodoSidebar() {
   // Always include completed items in sidebar (different from widget behavior)
   const { todos, addTodo, toggleTodo, deleteTodo, updateTodo, clearCompleted } = useTodos({ includeCompleted: true });
   const [newTodoText, setNewTodoText] = useState('');
-  const [newTodoPriority, setNewTodoPriority] = useState<Priority>('none');
+  const [newTodoPriority, setNewTodoPriority] = useState<Priority>('medium');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
@@ -84,8 +84,13 @@ export function TodoSidebar() {
     active.sort((a, b) => {
       const aPriority: Priority = (a.priority as Priority) || 'none';
       const bPriority: Priority = (b.priority as Priority) || 'none';
-      return priorityOrder[aPriority] - priorityOrder[bPriority];
+      const byPriority = priorityOrder[aPriority] - priorityOrder[bPriority];
+      if (byPriority !== 0) return byPriority;
+      return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt);
     });
+
+    // Sort completed by update time (newest first)
+    completed.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
 
     return { activeTodos: active, completedTodos: completed };
   }, [todos]);
@@ -96,7 +101,7 @@ export function TodoSidebar() {
       try {
         await addTodo(newTodoText.trim(), newTodoPriority);
         setNewTodoText('');
-        setNewTodoPriority('none');
+        setNewTodoPriority('medium');
       } catch (error) {
         console.error('Failed to add todo:', error);
       }

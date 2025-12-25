@@ -49,7 +49,7 @@ export function useTodos(options?: UseTodosOptions): UseTodosReturn {
 
   // Real-time query for todos
   const todos = useLiveQuery(() => {
-    let query = db.todos.orderBy('createdAt').reverse();
+    let query = db.todos.orderBy('updatedAt').reverse();
 
     // Apply max items limit only for widget (not for sidebar with includeCompleted)
     if (maxItems > 0 && !options?.includeCompleted) {
@@ -65,7 +65,7 @@ export function useTodos(options?: UseTodosOptions): UseTodosReturn {
   }, [maxItems, showCompleted, options?.includeCompleted]);
 
   // Add new todo with automatic tag extraction
-  const addTodo = useCallback(async (text: string, priority: TodoPriority = 'none') => {
+  const addTodo = useCallback(async (text: string, priority: TodoPriority = 'medium') => {
     if (!text.trim()) return;
 
     try {

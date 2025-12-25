@@ -5,6 +5,13 @@
 
 import type { LocationData } from '../types';
 
+const IS_DEV = !!(import.meta as any)?.env?.DEV;
+function debugLog(level: 'info' | 'warn', ...args: unknown[]) {
+  if (!IS_DEV) return;
+  // eslint-disable-next-line no-console
+  console[level](...args);
+}
+
 /**
  * Validate coordinates are within valid ranges
  * Latitude: -90 to 90, Longitude: -180 to 180
@@ -162,12 +169,12 @@ export async function getLocation(): Promise<LocationData & { isFallback?: boole
     // If user explicitly denies permission, fall back to Beijing
     // This ensures weather features still work while respecting that user denied precise location
     if (message.includes('denied')) {
-      console.info('Location permission denied - using Beijing as fallback');
+      debugLog('info', 'Location permission denied - using Beijing as fallback');
       return { ...BEIJING_FALLBACK, isFallback: true };
     }
 
     // For other errors (timeout, unavailable), also use Beijing fallback
-    console.warn('Geolocation failed, using Beijing fallback:', geoError);
+    debugLog('warn', 'Geolocation failed, using Beijing fallback:', geoError);
     return { ...BEIJING_FALLBACK, isFallback: true };
   }
 }
