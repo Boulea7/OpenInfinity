@@ -166,6 +166,31 @@ export function IconGrid({
   const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set());
   const DELETE_ANIMATION_DURATION = 300; // ms, matches CSS transition
 
+  // Toast notification state for system icon hiding
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string) => {
+    // Clear any existing timeout
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToastMessage(message);
+    // Auto-hide after 3 seconds
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  }, []);
+
+  // Cleanup toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // ESC key to exit delete mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -478,6 +503,10 @@ export function IconGrid({
 
   // Handle animated delete: first trigger exit animation, then remove after animation completes
   const handleAnimatedDelete = useCallback((id: string) => {
+    // Check if this is a system icon to show appropriate toast
+    const icon = icons.find(i => i.id === id);
+    const isSystemIconBeingDeleted = icon && isSystemIcon(icon);
+
     // Add to deleting set to trigger exit animation
     setDeletingItems(prev => new Set(prev).add(id));
 
@@ -492,8 +521,13 @@ export function IconGrid({
         next.delete(id);
         return next;
       });
+
+      // Show toast for system icons
+      if (isSystemIconBeingDeleted) {
+        showToast('快捷方式已隐藏，可在设置 > 系统快捷方式中恢复');
+      }
     }, DELETE_ANIMATION_DURATION);
-  }, [deleteIcon, DELETE_ANIMATION_DURATION]);
+  }, [deleteIcon, DELETE_ANIMATION_DURATION, icons, showToast]);
 
   // Context menu items
   const getContextMenuItems = useCallback(
@@ -517,11 +551,12 @@ export function IconGrid({
               }
             },
           },
-          {
+          // Hide edit option for system icons - they should not be editable
+          ...(!isSystemIcon(icon) ? [{
             id: 'edit',
             label: t('contextMenu.edit', 'Edit'),
             onClick: () => onEditIcon?.(icon),
-          },
+          }] : []),
           {
             id: 'edit-mode',
             label: t('contextMenu.editIcons', '编辑图标'),
@@ -936,6 +971,21 @@ export function IconGrid({
       )}
 
       {/* Empty state - intentionally blank, user will see the dashed circle add button */}
+
+      {/* Toast notification for system icon hiding */}
+      {toastMessage && (
+        <div
+          className={cn(
+            'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
+            'px-4 py-3 rounded-xl shadow-lg',
+            'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900',
+            'text-sm font-medium',
+            'animate-in fade-in slide-in-from-bottom-4 duration-300'
+          )}
+        >
+          {toastMessage}
+        </div>
+      )}
 
       {/* Folder Name Modal for hover merge */}
       <FolderNameModal

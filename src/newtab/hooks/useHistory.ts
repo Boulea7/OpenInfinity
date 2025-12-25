@@ -111,9 +111,11 @@ export function useHistory(): UseHistoryReturn {
 
       if (newItems.length > 0) {
         setHistoryItems(prev => {
-          // Filter duplicates just in case
-          const existingIds = new Set(prev.map(i => i.id));
-          const uniqueNew = newItems.filter(i => !existingIds.has(i.id));
+          // Use url+lastVisitTime as unique key for reliable deduplication
+          // (id is randomUUID, unreliable across pagination)
+          const uniqueKey = (item: HistoryItem) => `${item.url}:${item.lastVisitTime}`;
+          const existingKeys = new Set(prev.map(uniqueKey));
+          const uniqueNew = newItems.filter(i => !existingKeys.has(uniqueKey(i)));
           return [...prev, ...uniqueNew];
         });
       } else {

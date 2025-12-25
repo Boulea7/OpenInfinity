@@ -815,7 +815,8 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         minimalMode: state.minimalMode,
         minimalModeSettings: state.minimalModeSettings,
         systemIconSettings: state.systemIconSettings,
-        collapsedSections: state.collapsedSections,
+        // Note: collapsedSections intentionally excluded from persistence
+        // so settings panel always opens with all sections expanded
       }),
     }
   )

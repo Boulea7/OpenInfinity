@@ -8,10 +8,11 @@
  * - Square corners design
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useNavigationStore } from '../../stores/navigationStore';
 
 // All section IDs for checking collapse state
 const ALL_SECTION_IDS = [
@@ -49,9 +50,38 @@ export const SettingsPanelV2: React.FC<SettingsPanelV2Props> = ({ className = ''
   const { t } = useTranslation();
   const collapsedSections = useSettingsStore((state) => state.collapsedSections);
   const setAllSectionsCollapsed = useSettingsStore((state) => state.setAllSectionsCollapsed);
+  const setSectionCollapsed = useSettingsStore((state) => state.setSectionCollapsed);
+
+  // Navigation store for initial tab scroll
+  const settingsInitialTab = useNavigationStore((state) => state.settingsInitialTab);
+  const setSettingsInitialTab = useNavigationStore((state) => state.setSettingsInitialTab);
+
+  // Scroll container ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Wallpaper picker modal state
   const [isWallpaperPickerOpen, setIsWallpaperPickerOpen] = useState(false);
+
+  // Handle initial tab scroll when settings panel opens with a specific section
+  useEffect(() => {
+    if (settingsInitialTab && scrollContainerRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        const sectionElement = document.getElementById(`section-${settingsInitialTab}`);
+        if (sectionElement) {
+          // Expand the section if it's collapsed
+          setSectionCollapsed(settingsInitialTab, false);
+
+          // Scroll to the section
+          sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        // Clear the initial tab after scrolling
+        setSettingsInitialTab(null);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [settingsInitialTab, setSettingsInitialTab, setSectionCollapsed]);
 
   // Check if all sections are currently collapsed
   const allCollapsed = useMemo(() => {
@@ -109,7 +139,7 @@ export const SettingsPanelV2: React.FC<SettingsPanelV2Props> = ({ className = ''
       </div>
 
       {/* Scrollable content - gray background with white cards */}
-      <div className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-950">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-950">
         <div className="p-3 space-y-3">
           {/* Primary sections (per design order) */}
           <WallpaperSection onOpenPicker={() => setIsWallpaperPickerOpen(true)} />

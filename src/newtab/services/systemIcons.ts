@@ -210,8 +210,38 @@ export async function hideSystemIcon(iconId: SystemIconId): Promise<void> {
 }
 
 /**
+ * Find next available position in a folder or root level
+ * Scans existing icons to find an unoccupied grid position
+ */
+async function findNextAvailablePosition(
+  folderId: string | undefined,
+  excludeIconId: string
+): Promise<{ x: number; y: number }> {
+  const allIcons = await db.icons.toArray();
+  const iconsInScope = allIcons.filter(
+    (i) => i.id !== excludeIconId && !i.isHidden && (folderId ? i.folderId === folderId : !i.folderId)
+  );
+
+  const occupiedPositions = new Set(iconsInScope.map((i) => `${i.position.x},${i.position.y}`));
+
+  // Scan grid positions (assumes reasonable max columns)
+  const MAX_COLS = 20;
+  for (let y = 0; y < 100; y++) {
+    for (let x = 0; x < MAX_COLS; x++) {
+      if (!occupiedPositions.has(`${x},${y}`)) {
+        return { x, y };
+      }
+    }
+  }
+
+  // Fallback to origin if no position found (shouldn't happen)
+  return { x: 0, y: 0 };
+}
+
+/**
  * Restore a hidden system icon
  * Attempts to restore to original position if available
+ * Validates folder existence and checks for position conflicts
  *
  * @param iconId - The system icon ID to restore
  */
@@ -219,14 +249,40 @@ export async function restoreSystemIcon(iconId: SystemIconId): Promise<void> {
   const icon = await db.icons.get(iconId);
   if (!icon || !icon.isSystemIcon) return;
 
-  // Try to restore original position
-  const position = icon.originalPosition || { x: 0, y: 0 };
-  const folderId = icon.originalFolderId;
+  // Validate folder existence - if original folder was deleted, restore to root
+  let targetFolderId = icon.originalFolderId;
+  if (targetFolderId) {
+    const folder = await db.folders.get(targetFolderId);
+    if (!folder) {
+      // Folder was deleted, restore to root level
+      targetFolderId = undefined;
+    }
+  }
+
+  // Try to restore original position, check for conflicts
+  let position = icon.originalPosition || { x: 0, y: 0 };
+
+  // Check if position is occupied
+  const allIcons = await db.icons.toArray();
+  const iconsInScope = allIcons.filter(
+    (i) =>
+      i.id !== iconId &&
+      !i.isHidden &&
+      (targetFolderId ? i.folderId === targetFolderId : !i.folderId)
+  );
+  const isOccupied = iconsInScope.some(
+    (i) => i.position.x === position.x && i.position.y === position.y
+  );
+
+  if (isOccupied) {
+    // Find next available position
+    position = await findNextAvailablePosition(targetFolderId, iconId);
+  }
 
   await db.icons.update(iconId, {
     isHidden: false,
     position,
-    folderId,
+    folderId: targetFolderId,
     // Clear saved original values
     originalPosition: undefined,
     originalFolderId: undefined,

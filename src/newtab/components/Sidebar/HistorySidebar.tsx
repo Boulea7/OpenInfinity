@@ -38,7 +38,7 @@ export function HistorySidebar() {
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchRange, setSearchRange] = useState(SEARCH_RANGES[2].value); // Default 1 week for search
+  const [searchRange, setSearchRange] = useState(SEARCH_RANGES[3].value); // Default 2 weeks for search
 
   // Settings State
   const [showSettings, setShowSettings] = useState(false);

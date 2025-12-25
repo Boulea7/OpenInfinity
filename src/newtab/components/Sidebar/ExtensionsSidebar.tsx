@@ -16,11 +16,11 @@ import {
   ChevronDown,
   ChevronRight,
   Shield,
-  Download
 } from 'lucide-react';
 import { PermissionGate } from '../ui/PermissionGate';
 import { hasPermissions, ensureOptionalPermissions, PERMISSION_GROUPS } from '../../../shared/permissions';
 import { cn } from '../../utils';
+import { openUrlSafe } from '../../utils/navigation';
 
 interface ExtensionInfo {
   id: string;
@@ -232,23 +232,6 @@ function ExtensionsSidebarContent() {
     }
   };
 
-  // Open URL safely in new tab
-  const openUrl = (url: string) => {
-    if (chrome.tabs) {
-      chrome.tabs.create({ url });
-    } else {
-      window.open(url, '_blank');
-    }
-  };
-
-  // Get CRX Download Link
-  const getCrxUrl = (ext: ExtensionInfo) => {
-    if (ext.installType !== 'normal') return null; // Only for webstore extensions
-    // Construct CRX URL for the current Chrome version (generic fallback if version unknown)
-    const version = /Chrome\/([0-9.]+)/.exec(navigator.userAgent)?.[1] || '0.0.0.0';
-    return `https://clients2.google.com/service/update2/crx?response=redirect&acceptformat=crx2,crx3&prodversion=${version}&x=id%3D${ext.id}%26installsource%3Dondemand%26uc`;
-  };
-
   // Get extension icon
   const getIcon = (ext: ExtensionInfo) => {
     if (ext.icons && ext.icons.length > 0) {
@@ -407,10 +390,10 @@ function ExtensionsSidebarContent() {
               {/* Action Buttons */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
-                  {/* Settings */}
+                  {/* Settings - uses openUrlSafe for protocol validation */}
                   {ext.optionsUrl && (
                     <button
-                      onClick={() => openUrl(ext.optionsUrl!)}
+                      onClick={() => openUrlSafe(ext.optionsUrl!)}
                       className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
                       title="扩展选项"
                     >
@@ -418,9 +401,9 @@ function ExtensionsSidebarContent() {
                     </button>
                   )}
 
-                  {/* Homepage */}
+                  {/* Homepage - uses openUrlSafe for protocol validation */}
                   <button
-                    onClick={() => openUrl(ext.homepageUrl || `https://chrome.google.com/webstore/detail/${ext.id}`)}
+                    onClick={() => openUrlSafe(ext.homepageUrl || `https://chrome.google.com/webstore/detail/${ext.id}`)}
                     className="p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     title="打开主页/商店"
                   >
@@ -462,25 +445,7 @@ function ExtensionsSidebarContent() {
               {expandedPermissions.has(ext.id) && (
                 <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 -mx-3 -mb-3 p-3 rounded-b-xl space-y-3 animate-in fade-in slide-in-from-top-1">
 
-                  {/* 1. Download CRX Link */}
-                  {getCrxUrl(ext) && (
-                    <div className="flex items-start text-xs">
-                      <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">下载CRX</span>
-                      <div className="flex-1">
-                        <a
-                          href={getCrxUrl(ext)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-500 hover:underline hover:text-blue-600"
-                        >
-                          {ext.name}.crx
-                          <Download className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 2. Host Permissions */}
+                  {/* Host Permissions */}
                   {ext.hostPermissions && ext.hostPermissions.length > 0 && (
                     <div className="flex items-start text-xs">
                       <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">Host权限</span>
@@ -494,7 +459,7 @@ function ExtensionsSidebarContent() {
                     </div>
                   )}
 
-                  {/* 3. General Permissions (Warnings) */}
+                  {/* General Permissions (Warnings) */}
                   <div className="flex items-start text-xs">
                     <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">权限</span>
                     <div className="flex-1 flex flex-col gap-1">

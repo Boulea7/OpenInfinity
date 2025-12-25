@@ -79,6 +79,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
   return (
     <div
+      id={`section-${id}`}
       className={`
         bg-white dark:bg-gray-900
         rounded-xl

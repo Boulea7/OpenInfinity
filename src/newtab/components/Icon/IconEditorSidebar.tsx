@@ -171,6 +171,9 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
 
   if (!isOpen && !isLoading) return null;
 
+  // System icons should not be editable
+  const isSystemIconEditing = editingIcon?.isSystemIcon === true;
+
   const show = isOpen;
 
   return (
@@ -212,6 +215,21 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          {/* System icon protection message */}
+          {isSystemIconEditing ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+                <Globe size={32} className="text-zinc-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                系统快捷方式不可编辑
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[280px]">
+                这是一个内置的系统快捷方式，无法修改其属性。如需隐藏此快捷方式，可在设置 &gt; 系统快捷方式中进行管理。
+              </p>
+            </div>
+          ) : (
+          <>
           {/* URL Field */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -280,26 +298,40 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
               {error}
             </div>
           )}
+          </>
+          )}
         </div>
 
         {/* Footer Actions */}
         <div className="p-6 border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isLoading}
-              className="w-full py-2.5 bg-brand-orange-500 hover:bg-brand-orange-600 text-white font-medium rounded-lg shadow-sm shadow-brand-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? '保存中...' : '确定'}
-            </button>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="w-full py-2.5 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-600 dark:text-gray-300 font-medium rounded-lg transition-colors"
-            >
-              取消
-            </button>
+            {isSystemIconEditing ? (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="w-full py-2.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium rounded-lg transition-colors"
+              >
+                关闭
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-brand-orange-500 hover:bg-brand-orange-600 text-white font-medium rounded-lg shadow-sm shadow-brand-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? '保存中...' : '确定'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="w-full py-2.5 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-600 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                >
+                  取消
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
