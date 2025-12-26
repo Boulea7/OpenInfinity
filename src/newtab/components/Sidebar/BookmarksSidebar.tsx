@@ -109,7 +109,7 @@ function BookmarksSidebarContent() {
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
   const [showRecentlyAdded, setShowRecentlyAdded] = useState(() => {
-    return localStorage.getItem('bookmarks_show_recent') === 'true';
+    return localStorage.getItem('bookmarks_show_recent') !== 'false';  // Default to true on first install
   });
 
   // Persist showRecentlyAdded
@@ -122,9 +122,16 @@ function BookmarksSidebarContent() {
   }, [showRecentlyAdded, activeTab]);
 
   // Folder navigation state
-  const [viewMode, setViewMode] = useState<ViewMode>('folder');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (localStorage.getItem('bookmarks_view_mode') as ViewMode) || 'tree';
+  });
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
+
+  // Persist viewMode
+  useEffect(() => {
+    localStorage.setItem('bookmarks_view_mode', viewMode);
+  }, [viewMode]);
 
   // Animation ref for list items
   const containerRef = useRef<HTMLDivElement>(null);

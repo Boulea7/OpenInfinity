@@ -4,6 +4,7 @@
  */
 
 import type { LocationData } from '../types';
+import { checkLocationPermission } from './locationPermission';
 
 const IS_DEV = !!(import.meta as any)?.env?.DEV;
 function debugLog(level: 'info' | 'warn', ...args: unknown[]) {
@@ -159,21 +160,27 @@ const BEIJING_FALLBACK: LocationData = {
 };
 
 export async function getLocation(): Promise<LocationData & { isFallback?: boolean }> {
+  // Check permission state first (does not trigger browser prompt)
+  const permState = await checkLocationPermission();
+
+  // If permission is not decided yet, use fallback to avoid triggering prompt without user gesture
+  if (permState === 'prompt') {
+    debugLog('info', 'Location permission not decided - using fallback');
+    return { ...BEIJING_FALLBACK, isFallback: true };
+  }
+
+  // If permission is denied, use fallback
+  if (permState === 'denied') {
+    debugLog('info', 'Location permission denied - using Beijing as fallback');
+    return { ...BEIJING_FALLBACK, isFallback: true };
+  }
+
+  // Permission is granted, safe to call geolocation API
   try {
-    // Try Geolocation API
     const location = await getGeolocation();
     return location;
   } catch (geoError) {
-    const message = geoError instanceof Error ? geoError.message : 'Unknown error';
-
-    // If user explicitly denies permission, fall back to Beijing
-    // This ensures weather features still work while respecting that user denied precise location
-    if (message.includes('denied')) {
-      debugLog('info', 'Location permission denied - using Beijing as fallback');
-      return { ...BEIJING_FALLBACK, isFallback: true };
-    }
-
-    // For other errors (timeout, unavailable), also use Beijing fallback
+    // Even with permission granted, geolocation can fail (timeout, unavailable, etc.)
     debugLog('warn', 'Geolocation failed, using Beijing fallback:', geoError);
     return { ...BEIJING_FALLBACK, isFallback: true };
   }

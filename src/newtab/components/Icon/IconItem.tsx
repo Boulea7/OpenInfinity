@@ -8,7 +8,7 @@ import { useSettingsStore } from '../../stores';
 import { cn, getFaviconUrl, getGoogleFaviconUrl, getClearbitLogoUrl } from '../../utils';
 import { openWebsite, isSafeUrl } from '../../utils/navigation';
 import { handleSystemIconClick, isSystemIcon } from '../../utils/systemIconHandlers';
-import { getSystemIconComponent } from '../../assets/icons/system';
+import { getSystemIconComponent, WeatherIcon } from '../../assets/icons/system';
 
 /**
  * Get weather background color based on condition
@@ -57,15 +57,13 @@ function renderSystemIcon(icon: Icon, weather?: WeatherCache | null): React.Reac
     );
   }
 
-  // Special rendering for weather icon
+  // Special rendering for weather icon: show weather icon + temperature
   if (icon.systemIconId === 'system-weather' && weather?.current) {
     return (
       <div className="relative w-full h-full flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-white drop-shadow-md">
+        <WeatherIcon size={24} className="mb-1" />
+        <span className="text-lg font-bold text-white drop-shadow-md">
           {Math.round(weather.current.temperature)}°
-        </span>
-        <span className="text-[10px] text-white/90 truncate max-w-full px-1 drop-shadow-sm">
-          {weather.current.condition}
         </span>
       </div>
     );
@@ -226,17 +224,22 @@ export const IconItem = React.memo(function IconItem({
     // Enter to activate (avoid Space to not conflict with dnd-kit keyboard dragging)
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Synthetic event: reuse click handler behavior without leaking the event
       if (isDragging) return;
+
+      // Check if this is a system icon and handle it (consistent with handleClick)
+      if (isSystemIcon(icon)) {
+        handleSystemIconClick(icon);
+        return;
+      }
+
       if (onClick) {
         onClick(icon);
         return;
       }
       if (isSafeUrl(icon.url)) {
         openWebsite(icon.url, openBehavior);
-      } else {
-        console.error('Blocked unsafe URL:', icon.url);
       }
+      // Removed console.error for unsafe URLs to avoid noise from system:// URLs
     }
   };
 

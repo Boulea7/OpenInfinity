@@ -433,7 +433,7 @@ function ExtensionsSidebarContent() {
                 {/* Uninstall */}
                 <button
                   onClick={() => uninstallExtension(ext.id)}
-                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-60 hover:opacity-100"
                   title="卸载扩展"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

@@ -194,7 +194,14 @@ export function useHistory(): UseHistoryReturn {
    * Check permission on mount
    */
   useEffect(() => {
-    checkHistoryPermission().then(setHasPermission);
+    checkHistoryPermission().then((granted) => {
+      setHasPermission(granted);
+      // If permission is not granted, stop loading state immediately
+      // to prevent infinite loading spinner
+      if (!granted) {
+        setIsLoading(false);
+      }
+    });
   }, []);
 
   /**
