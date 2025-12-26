@@ -43,19 +43,19 @@ interface PexelsSearchResponse {
   next_page?: string;
 }
 
+// Default Pexels API key (demo key for OpenInfinity)
+const DEFAULT_PEXELS_API_KEY = 'REDACTED_PEXELS_KEY';
+
 export class PexelsProvider implements WallpaperProvider {
   private apiKey: string;
   private requestCount: number = 0;
   private resetAt: number = Date.now() + 3600000; // 1 hour from now
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || import.meta.env.VITE_PEXELS_API_KEY || '';
-
-    if (!this.apiKey) {
-      // Silently skip initialization if API key not configured
-      // This is expected when only using Unsplash or other providers
-      // console.warn('Pexels API key not configured. Provider will not work.');
-    }
+    // Priority: provided key > env var > default key
+    this.apiKey = apiKey
+      || import.meta.env.VITE_PEXELS_API_KEY
+      || DEFAULT_PEXELS_API_KEY;
   }
 
   /**

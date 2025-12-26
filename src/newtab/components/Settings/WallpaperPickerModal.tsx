@@ -28,7 +28,6 @@ import { useWallpaperStore } from '../../stores/wallpaperStore';
 import {
   WALLPAPER_SOURCES,
   WallpaperSource,
-  getStoredApiKeys,
 } from '../../services/wallpaperSources';
 import { WallpaperSkeleton } from './components/WallpaperSkeleton';
 import { WallpaperCard } from './components/WallpaperCard';
@@ -76,18 +75,41 @@ const TAG_OPTIONS = [
   { id: 'street', label: '街头' },
 ];
 
-// Initialize sources with enabled state from localStorage
-const getInitialSources = (): Array<WallpaperSource & { enabled: boolean }> => {
+// Get selected source from localStorage (single select mode)
+// 'all' means random from all sources
+const getSelectedSource = (): string => {
   try {
-    const stored = localStorage.getItem('wallpaper-sources-enabled');
-    const enabledMap = stored ? JSON.parse(stored) : { bing: true, unsplash: true };
-    return WALLPAPER_SOURCES.map(source => ({
-      ...source,
-      enabled: enabledMap[source.id] ?? source.enabled,
-    }));
+    const stored = localStorage.getItem('wallpaper-selected-source');
+    return stored || 'all';
   } catch {
-    return WALLPAPER_SOURCES.map(source => ({ ...source }));
+    return 'all';
   }
+};
+
+// Save selected source to localStorage
+const saveSelectedSource = (sourceId: string): void => {
+  localStorage.setItem('wallpaper-selected-source', sourceId);
+};
+
+// Header background colors for each source
+const SOURCE_HEADER_COLORS: Record<string, string> = {
+  all: 'bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500',
+  bing: 'bg-gradient-to-br from-cyan-400 to-blue-500',
+  unsplash: 'bg-gray-800',
+  pexels: 'bg-gradient-to-br from-green-400 to-teal-500',
+  anime: 'bg-gradient-to-br from-pink-400 to-purple-500',
+  lifeofpix: 'bg-gradient-to-br from-amber-400 to-orange-500',
+  mmt: 'bg-gradient-to-br from-teal-400 to-cyan-500',
+  realisticshots: 'bg-gradient-to-br from-slate-400 to-gray-600',
+  jaymantri: 'bg-gradient-to-br from-green-400 to-emerald-500',
+  freenaturestock: 'bg-gradient-to-br from-lime-400 to-green-500',
+  skitterphoto: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+  startupstock: 'bg-gradient-to-br from-violet-400 to-purple-500',
+  barnimages: 'bg-gradient-to-br from-stone-400 to-amber-600',
+  picography: 'bg-gradient-to-br from-rose-400 to-red-500',
+  wallhaven: 'bg-gradient-to-br from-slate-500 to-slate-700',
+  infinity: 'bg-gradient-to-br from-orange-400 to-red-500',
+  preset: 'bg-gradient-to-br from-blue-400 to-indigo-500',
 };
 
 // Solid color/gradient presets
@@ -158,8 +180,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
   const [localWallpapers, setLocalWallpapers] = useState<WallpaperItem[]>([]);
   const [recentWallpapers] = useState<WallpaperItem[]>([]);
   const [favoriteWallpapers] = useState<WallpaperItem[]>([]);
-  const [sources, setSources] = useState(() => getInitialSources());
-  const [apiKeys] = useState<Record<string, string>>(() => getStoredApiKeys());
+  const [selectedSource, setSelectedSource] = useState(() => getSelectedSource());
 
   // Wallpaper store
   const setWallpaperFromUrl = useWallpaperStore((state) => state.setWallpaperFromUrl);
@@ -285,17 +306,10 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
     }
   };
 
-  // Toggle source enabled
-  const toggleSource = (sourceId: string) => {
-    setSources((prev) => {
-      const updated = prev.map((s) =>
-        s.id === sourceId ? { ...s, enabled: !s.enabled } : s
-      );
-      // Persist to localStorage
-      const enabledMap = Object.fromEntries(updated.map(s => [s.id, s.enabled]));
-      localStorage.setItem('wallpaper-sources-enabled', JSON.stringify(enabledMap));
-      return updated;
-    });
+  // Select a single source (single-select mode)
+  const selectSource = (sourceId: string) => {
+    setSelectedSource(sourceId);
+    saveSelectedSource(sourceId);
   };
 
   // Get language-specific description
@@ -598,6 +612,37 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
             <div className="p-5 h-full overflow-y-auto">
               {/* Wallpaper sources grid - 3 columns */}
               <div className="grid grid-cols-3 gap-4">
+                {/* "All Sources" option - random from all */}
+                <div
+                  onClick={() => selectSource('all')}
+                  className={`
+                    group cursor-pointer rounded-lg overflow-hidden transition-all duration-200
+                    ${selectedSource === 'all'
+                      ? 'ring-2 ring-orange-500 shadow-lg'
+                      : 'hover:shadow-md border border-gray-100 dark:border-gray-800'
+                    }
+                  `}
+                >
+                  <div className={`h-20 ${SOURCE_HEADER_COLORS.all} flex items-center justify-center relative`}>
+                    <div className="w-10 h-10 bg-white rounded-lg shadow flex items-center justify-center">
+                      <ImageIcon className="w-5 h-5 text-purple-500" />
+                    </div>
+                    {selectedSource === 'all' && (
+                      <div className="absolute bottom-2 right-2 bg-orange-500 text-white rounded-full p-0.5">
+                        <Check className="w-3 h-3" strokeWidth={3} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-white dark:bg-gray-900">
+                    <div className="font-medium text-sm text-gray-900 dark:text-white">
+                      {t('settings.wallpaper.picker.allSources', '全部壁纸源')}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                      {t('settings.wallpaper.picker.allSourcesDesc', '随机切换所有壁纸源')}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Create new library card */}
                 <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center py-8 text-gray-400 hover:border-gray-300 hover:text-gray-500 cursor-pointer transition-colors">
                   <div className="w-10 h-10 border-2 border-current rounded-lg flex items-center justify-center mb-2">
@@ -607,22 +652,14 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                 </div>
 
                 {/* Source cards */}
-                {sources.map((source) => {
-                  const headerColors: Record<string, string> = {
-                    bing: 'bg-gradient-to-br from-cyan-400 to-blue-500',
-                    unsplash: 'bg-gray-800',
-                    pexels: 'bg-gradient-to-br from-green-400 to-teal-500',
-                    wallhaven: 'bg-gradient-to-br from-slate-500 to-slate-700',
-                    infinity: 'bg-gradient-to-br from-orange-400 to-red-500',
-                    preset: 'bg-gradient-to-br from-blue-400 to-indigo-500',
-                  };
-                  const headerColor = headerColors[source.id] || 'bg-gray-300';
-                  const isSelected = source.enabled;
+                {WALLPAPER_SOURCES.map((source) => {
+                  const headerColor = SOURCE_HEADER_COLORS[source.id] || 'bg-gray-300';
+                  const isSelected = selectedSource === source.id;
 
                   return (
                     <div
                       key={source.id}
-                      onClick={() => toggleSource(source.id)}
+                      onClick={() => selectSource(source.id)}
                       className={`
                         group cursor-pointer rounded-lg overflow-hidden transition-all duration-200
                         ${isSelected
@@ -654,8 +691,8 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                         {source.apiKeyRequired && (
                           <div className="flex items-center gap-1 mt-1.5">
                             <Key className="w-3 h-3 text-gray-400" />
-                            <span className={`text-xs ${apiKeys[source.id] ? 'text-green-600' : 'text-amber-600'}`}>
-                              {apiKeys[source.id] ? 'API Key ✓' : 'Needs Key'}
+                            <span className="text-xs text-green-600">
+                              API Key ✓
                             </span>
                           </div>
                         )}
