@@ -23,6 +23,7 @@ import { IconEditorSidebar } from './components/Icon/IconEditorSidebar';
 import { InfinityLogo } from './components/Navigation/InfinityLogo';
 import { InfinityNavPanel } from './components/Navigation/InfinityNavPanel';
 import { SidebarRouter } from './components/Sidebar/SidebarRouter';
+import { HomeTodoList } from './components/Widgets/HomeTodoList';
 
 /**
  * OpenInfinity New Tab Application
@@ -336,6 +337,11 @@ function App() {
       <InfinityLogo />
       <InfinityNavPanel />
       <SidebarRouter />
+
+      {/* Home Todo List - Fixed on right side, hidden in minimal mode */}
+      {!minimalMode && viewSettings.showHomeTodoList && (
+        <HomeTodoList />
+      )}
     </div>
   );
 }

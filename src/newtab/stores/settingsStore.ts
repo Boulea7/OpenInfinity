@@ -82,6 +82,7 @@ export interface ViewSettings {
   showNotesWidget: boolean;
   showBookmarksWidget: boolean;
   showHistoryWidget: boolean;
+  showHomeTodoList: boolean;        // Show todo list on right side of grid (default: false)
   animationIntensity: 'none' | 'light' | 'normal' | 'heavy';  // Animation intensity (default: 'normal')
   currentView: 'search' | 'notes';  // Current view mode (default: 'search')
   showPinnedNotes: boolean;         // Show pinned notes in search view (default: false)
@@ -399,6 +400,7 @@ const defaultSettings: SettingsState = {
     showNotesWidget: true,
     showBookmarksWidget: true,
     showHistoryWidget: true,
+    showHomeTodoList: false,        // Default: hidden, user can enable in settings
     animationIntensity: 'normal',  // Default: normal animation
     currentView: 'search',          // Default: search view
     showPinnedNotes: false,         // Default: hide pinned notes
@@ -657,7 +659,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'openinfinity-settings',
-      version: 8, // V8: Add system icon settings
+      version: 9, // V9: Add viewSettings.showHomeTodoList
       migrate: (persistedState: any, version: number) => {
         const state = persistedState ?? {};
 
@@ -794,6 +796,14 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
             },
             initialized: false,
             locationDeniedPromptShown: false,
+          };
+        }
+
+        // V9: Add HomeTodoList toggle in viewSettings
+        if (version < 9) {
+          state.viewSettings = {
+            ...state.viewSettings,
+            showHomeTodoList: state?.viewSettings?.showHomeTodoList ?? false,
           };
         }
 

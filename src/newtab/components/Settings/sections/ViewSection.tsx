@@ -63,6 +63,13 @@ export const ViewSection: React.FC = () => {
           checked={viewSettings.showWeather}
           onChange={(checked) => setViewSettings({ showWeather: checked })}
         />
+
+        <Toggle
+          label={t('settings.view.showHomeTodoList', '在首页右侧显示待办列表')}
+          description={t('settings.view.showHomeTodoListDesc', '显示未完成的待办事项（半透明悬浮）')}
+          checked={!!viewSettings.showHomeTodoList}
+          onChange={(checked) => setViewSettings({ showHomeTodoList: checked })}
+        />
       </div>
     </CollapsibleSection>
   );
