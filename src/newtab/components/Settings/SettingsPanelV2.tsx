@@ -64,19 +64,35 @@ export const SettingsPanelV2: React.FC<SettingsPanelV2Props> = ({ className = ''
 
   // Handle initial tab scroll when settings panel opens with a specific section
   useEffect(() => {
-    if (settingsInitialTab && scrollContainerRef.current) {
-      // Small delay to ensure DOM is ready
+    if (settingsInitialTab) {
+      // Small delay to ensure DOM is ready and section is expanded
       const timer = setTimeout(() => {
-        const sectionElement = document.getElementById(`section-${settingsInitialTab}`);
-        if (sectionElement) {
-          // Expand the section if it's collapsed
-          setSectionCollapsed(settingsInitialTab, false);
+        // Expand the section if it's collapsed
+        setSectionCollapsed(settingsInitialTab, false);
 
-          // Scroll to the section
-          sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        // Clear the initial tab after scrolling
-        setSettingsInitialTab(null);
+        // Additional delay for expansion animation to complete
+        const scrollTimer = setTimeout(() => {
+          const sectionElement = document.getElementById(`section-${settingsInitialTab}`);
+          const scrollContainer = scrollContainerRef.current;
+
+          if (sectionElement && scrollContainer) {
+            // Calculate the offset relative to the scroll container
+            const containerRect = scrollContainer.getBoundingClientRect();
+            const sectionRect = sectionElement.getBoundingClientRect();
+            const offsetTop = sectionRect.top - containerRect.top + scrollContainer.scrollTop;
+
+            // Scroll with a small offset from top for better visibility
+            scrollContainer.scrollTo({
+              top: Math.max(0, offsetTop - 12),
+              behavior: 'smooth',
+            });
+          }
+
+          // Clear the initial tab after scrolling
+          setSettingsInitialTab(null);
+        }, 150);
+
+        return () => clearTimeout(scrollTimer);
       }, 100);
 
       return () => clearTimeout(timer);

@@ -133,7 +133,7 @@ export function WallpaperIcon({ className, size = 48 }: IconProps) {
   );
 }
 
-// OpenInfinity icon - Pure black infinity symbol
+// OpenInfinity icon - Colorful gradient infinity symbol
 export function OpenInfinityIcon({ className, size = 48 }: IconProps) {
   return (
     <svg
@@ -144,9 +144,16 @@ export function OpenInfinityIcon({ className, size = 48 }: IconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
+      <defs>
+        <linearGradient id="infinityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6366F1" />
+          <stop offset="50%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#EC4899" />
+        </linearGradient>
+      </defs>
       <path
         d="M14.5 30C19 30 21.5 27 24 24C26.5 21 29 18 33.5 18C38 18 41 20.5 41 24C41 27.5 38 30 33.5 30C29 30 26.5 27 24 24C21.5 21 19 18 14.5 18C10 18 7 20.5 7 24C7 27.5 10 30 14.5 30Z"
-        stroke="#18181B"
+        stroke="url(#infinityGradient)"
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -233,7 +240,7 @@ export function ExtensionsIcon({ className, size = 48 }: IconProps) {
 /**
  * System icon component mapping
  */
-export const SystemIconComponents: Record<string, React.FC<IconProps>> = {
+export const SystemIconComponents: Record<string, (props: IconProps) => JSX.Element> = {
   weather: WeatherIcon,
   todo: TodoIcon,
   notes: NotesIcon,
@@ -248,7 +255,7 @@ export const SystemIconComponents: Record<string, React.FC<IconProps>> = {
 /**
  * Get system icon component by name
  */
-export function getSystemIconComponent(name: string): React.FC<IconProps> | null {
+export function getSystemIconComponent(name: string): ((props: IconProps) => JSX.Element) | null {
   return SystemIconComponents[name] || null;
 }
 

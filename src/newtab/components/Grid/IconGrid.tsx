@@ -869,9 +869,12 @@ export function IconGrid({
                     enterDeleteMode();
                   }}
                   onClick={(icon) => {
-                    // In edit mode, clicking icon opens edit sidebar
+                    // In edit mode, clicking icon opens edit sidebar (except system icons)
                     if (isDeleteMode) {
-                      onEditIcon?.(icon);
+                      // System icons are not editable - do nothing in edit mode
+                      if (!isSystemIcon(icon)) {
+                        onEditIcon?.(icon);
+                      }
                       return;
                     }
                     // Normal mode: select and open URL

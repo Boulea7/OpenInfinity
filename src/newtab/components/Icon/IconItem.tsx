@@ -444,7 +444,8 @@ export const IconItem = React.memo(function IconItem({
           )}
 
           {/* Edit Overlay - Only visible in delete mode on hover, covers only the icon circle */}
-          {isDeleteMode && (
+          {/* System icons should NOT have edit overlay - they are not editable */}
+          {isDeleteMode && !isSystemIcon(icon) && (
             <div
               className={cn(
                 'absolute inset-0 z-10',

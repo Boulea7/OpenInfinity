@@ -136,14 +136,21 @@ export async function hasSystemIcons(): Promise<boolean> {
 }
 
 /**
+ * Default grid columns count (fallback when not provided)
+ */
+const DEFAULT_GRID_COLUMNS = 7;
+
+/**
  * Inject all system icons into the database
  * Called on first load or after data reset
  *
  * @param visibility - Record of which icons should be visible (from settings)
+ * @param gridColumns - Number of columns in the grid layout (default: 7)
  * @returns Number of icons injected
  */
 export async function injectSystemIcons(
-  visibility: Record<SystemIconId, boolean>
+  visibility: Record<SystemIconId, boolean>,
+  gridColumns: number = DEFAULT_GRID_COLUMNS
 ): Promise<number> {
   // Note: isSystemIcon is not indexed, so we filter in JS
   const allIcons = await db.icons.toArray();
@@ -154,12 +161,19 @@ export async function injectSystemIcons(
   const iconsToInject: Icon[] = [];
   let position = 0;
 
+  // Ensure gridColumns is at least 1 to prevent division issues
+  const columns = Math.max(1, gridColumns);
+
   for (const def of SYSTEM_ICONS) {
     // Skip if already exists
     if (existingIds.has(def.id)) continue;
 
     // Skip if hidden in settings
     if (!visibility[def.id]) continue;
+
+    // Calculate grid position with proper row wrapping
+    const x = position % columns;
+    const y = Math.floor(position / columns);
 
     const now = Date.now();
     const icon: Icon = {
@@ -171,7 +185,7 @@ export async function injectSystemIcons(
         type: 'system',
         value: def.svgName || def.id,
       },
-      position: { x: position, y: 0 },
+      position: { x, y },
       createdAt: now,
       updatedAt: now,
       isSystemIcon: true,

@@ -96,7 +96,8 @@ function getNextPosition(
 ): { x: number; y: number } {
   // Clamp to minimum 1 to prevent division issues
   const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
-  const rootIcons = icons.filter(i => !i.folderId);
+  // Exclude hidden icons from position calculation
+  const rootIcons = icons.filter(i => !i.folderId && !i.isHidden);
   const allItems = [...rootIcons, ...folders];
 
   if (allItems.length === 0) {
@@ -322,8 +323,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
         if (childIcons.length > 0) {
           // P2 Fix: Calculate new positions for displaced icons
-          // Get current root items (excluding the folder being deleted)
-          const rootIcons = icons.filter(i => !i.folderId);
+          // Get current root items (excluding the folder being deleted and hidden icons)
+          const rootIcons = icons.filter(i => !i.folderId && !i.isHidden);
           const otherFolders = folders.filter(f => f.id !== id);
           const existingRootItems = [...rootIcons, ...otherFolders];
 
@@ -364,7 +365,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       // Update local state with recalculated positions
       const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
       const childIcons = icons.filter(icon => icon.folderId === id);
-      const rootIcons = icons.filter(i => !i.folderId);
+      // Exclude hidden icons from position calculation
+      const rootIcons = icons.filter(i => !i.folderId && !i.isHidden);
       const otherFolders = folders.filter(f => f.id !== id);
       const existingRootItems = [...rootIcons, ...otherFolders];
 
@@ -464,7 +466,8 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
         if (allDisplacedIcons.length > 0) {
           // Calculate new positions for displaced icons
-          const rootIcons = icons.filter(i => !i.folderId && !regularIconIds.includes(i.id));
+          // Exclude hidden icons from position calculation
+          const rootIcons = icons.filter(i => !i.folderId && !i.isHidden && !regularIconIds.includes(i.id));
           const remainingFolders = folders.filter(f => !folderIds.includes(f.id));
           const existingRootItems = [...rootIcons, ...remainingFolders];
 
@@ -701,9 +704,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const safeRows = Math.max(1, rows || 4); // 4 rows is a reasonable default
     const itemsPerPage = safeColumns * safeRows;
 
-    // Only count root level items
-    const rootIcons = icons.filter(icon => !icon.folderId);
-    const totalItems = rootIcons.length + folders.length;
+    // Only count visible root level items (exclude hidden icons)
+    const visibleRootIcons = icons.filter(icon => !icon.folderId && !icon.isHidden);
+    const totalItems = visibleRootIcons.length + folders.length;
 
     return Math.max(1, Math.ceil(totalItems / itemsPerPage));
   },
@@ -817,7 +820,10 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       }
 
       // DB is empty - inject system icons regardless of initialized flag
-      await injectSystemIcons(systemIconSettings.visibility);
+      // Get grid columns from view settings for proper position calculation
+      const viewSettings = settingsStore.viewSettings;
+      const gridColumns = viewSettings?.columns ?? 7;
+      await injectSystemIcons(systemIconSettings.visibility, gridColumns);
 
       // Mark as initialized
       settingsStore.setSystemIconSettings({ initialized: true });
