@@ -109,8 +109,8 @@ export function Modal({
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      {/* Backdrop - pointer-events-none to let clicks pass through to overlay handler */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-none" />
 
       {/* Modal content */}
       <div
@@ -125,6 +125,7 @@ export function Modal({
           className
         )}
         tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         {(title || showCloseButton) && (
