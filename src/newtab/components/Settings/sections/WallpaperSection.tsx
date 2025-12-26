@@ -57,7 +57,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({
     >
       {/* Wallpaper Preview */}
       <div
-        className="relative aspect-video overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 rounded-sm"
+        className="relative aspect-video overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 rounded-xl"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -101,6 +101,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({
               bg-white/90 dark:bg-gray-800/90
               text-gray-900 dark:text-white
               text-sm font-medium
+              rounded-lg
               hover:bg-white dark:hover:bg-gray-700
               transition-colors
             "
@@ -117,6 +118,7 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({
             absolute top-2 right-2
             w-8 h-8
             bg-white/80 dark:bg-gray-800/80
+            rounded-lg
             flex items-center justify-center
             hover:bg-white dark:hover:bg-gray-700
             transition-colors
