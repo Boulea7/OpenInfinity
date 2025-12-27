@@ -87,17 +87,6 @@ export const WALLPAPER_SOURCES: WallpaperSource[] = [
     category: 'photography',
   },
   {
-    id: 'realisticshots',
-    name: 'Realistic Shots',
-    description: 'Free stock photos for personal and commercial use',
-    descriptionZh: '可商用的免费图库',
-    logo: 'https://realisticshots.com/favicon.ico',
-    website: 'https://realisticshots.com',
-    apiKeyRequired: false,
-    enabled: false,
-    category: 'photography',
-  },
-  {
     id: 'jaymantri',
     name: 'Jay Mantri',
     description: 'Free pics. Do anything (CC0). Make magic.',

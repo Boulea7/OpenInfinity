@@ -105,7 +105,6 @@ const SOURCE_HEADER_COLORS: Record<string, string> = {
   anime: 'bg-gradient-to-br from-pink-400 to-purple-500',
   lifeofpix: 'bg-gradient-to-br from-cyan-400 to-blue-500',
   mmt: 'bg-gradient-to-br from-orange-400 to-red-500',
-  realisticshots: 'bg-gradient-to-br from-slate-400 to-slate-600',
   jaymantri: 'bg-gradient-to-br from-red-400 to-orange-500',
   freenaturestock: 'bg-gradient-to-br from-green-400 to-lime-600',
   skitterphoto: 'bg-gradient-to-br from-teal-400 to-cyan-600',
@@ -119,12 +118,17 @@ const SOURCE_HEADER_COLORS: Record<string, string> = {
 
 // Inline SVG icons for wallpaper sources (white color for gradient backgrounds)
 // Official brand logos from Simple Icons and Bootstrap Icons where available
+// Text logos for sources without official SVG assets
 const SourceIcons: Record<string, React.FC<{ className?: string }>> = {
+  // Grid icon for "All Sources"
   all: ({ className }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
     </svg>
   ),
+
+  // === Official Brand Logos ===
+
   // Official Bing logo from Bootstrap Icons
   bing: ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 16 16">
@@ -133,68 +137,86 @@ const SourceIcons: Record<string, React.FC<{ className?: string }>> = {
       <path d="m3.004 12.184.03.129c.089.402.245.693.515.963a1.82 1.82 0 0 0 1.312.543c.361 0 .673-.09.994-.287l.472-.29.373-.23V5.334c0-1.537-.003-2.45-.008-2.521a1.82 1.82 0 0 0-.535-1.177c-.097-.096-.18-.16-.427-.33L4.183.24c-.239-.163-.258-.175-.33-.2a.63.63 0 0 0-.842.464c-.009.042-.01.603-.01 3.646l.003 8.035Z"/>
     </svg>
   ),
+
   // Official Unsplash logo from Simple Icons
   unsplash: ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
       <path d="M7.5 6.75V0h9v6.75h-9zm9 3.75H24V24H0V10.5h7.5v6.75h9V10.5z"/>
     </svg>
   ),
+
   // Official Pexels logo from Simple Icons
   pexels: ({ className }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
       <path d="M1.5 0A1.5 1.5 0 000 1.5v21A1.5 1.5 0 001.5 24h21a1.5 1.5 0 001.5-1.5v-21A1.5 1.5 0 0022.5 0h-21zm6.75 6.75h5.2715a3.843 3.843 0 01.627 7.6348V17.25H8.25V6.75zm1.5 1.5v7.5h2.8984v-2.8145h.873a2.343 2.343 0 100-4.6855H9.75Z"/>
     </svg>
   ),
-  anime: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  lifeofpix: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  ),
-  mmt: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11v5m0 0l-3-3m3 3l3-3M8 7.5a2.5 2.5 0 015 0v3.5a2.5 2.5 0 01-5 0V7.5z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V7.5a2.5 2.5 0 00-5 0v3.5a2.5 2.5 0 005 0V11z" />
-    </svg>
-  ),
-  realisticshots: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </svg>
-  ),
-  jaymantri: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
-    </svg>
-  ),
-  freenaturestock: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  skitterphoto: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-    </svg>
-  ),
+
+  // Official Startup Stock Photos logo (camera icon from official website)
   startupstock: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <svg className={className} fill="currentColor" viewBox="0 0 238 158">
+      <path d="M225,25V145H13V25H225m13-13H0V158H238V12Z"/>
+      <path d="M120.5,46A39.5,39.5,0,1,1,81,85.5,39.55,39.55,0,0,1,120.5,46m0-13A52.5,52.5,0,1,0,173,85.5,52.49,52.49,0,0,0,120.5,33Z"/>
+      <circle cx="205" cy="47" r="13"/>
+      <rect x="26" width="35" height="12"/>
     </svg>
   ),
+
+  // === Text Logos (for sources without official SVG assets) ===
+
+  // Wallhaven (anime wallpapers)
+  anime: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="26" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">WH</text>
+    </svg>
+  ),
+
+  // Life of Pix
+  lifeofpix: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="24" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">LOP</text>
+    </svg>
+  ),
+
+  // MMT Stock (now FOCA)
+  mmt: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="22" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">FOCA</text>
+    </svg>
+  ),
+
+  // Jay Mantri
+  jaymantri: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="28" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">JM</text>
+    </svg>
+  ),
+
+  // Free Nature Stock
+  freenaturestock: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="24" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">FNS</text>
+    </svg>
+  ),
+
+  // Skitter Photo
+  skitterphoto: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="28" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">SP</text>
+    </svg>
+  ),
+
+  // Barn Images
   barnimages: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="20" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">Barn</text>
     </svg>
   ),
+
+  // Picography
   picography: ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    <svg className={className} viewBox="0 0 100 40" fill="currentColor">
+      <text x="50" y="30" fontSize="20" fontWeight="bold" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">Pico</text>
     </svg>
   ),
 };
