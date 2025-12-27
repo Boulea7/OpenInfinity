@@ -279,6 +279,17 @@ export interface WeatherCache {
   expiresAt: number; // Cache expiration time (1 hour)
 }
 
+// Resource cache entry for offline-first loading
+export interface ResourceCacheEntry {
+  id: string; // URL hash or custom ID
+  url: string;
+  dataUrl: string; // Base64 encoded data
+  mimeType: string;
+  size: number;
+  cachedAt: number;
+  version: number;
+}
+
 /**
  * OpenInfinity Database class
  */
@@ -297,6 +308,7 @@ class OpenInfinityDB extends Dexie {
   presetWebsites!: Table<PresetWebsite, string>;
   userFavorites!: Table<UserFavorite, string>;
   weatherCache!: Table<WeatherCache, string>;
+  resourceCache!: Table<ResourceCacheEntry, string>;
 
   constructor() {
     super('OpenInfinityDB');
@@ -547,6 +559,25 @@ class OpenInfinityDB extends Dexie {
           ]);
         }
       });
+
+    // Version 11: Add resource cache for offline-first asset loading
+    this.version(11).stores({
+      icons: '++id, type, url, folderId, createdAt',
+      folders: '++id, name, createdAt',
+      wallpapers: '++id, type, createdAt',
+      todos: '++id, done, parentId, dueDate, *tags, createdAt, updatedAt',
+      notes: '++id, isPinned, *tags, createdAt, updatedAt',
+      settings: 'key',
+      emailAccounts: '++id, provider, email, enabled, lastChecked',
+      todoIntegrations: '++id, provider, enabled, lastSynced',
+      rssSubscriptions: '++id, url, category, enabled, lastFetched',
+      rssItems: '++id, subscriptionId, pubDate, isRead, isStarred',
+      notificationLogs: '++id, type, source, isRead, createdAt',
+      presetWebsites: '++id, category, region, popularity, *tags',
+      userFavorites: '++id, websiteId, addedAt',
+      weatherCache: 'id, fetchedAt, expiresAt',
+      resourceCache: 'id, url, cachedAt',
+    });
 
     // Populate hook for fresh installs
     this.on('populate', (trans) => {

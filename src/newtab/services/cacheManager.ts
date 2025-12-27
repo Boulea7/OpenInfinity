@@ -6,6 +6,11 @@
 import { db } from './database';
 import { clearExpiredIconCache } from '../utils/iconCache';
 import { clearExpiredGeocodeCache } from './geocoding';
+import {
+  clearExpiredResourceCache,
+  clearResourceCache,
+  getResourceCacheStats,
+} from './resourceCache';
 
 /**
  * Safely parse JSON from localStorage
@@ -27,6 +32,10 @@ export interface CacheStats {
   iconCache: number;
   geocodeCache: number;
   searchEngineIconCache: number;
+  resourceCache: {
+    count: number;
+    totalSize: number;
+  };
 }
 
 /**
@@ -67,6 +76,7 @@ export async function clearAllIconCaches(): Promise<void> {
  */
 export async function clearAllCaches(): Promise<void> {
   await clearWeatherCache();
+  await clearResourceCache();
   clearGeocodeCache();
   clearSearchEngineIconCache();
   console.log('[CacheManager] All caches cleared');
@@ -85,19 +95,27 @@ export async function getCacheStats(): Promise<CacheStats> {
   const geocodeCache = safeJsonParse(localStorage.getItem('geocode-cache-v1'));
   const geocodeCount = Object.keys(geocodeCache).length;
 
+  // Resource cache stats
+  const resourceStats = await getResourceCacheStats();
+
   return {
     weatherCache: weatherCount,
     iconCache: 0, // Reserved for future use
     geocodeCache: geocodeCount,
     searchEngineIconCache: engineIconCount,
+    resourceCache: {
+      count: resourceStats.count,
+      totalSize: resourceStats.totalSize,
+    },
   };
 }
 
 /**
  * Clear expired caches (maintenance)
  */
-export function clearExpiredCaches(): void {
+export async function clearExpiredCaches(): Promise<void> {
   clearExpiredIconCache();
   clearExpiredGeocodeCache();
+  await clearExpiredResourceCache();
   console.log('[CacheManager] Expired caches cleared');
 }
