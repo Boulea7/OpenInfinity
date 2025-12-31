@@ -41,13 +41,6 @@ const DEFAULT_SUPPORTED_TYPES = ['web'];
 
 // Search type URLs for different engines
 const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
-  // ... (Keep existing URL configs)
-  // I will omit the full list here for brevity, assuming standard implementation or I'll copy from original
-  // BUT replace_file_content needs EXACT match or specific chunks. 
-  // Since I am rewriting the component structure significantly, I might use write_to_file to overwrite 
-  // or be very careful. 
-  // Given I need to keep the URL map, I'll use read_file content reference.
-  // Actually, I'll copy the map from the previous read.
   google: {
     web: 'https://www.google.com/search?q=',
     images: 'https://www.google.com/search?tbm=isch&q=',

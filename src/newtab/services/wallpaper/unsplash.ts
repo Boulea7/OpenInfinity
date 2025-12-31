@@ -88,6 +88,8 @@ export class UnsplashProvider implements WallpaperProvider {
             Authorization: `Client-ID ${this.accessKey}`,
           },
           signal: AbortSignal.timeout(10000), // 10s timeout
+          referrerPolicy: 'no-referrer',
+          credentials: 'omit',
         }
       );
 
@@ -155,6 +157,8 @@ export class UnsplashProvider implements WallpaperProvider {
         headers: {
           Authorization: `Client-ID ${this.accessKey}`,
         },
+        referrerPolicy: 'no-referrer',
+        credentials: 'omit',
       });
     } catch (error) {
       console.warn('Failed to track Unsplash download:', error);

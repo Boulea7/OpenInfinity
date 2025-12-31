@@ -93,6 +93,8 @@ export class PexelsProvider implements WallpaperProvider {
             Authorization: this.apiKey,
           },
           signal: AbortSignal.timeout(10000),
+          referrerPolicy: 'no-referrer',
+          credentials: 'omit',
         }
       );
 

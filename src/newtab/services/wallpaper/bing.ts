@@ -42,6 +42,8 @@ export class BingProvider implements WallpaperProvider {
 
       const response = await fetch(`${BING_FEED_API}?${params}`, {
         signal: AbortSignal.timeout(10000),
+        referrerPolicy: 'no-referrer',
+        credentials: 'omit',
       });
 
       if (!response.ok) {

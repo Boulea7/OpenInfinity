@@ -111,6 +111,8 @@ export class WallhavenProvider implements WallpaperProvider {
         `${WALLHAVEN_API_BASE}/search?${params}`,
         {
           signal: AbortSignal.timeout(15000), // 15s timeout
+          referrerPolicy: 'no-referrer',
+          credentials: 'omit',
         }
       );
 
