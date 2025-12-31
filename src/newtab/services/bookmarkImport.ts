@@ -251,7 +251,7 @@ async function getFaviconForUrl(url: string): Promise<Icon['icon']> {
         value: response.data, // Data URL (base64)
       };
     }
-  } catch (error) {
+  } catch {
     console.warn(`Favicon fetch failed for ${url}, using text fallback`);
   }
 

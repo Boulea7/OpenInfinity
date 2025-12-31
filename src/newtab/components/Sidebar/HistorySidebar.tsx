@@ -6,25 +6,28 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Clock, Search, ExternalLink, Trash2, Archive, Settings, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useHistory } from '../../hooks';
 import { PermissionGate } from '../ui/PermissionGate';
 import { cn, getGoogleFaviconUrl } from '../../utils';
 import { openUrlSafe } from '../../utils/navigation';
 
+// Range options with i18n keys
 const SEARCH_RANGES = [
-  { label: '最近1天', value: 24 * 60 * 60 * 1000 },
-  { label: '最近3天', value: 3 * 24 * 60 * 60 * 1000 },
-  { label: '最近1周', value: 7 * 24 * 60 * 60 * 1000 },
-  { label: '最近2周', value: 14 * 24 * 60 * 60 * 1000 },
-  { label: '最近1月', value: 30 * 24 * 60 * 60 * 1000 },
+  { labelKey: 'history.range.oneDay', value: 24 * 60 * 60 * 1000 },
+  { labelKey: 'history.range.threeDays', value: 3 * 24 * 60 * 60 * 1000 },
+  { labelKey: 'history.range.oneWeek', value: 7 * 24 * 60 * 60 * 1000 },
+  { labelKey: 'history.range.twoWeeks', value: 14 * 24 * 60 * 60 * 1000 },
+  { labelKey: 'history.range.oneMonth', value: 30 * 24 * 60 * 60 * 1000 },
 ];
 
 const DELETE_RANGES = [
   ...SEARCH_RANGES,
-  { label: '全部历史', value: 0 }, // 0 indicates all time
+  { labelKey: 'history.range.allHistory', value: 0 }, // 0 indicates all time
 ];
 
 export function HistorySidebar() {
+  const { t } = useTranslation();
   const {
     historyItems,
     hasPermission,
@@ -112,7 +115,7 @@ export function HistorySidebar() {
   // Group helpers
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
   };
 
   const getFriendlyDateGroup = (timestamp: number) => {
@@ -124,12 +127,12 @@ export function HistorySidebar() {
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-    const dateStr = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-    const weekday = weekdays[date.getDay()];
+    // Use locale-aware date and weekday formatting
+    const dateStr = date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
 
-    if (diffDays === 0) return `今天 ${dateStr}${weekday}`;
-    if (diffDays === 1) return `昨天 ${dateStr}${weekday}`;
+    if (diffDays === 0) return `${t('history.today', 'Today')} ${dateStr} ${weekday}`;
+    if (diffDays === 1) return `${t('history.yesterday', 'Yesterday')} ${dateStr} ${weekday}`;
     return `${dateStr} ${weekday}`;
   }
 
@@ -193,8 +196,8 @@ export function HistorySidebar() {
                 className="text-xs bg-transparent text-zinc-500 dark:text-zinc-400 font-medium py-1 px-1 mr-1 border-none focus:ring-0 cursor-pointer hover:text-zinc-800 dark:hover:text-zinc-200"
               >
                 {SEARCH_RANGES.map(range => (
-                  <option key={range.label} value={range.value}>
-                    {range.label}
+                  <option key={range.labelKey} value={range.value}>
+                    {t(range.labelKey)}
                   </option>
                 ))}
               </select>
@@ -332,12 +335,12 @@ export function HistorySidebar() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2 ml-1">
-                    选择时间范围
+                    {t('history.selectTimeRange', 'Select time range')}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {DELETE_RANGES.map((range) => (
                       <button
-                        key={range.label}
+                        key={range.labelKey}
                         onClick={() => setClearRange(range.value)}
                         className={cn(
                           "px-3 py-2 text-xs font-medium rounded-lg border transition-all",
@@ -346,7 +349,7 @@ export function HistorySidebar() {
                             : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
                         )}
                       >
-                        {range.label}
+                        {t(range.labelKey)}
                       </button>
                     ))}
                   </div>

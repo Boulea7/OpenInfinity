@@ -27,18 +27,37 @@ function isAllowedHost(hostname: string): boolean {
   return ALLOWED_HOST_SUFFIXES.some((suffix) => lower.endsWith(suffix));
 }
 
+// IPv6 private address patterns for SSRF protection
+const IPV6_PRIVATE_PATTERNS = [
+  /^::1$/i, // loopback
+  /^fe80:/i, // link-local
+  /^fc00:/i, // unique local
+  /^fd[0-9a-f]{2}:/i, // unique local
+  /^::ffff:(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/i, // IPv4-mapped private
+];
+
 /**
  * Check if hostname is a private/internal IP address
  */
 function isPrivateHost(hostname: string): boolean {
+  // Normalize hostname (remove brackets from IPv6)
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+
   // Check blocked hosts list
-  if (BLOCKED_HOSTS.includes(hostname.toLowerCase())) {
+  if (BLOCKED_HOSTS.includes(normalized)) {
     return true;
   }
 
-  // Check private IP ranges
+  // Check IPv4 private IP ranges
   for (const pattern of PRIVATE_IP_RANGES) {
-    if (pattern.test(hostname)) {
+    if (pattern.test(normalized)) {
+      return true;
+    }
+  }
+
+  // Check IPv6 private address patterns
+  for (const pattern of IPV6_PRIVATE_PATTERNS) {
+    if (pattern.test(normalized)) {
       return true;
     }
   }
@@ -52,6 +71,12 @@ function isPrivateHost(hostname: string): boolean {
 function isValidFaviconUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
+
+    // Reject URLs with embedded credentials (user:pass@host)
+    if (url.username || url.password) {
+      console.warn('[Favicon] URL contains credentials, rejecting');
+      return false;
+    }
 
     // Check protocol
     if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {

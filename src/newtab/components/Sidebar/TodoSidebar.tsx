@@ -5,6 +5,7 @@ import {
   ChevronDown,
   CornerDownLeft
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTodos, type TodoPriority } from '../../hooks';
 import { useFlipAnimation } from '../../hooks/useFlipAnimation';
 import { cn } from '../../utils';
@@ -12,11 +13,12 @@ import type { TodoItem } from '../../services/database';
 
 type Priority = TodoPriority;
 
-const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
-  { value: 'high', label: '高', color: 'bg-red-500' },
-  { value: 'medium', label: '中', color: 'bg-yellow-500' },
-  { value: 'low', label: '低', color: 'bg-green-500' },
-  { value: 'none', label: '无', color: 'bg-gray-400' },
+// Priority options with i18n keys
+const PRIORITY_OPTIONS: { value: Priority; labelKey: string; color: string }[] = [
+  { value: 'high', labelKey: 'todo.priority.high', color: 'bg-red-500' },
+  { value: 'medium', labelKey: 'todo.priority.medium', color: 'bg-yellow-500' },
+  { value: 'low', labelKey: 'todo.priority.low', color: 'bg-green-500' },
+  { value: 'none', labelKey: 'todo.priority.none', color: 'bg-gray-400' },
 ];
 
 /**
@@ -54,6 +56,7 @@ function renderTextWithTags(text: string): React.ReactNode {
 }
 
 export function TodoSidebar() {
+  const { t } = useTranslation();
   const { todos, addTodo, toggleTodo, deleteTodo, updateTodo, clearCompleted } = useTodos({ includeCompleted: true });
 
   const [newTodoText, setNewTodoText] = useState('');
@@ -254,7 +257,7 @@ export function TodoSidebar() {
         "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ml-2 shadow-sm text-white shrink-0",
         option.color
       )}>
-        {option.label}
+        {t(option.labelKey)}
       </span>
     );
   };
@@ -277,7 +280,7 @@ export function TodoSidebar() {
               value={newTodoText}
               onChange={(e) => setNewTodoText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
-              placeholder="添加新待办... 使用 #标签 分类 (按回车添加)"
+              placeholder={t('todo.addPlaceholder', 'Add new todo... Use #tag for categories (Enter to add)')}
               className={cn(
                 'w-full px-3 py-2.5 rounded-lg text-sm bg-transparent',
                 'text-gray-900 dark:text-gray-100',
@@ -302,7 +305,7 @@ export function TodoSidebar() {
                         : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'
                     )}
                   >
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 );
               })}
@@ -386,7 +389,7 @@ export function TodoSidebar() {
                                   : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'
                               )}
                             >
-                              {option.label}
+                              {t(option.labelKey)}
                             </button>
                           );
                         })}
@@ -432,7 +435,7 @@ export function TodoSidebar() {
                   <Check className="w-6 h-6 text-gray-300 dark:text-gray-600 transition-transform duration-500 group-hover:scale-110 group-hover:text-zinc-400" />
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-500">
-                  暂无待办事项
+                  {t('todo.empty', 'No todos yet')}
                 </p>
               </div>
             </div>
@@ -448,7 +451,7 @@ export function TodoSidebar() {
             <div className={cn("transition-transform duration-300", isCompletedExpanded ? "rotate-0" : "-rotate-90")}>
               <ChevronDown className="w-4 h-4" />
             </div>
-            已完成 ({completedTodos.length})
+            {t('todo.completed', 'Completed')} ({completedTodos.length})
             <div className="flex-1 h-px bg-gray-100 dark:bg-zinc-800 ml-2 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors" />
           </button>
 
@@ -456,7 +459,7 @@ export function TodoSidebar() {
             <div className="mt-3 space-y-1">
               {completedTodos.length === 0 && (
                 <div className="py-4 text-center text-xs text-gray-400 dark:text-gray-600 italic">
-                  暂无已完成事项
+                  {t('todo.noCompleted', 'No completed items')}
                 </div>
               )}
               {completedTodos.map((todo, index) => {
@@ -509,7 +512,7 @@ export function TodoSidebar() {
                       : "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 border-dashed border-red-200 dark:border-red-900/30 hover:border-red-300"
                   )}
                 >
-                  {confirmingClear ? "确定清除所有已完成？(再次点击确认)" : "清除所有已完成"}
+                  {confirmingClear ? t('todo.confirmClear', 'Click again to confirm') : t('todo.clearCompleted', 'Clear all completed')}
                 </button>
               )}
             </div>

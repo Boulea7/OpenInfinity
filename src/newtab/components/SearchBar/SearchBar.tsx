@@ -3,6 +3,7 @@ import { Search, ChevronDown, Monitor, Image, Video, Map, StickyNote } from 'luc
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../stores';
+import { useSearchStore } from '../../stores/searchStore';
 import { useDebounce } from '../../hooks';
 import { preloadEngineIcons } from '../../utils/iconCache';
 import { cn } from '../../utils';
@@ -177,13 +178,17 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
   }, []);
 
   const debouncedQuery = useDebounce(query, 200);
+  const setSearchQuery = useSearchStore((s) => s.setQuery);
 
-  // Notify parent of query change (for Notes search)
+  // Update search store with debounced query (for Notes search)
+  // This decouples SearchBar from App and prevents App re-renders
   useEffect(() => {
+    setSearchQuery(debouncedQuery);
+    // Also call legacy callback if provided
     if (onQueryChange) {
       onQueryChange(debouncedQuery);
     }
-  }, [debouncedQuery, onQueryChange]);
+  }, [debouncedQuery, setSearchQuery, onQueryChange]);
 
   // Get current search engine
   const engines = searchSettings.engines ?? [];
@@ -315,9 +320,6 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     inputRef.current?.focus();
   };
 
-  if (searchSettings.hidden) return null;
-  if (!currentEngine) return null;
-
   // Max-width classes for alignment based on settings
   const maxWidthClasses: Record<'small' | 'medium' | 'large', string> = {
     small: 'max-w-md',
@@ -396,16 +398,20 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     };
   }, [updateIndicator]);
 
+  if (searchSettings.hidden) return null;
+  if (!currentEngine) return null;
+
   return (
     <div
       className={cn('relative w-full z-20 flex flex-col items-center gap-4', className)}
       ref={suggestionsRef}
       role="search"
-      aria-label="搜索"
+      aria-label={i18n.language === 'zh' ? '搜索' : 'Search'}
     >
       {/* Top Bar: Search Types (Left) + View Switcher (Right) */}
+      {/* Use grid layout for precise alignment with the search bar below */}
       <div className={cn(
-        'w-full flex items-center justify-between gap-4',
+        'w-full grid grid-cols-[1fr_auto] items-center gap-4',
         currentMaxWidth
       )}>
         {/* Search Type Tabs - Hide if in Notes Mode? Or just disable? */}
@@ -595,14 +601,14 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
           onFocus={() => {
             if (!isNotesMode && searchSettings.showSuggestions && suggestions.length > 0) setShowSuggestions(true)
           }}
-          placeholder={isNotesMode ? "搜索便签..." : t('searchBar.placeholder')}
+          placeholder={isNotesMode ? t('notes.searchPlaceholder') : t('searchBar.placeholder')}
           className={cn(
             'flex-1 bg-transparent border-none outline-none',
             'text-zinc-800 dark:text-zinc-100 placeholder-zinc-400',
             'text-lg font-medium tracking-wide',
             'selection:bg-brand-orange/20 selection:text-brand-orange-700'
           )}
-          aria-label="搜索"
+          aria-label={i18n.language === 'zh' ? '搜索' : 'Search'}
           autoComplete="off"
           spellCheck={false}
         />
@@ -619,7 +625,7 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
                 ? 'bg-brand-orange text-white shadow-glow-orange hover:bg-brand-orange-600 transform hover:scale-105'
                 : 'text-zinc-400 hover:text-brand-orange hover:bg-brand-orange/10'
             )}
-            aria-label="搜索"
+            aria-label={i18n.language === 'zh' ? '搜索' : 'Search'}
           >
             <Search className={cn("w-5 h-5", query.trim() && "stroke-[2.5px]")} />
           </button>

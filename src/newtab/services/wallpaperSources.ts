@@ -234,7 +234,7 @@ export async function fetchStaticSourceWallpaper(
 ): Promise<string | null> {
   // TODO: Implement scraping/RSS parsing for each static source
   // For now, return null as placeholder
-  console.log(`Fetching from source: ${sourceId} (not implemented yet)`);
+  console.info(`Fetching from source: ${sourceId} (not implemented yet)`);
   return null;
 }
 

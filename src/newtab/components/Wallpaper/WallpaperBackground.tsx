@@ -24,17 +24,14 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
     solidColor,
     gradient,
     effects,
-    loadWallpaper,
   } = useWallpaperStore();
 
   const [layer1, setLayer1] = useState<ImageLayerState>({ url: null, loaded: false, error: false });
   const [layer2, setLayer2] = useState<ImageLayerState>({ url: null, loaded: false, error: false });
   const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
 
-  // Load wallpaper on mount
-  useEffect(() => {
-    loadWallpaper();
-  }, [loadWallpaper]);
+  // Wallpaper initialization is handled by App.tsx to prevent race conditions
+  // WallpaperBackground only renders the current wallpaper state
 
   // Double-buffer strategy:
   // - Keep currently visible layer as-is (avoid flicker)

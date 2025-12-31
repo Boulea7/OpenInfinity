@@ -7,12 +7,14 @@ import { markdown } from '@codemirror/lang-markdown';
 import { EditorView } from '@codemirror/view';
 import { markdownLivePreview } from '../../extensions/markdownLivePreview';
 import { db, Note, generateId } from '../../services/database';
-import { cn } from '../../utils';
+import { useSearchStore } from '../../stores/searchStore';
+import { cn, formatDate } from '../../utils';
 import { htmlToPlainText } from '../../utils/htmlUtils';
 import { isHtmlContent, htmlToMarkdown } from '../../utils/htmlToMarkdown';
 
 interface NotesViewProps {
   className?: string;
+  /** @deprecated Use searchStore instead */
   searchQuery?: string;
 }
 
@@ -21,11 +23,16 @@ interface NotesViewProps {
  * Redesigned as a Split-Pane Dashboard
  * Layout matches user request: "Same search bar position", "Split view below"
  */
-export function NotesView({ className, searchQuery = '' }: NotesViewProps) {
+export function NotesView({ className, searchQuery: propSearchQuery }: NotesViewProps) {
   const { t } = useTranslation();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
+
+  // Subscribe to search query from store (avoids App re-renders)
+  const storeSearchQuery = useSearchStore((s) => s.query);
+  // Support both store and prop (prop for backwards compatibility)
+  const searchQuery = storeSearchQuery || propSearchQuery || '';
 
   // Load notes from database
   const allNotes = useLiveQuery(
@@ -158,7 +165,7 @@ export function NotesView({ className, searchQuery = '' }: NotesViewProps) {
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5 text-xs text-white/30">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {new Date(note.updatedAt).toLocaleDateString()}
+                  {formatDate(note.updatedAt)}
                 </span>
               </div>
             </div>

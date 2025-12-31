@@ -12,6 +12,9 @@ import {
 } from '../services/bookmarks';
 import type { BookmarkItem } from '../types';
 
+// Precise selector to only subscribe to widgetSettings
+const selectWidgetSettings = (s: ReturnType<typeof useSettingsStore.getState>) => s.widgetSettings;
+
 /**
  * Bookmarks hook return interface
  */
@@ -28,7 +31,8 @@ export interface UseBookmarksReturn {
  * Bookmarks data management hook
  */
 export function useBookmarks(): UseBookmarksReturn {
-  const { widgetSettings } = useSettingsStore();
+  // Precise subscription to prevent re-renders from unrelated settings changes
+  const widgetSettings = useSettingsStore(selectWidgetSettings);
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);

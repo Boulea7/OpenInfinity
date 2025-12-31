@@ -1,4 +1,4 @@
-import { Infinity } from 'lucide-react';
+import { Infinity as InfinityIcon } from 'lucide-react';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { cn } from '../../utils';
 
@@ -53,7 +53,7 @@ export function InfinityLogo() {
             aria-label="Open Infinity navigation"
             title="Infinity"
         >
-            <Infinity
+            <InfinityIcon
                 className={cn(
                     'w-6 h-6',
                     'text-brand-orange-500',

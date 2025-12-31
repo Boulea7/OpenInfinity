@@ -1,12 +1,31 @@
-import { useCallback } from 'react';
+import { useCallback, lazy, Suspense } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { Plus, User, Settings } from 'lucide-react';
 import { SidePanel } from '../ui/SidePanel';
 import { useNavigationStore, type NavigationTab } from '../../stores/navigationStore';
-import { SettingsPanelV2 } from '../Settings/SettingsPanelV2';
-import { AddTab } from './AddTab/AddTab';
-import { MyTab } from './MyTab/MyTab';
 import { cn } from '../../utils';
+
+// Lazy load heavy panel components to reduce initial bundle
+const SettingsPanelV2 = lazy(() =>
+  import('../Settings/SettingsPanelV2').then((m) => ({ default: m.SettingsPanelV2 }))
+);
+const AddTab = lazy(() =>
+  import('./AddTab/AddTab').then((m) => ({ default: m.AddTab }))
+);
+const MyTab = lazy(() =>
+  import('./MyTab/MyTab').then((m) => ({ default: m.MyTab }))
+);
+
+// Simple loading skeleton for panel content
+function PanelSkeleton() {
+  return (
+    <div className="p-4 space-y-4 animate-pulse">
+      <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded-lg w-2/3" />
+      <div className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg" />
+      <div className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg" />
+    </div>
+  );
+}
 
 /**
  * InfinityNavPanel Component
@@ -97,7 +116,9 @@ export function InfinityNavPanel() {
                 className="flex-1 overflow-y-auto no-scrollbar bg-gray-100 dark:bg-gray-950"
                 role="tabpanel"
             >
-                {renderTabContent()}
+                <Suspense fallback={<PanelSkeleton />}>
+                    {renderTabContent()}
+                </Suspense>
             </div>
         </SidePanel>
     );

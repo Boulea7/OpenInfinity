@@ -50,7 +50,7 @@ export function extractDomain(url: string): string {
     return hostname;
   } catch {
     // Fallback: simple extraction
-    const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^\/\?#]+)/);
+    const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^/?#]+)/);
     return match ? match[1] : url;
   }
 }

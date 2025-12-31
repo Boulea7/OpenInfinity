@@ -147,7 +147,8 @@ export async function getCachedResource(
   if (!options?.forceRefresh) {
     try {
       const cached = await db.resourceCache.get(cacheId);
-      if (cached && Date.now() - cached.cachedAt < MAX_AGE_MS) {
+      // Verify URL matches to prevent hash collision issues
+      if (cached && cached.url === url && Date.now() - cached.cachedAt < MAX_AGE_MS) {
         return cached.dataUrl;
       }
     } catch (error) {
@@ -157,10 +158,10 @@ export async function getCachedResource(
 
   // Check if we should attempt download
   if (!shouldRetry(url)) {
-    // Return stale cache if available
+    // Return stale cache if available (with URL verification)
     try {
       const stale = await db.resourceCache.get(cacheId);
-      if (stale) return stale.dataUrl;
+      if (stale && stale.url === url) return stale.dataUrl;
     } catch {
       // Ignore
     }
@@ -198,10 +199,10 @@ export async function getCachedResource(
     console.warn(`[ResourceCache] Failed to download ${url}:`, error);
     recordFailure(url);
 
-    // Return stale cache as fallback
+    // Return stale cache as fallback (with URL verification)
     try {
       const stale = await db.resourceCache.get(cacheId);
-      if (stale) return stale.dataUrl;
+      if (stale && stale.url === url) return stale.dataUrl;
     } catch {
       // Ignore
     }
@@ -244,7 +245,7 @@ export async function clearExpiredResourceCache(): Promise<number> {
 
   if (expired.length > 0) {
     await db.resourceCache.bulkDelete(expired.map((e) => e.id));
-    console.log(`[ResourceCache] Cleared ${expired.length} expired entries`);
+    console.info(`[ResourceCache] Cleared ${expired.length} expired entries`);
   }
 
   return expired.length;
@@ -277,5 +278,5 @@ export async function getResourceCacheStats(): Promise<{
 export async function clearResourceCache(): Promise<void> {
   await db.resourceCache.clear();
   failedResources.clear();
-  console.log('[ResourceCache] All cache cleared');
+  console.info('[ResourceCache] All cache cleared');
 }

@@ -1,11 +1,14 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/shallow';
 import { useSettingsStore, useIconStore, useWallpaperStore } from './stores';
 import { useNavigationStore } from './stores/navigationStore';
 import { useWeatherUiStore } from './stores/weatherUiStore';
 import type { Icon, Folder } from './services/database';
 import { clearExpiredIconCache } from './utils/iconCache';
 import { hasOrigins, PERMISSION_GROUPS } from '../shared/permissions';
+import { applyDocumentLanguage, normalizeUiLanguage } from '../shared/locale';
+import { syncSystemIconTitlesForLanguage } from './services/systemIcons';
 import {
   WallpaperBackground,
   SearchBar,
@@ -15,10 +18,16 @@ import {
   CompactWeather,
   FolderModal,
   WidgetContainer,
-  NotesView,
-  PinnedNotesPanel,
   // ViewSwitcher removed here as it is integrated into SearchBar
 } from './components';
+
+// Lazy load heavy components to reduce initial bundle size (~600KB savings)
+const NotesView = lazy(() =>
+  import('./components/Notes/NotesView').then((m) => ({ default: m.NotesView }))
+);
+const PinnedNotesPanel = lazy(() =>
+  import('./components/Notes/PinnedNotesPanel').then((m) => ({ default: m.PinnedNotesPanel }))
+);
 import { IconEditorSidebar } from './components/Icon/IconEditorSidebar';
 import { InfinityLogo } from './components/Navigation/InfinityLogo';
 import { InfinityNavPanel } from './components/Navigation/InfinityNavPanel';
@@ -31,6 +40,7 @@ import { HomeTodoList } from './components/Widgets/HomeTodoList';
  */
 function App() {
   const { i18n } = useTranslation();
+  // Precise subscriptions to prevent unnecessary re-renders
   const {
     theme,
     language,
@@ -39,10 +49,26 @@ function App() {
     setViewSettings,
     minimalMode,
     minimalModeSettings,
-  } = useSettingsStore();
-  const { loadIcons, isLoading, initializeSystemIcons } = useIconStore();
-  const { openPanel } = useNavigationStore();
-  const isWeatherExpanded = useWeatherUiStore((state) => state.isExpanded);
+  } = useSettingsStore(
+    useShallow((s) => ({
+      theme: s.theme,
+      language: s.language,
+      initializeSettings: s.initializeSettings,
+      viewSettings: s.viewSettings,
+      setViewSettings: s.setViewSettings,
+      minimalMode: s.minimalMode,
+      minimalModeSettings: s.minimalModeSettings,
+    }))
+  );
+  const { loadIcons, isLoading, initializeSystemIcons } = useIconStore(
+    useShallow((s) => ({
+      loadIcons: s.loadIcons,
+      isLoading: s.isLoading,
+      initializeSystemIcons: s.initializeSystemIcons,
+    }))
+  );
+  const openPanel = useNavigationStore((s) => s.openPanel);
+  const isWeatherExpanded = useWeatherUiStore((s) => s.isExpanded);
 
   // layout state
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
@@ -54,8 +80,8 @@ function App() {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [openedFolder, setOpenedFolder] = useState<Folder | null>(null);
 
-  // Shared Search State
-  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  // Search state moved to searchStore to prevent App re-renders
+  // when user types in SearchBar
 
   const handleClockClick = useCallback(() => {
     openPanel('settings', 'clock');
@@ -82,6 +108,10 @@ function App() {
     if (storedLanguage !== language) {
       localStorage.setItem('language', language);
     }
+    applyDocumentLanguage(normalizeUiLanguage(language));
+    syncSystemIconTitlesForLanguage(normalizeUiLanguage(language)).catch((err) => {
+      console.error('[App] Failed to sync system icon titles:', err);
+    });
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
@@ -262,8 +292,6 @@ function App() {
           {/* Persistent Search Bar */}
           <div className="w-full flex justify-center">
             <SearchBar
-              onQueryChange={setGlobalSearchQuery}
-              externalQuery={globalSearchQuery}
               className="mb-6"
               showViewSwitcher={!minimalMode || minimalModeSettings.showViewSwitcher}
             />
@@ -306,12 +334,18 @@ function App() {
               )}
 
               {/* Pinned Notes Panel - hidden in minimal mode */}
-              {!minimalMode && viewSettings.showPinnedNotes && <PinnedNotesPanel />}
+              {!minimalMode && viewSettings.showPinnedNotes && (
+                <Suspense fallback={null}>
+                  <PinnedNotesPanel />
+                </Suspense>
+              )}
             </>
           ) : (
             // Notes View taking remaining space
             <div className="flex-1 h-full min-h-0 overflow-hidden">
-              <NotesView searchQuery={globalSearchQuery} />
+              <Suspense fallback={<div className="animate-pulse h-full w-full bg-white/5 rounded-lg" />}>
+                <NotesView />
+              </Suspense>
             </div>
           )}
         </main>

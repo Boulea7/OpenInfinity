@@ -184,7 +184,7 @@ export function useHistory(): UseHistoryReturn {
       const granted = await requestHistoryPermission();
       setHasPermission(granted);
       return granted;
-    } catch (err) {
+    } catch {
       setError('Permission request failed');
       return false;
     }

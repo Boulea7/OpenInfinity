@@ -4,6 +4,7 @@
  */
 
 import type { HistoryItem } from '../types';
+import { formatRelativeTime as formatRelativeTimeUtil } from '../utils';
 
 /**
  * Safely get Chrome API
@@ -201,21 +202,5 @@ export function getFaviconUrl(url: string): string {
  * Format relative time for history items
  */
 export function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diffMs = now - timestamp;
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMinutes < 1) {
-    return '刚刚';
-  } else if (diffMinutes < 60) {
-    return `${diffMinutes} 分钟前`;
-  } else if (diffHours < 24) {
-    return `${diffHours} 小时前`;
-  } else if (diffDays < 7) {
-    return `${diffDays} 天前`;
-  } else {
-    return new Date(timestamp).toLocaleDateString('zh-CN');
-  }
+  return formatRelativeTimeUtil(timestamp);
 }

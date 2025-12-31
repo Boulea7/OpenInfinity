@@ -49,6 +49,8 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
 
       // TypeScript rules
+      // Disable base rule in favor of the TypeScript-aware version.
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'warn',

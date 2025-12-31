@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getCurrentUiLanguage, getLocaleFromUiLanguage } from '../../shared/locale';
 
 /**
  * Merge Tailwind CSS classes with clsx
@@ -50,7 +51,8 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions
 ): string {
   const d = typeof date === 'number' ? new Date(date) : date;
-  return d.toLocaleDateString('zh-CN', options);
+  const locale = getLocaleFromUiLanguage(getCurrentUiLanguage());
+  return d.toLocaleDateString(locale, options);
 }
 
 /**
@@ -61,7 +63,8 @@ export function formatTime(
   options?: Intl.DateTimeFormatOptions
 ): string {
   const d = typeof date === 'number' ? new Date(date) : date;
-  return d.toLocaleTimeString('zh-CN', {
+  const locale = getLocaleFromUiLanguage(getCurrentUiLanguage());
+  return d.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     ...options,
@@ -73,17 +76,25 @@ export function formatTime(
  */
 export function formatRelativeTime(date: Date | number): string {
   const d = typeof date === 'number' ? new Date(date) : date;
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
+  const locale = getLocaleFromUiLanguage(getCurrentUiLanguage());
+  const lang = getCurrentUiLanguage();
+
+  const now = Date.now();
+  const diffMs = now - d.getTime();
   const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec < 60) {
+    return lang === 'zh' ? '刚刚' : 'Just now';
+  }
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return 'Just now';
-  if (diffMin < 60) return `${diffMin} minutes ago`;
-  if (diffHour < 24) return `${diffHour} hours ago`;
-  if (diffDay < 7) return `${diffDay} days ago`;
+  if (diffMin < 60) return rtf.format(-diffMin, 'minute');
+  if (diffHour < 24) return rtf.format(-diffHour, 'hour');
+  if (diffDay < 7) return rtf.format(-diffDay, 'day');
 
   return formatDate(d);
 }

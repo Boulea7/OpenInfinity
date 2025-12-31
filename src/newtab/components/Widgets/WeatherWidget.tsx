@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/shallow';
 import { Cloud, RefreshCw, Droplets, Wind, Thermometer, ChevronDown, ChevronRight, AlertCircle, MapPin } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
 import { useWeather } from '../../hooks';
@@ -14,7 +15,14 @@ import type { BaseWidgetProps } from '../../types';
  */
 export function WeatherWidget({ isExpanded, onToggleExpand, className, hideHeader }: BaseWidgetProps) {
   const { t } = useTranslation();
-  const { weatherSettings, setWeatherSettings, language } = useSettingsStore();
+  // Precise subscriptions to prevent re-renders from unrelated settings changes
+  const { weatherSettings, setWeatherSettings, language } = useSettingsStore(
+    useShallow((s) => ({
+      weatherSettings: s.weatherSettings,
+      setWeatherSettings: s.setWeatherSettings,
+      language: s.language,
+    }))
+  );
   const { weather, isLoading, error, forceRefresh } = useWeather();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout>>();

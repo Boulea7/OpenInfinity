@@ -9,6 +9,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Heart, ThumbsUp } from 'lucide-react';
 import type { PresetWallpaper } from '../../../data/presetWallpapers';
 
@@ -31,6 +32,7 @@ export const WallpaperCard: React.FC<WallpaperCardProps> = ({
   isLiked,
   likeCount,
 }) => {
+  const { t } = useTranslation();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -83,7 +85,7 @@ export const WallpaperCard: React.FC<WallpaperCardProps> = ({
       {/* Error state */}
       {imageError && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-          <span className="text-sm text-gray-400">加载失败</span>
+          <span className="text-sm text-gray-400">{t('common.loadFailed', 'Load failed')}</span>
         </div>
       )}
 
@@ -131,7 +133,7 @@ export const WallpaperCard: React.FC<WallpaperCardProps> = ({
               : 'bg-black/40 text-white/90 hover:bg-black/60'
             }
           `}
-          title={isFavorited ? '取消收藏' : '收藏'}
+          title={isFavorited ? t('common.unfavorite', 'Unfavorite') : t('common.favorite', 'Favorite')}
         >
           <Heart
             className="w-4 h-4"
@@ -153,7 +155,7 @@ export const WallpaperCard: React.FC<WallpaperCardProps> = ({
               : 'bg-black/40 text-white/90 hover:bg-black/60'
             }
           `}
-          title={isLiked ? '已点赞' : '点赞'}
+          title={isLiked ? t('common.liked', 'Liked') : t('common.like', 'Like')}
         >
           <ThumbsUp
             className="w-3.5 h-3.5"

@@ -76,7 +76,7 @@ export const COMMON_TIMEZONES: TimezoneOption[] = [
 export function getAutoTimezone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  } catch (error) {
+  } catch {
     // Fallback to UTC if detection fails
     return 'UTC';
   }

@@ -33,9 +33,18 @@ export default defineConfig({
       },
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable'],
+          // Core React bundle
+          'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+          // Drag and drop
+          'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          // Data fetching
           'query-vendor': ['@tanstack/react-query'],
+          // Internationalization
+          'i18n-vendor': ['i18next', 'react-i18next'],
+          // Code editor (heavy, lazy loaded in components)
+          'editor-vendor': ['@uiw/react-codemirror', '@codemirror/lang-markdown', '@codemirror/language'],
+          // State management
+          'zustand-vendor': ['zustand'],
         },
       },
     },

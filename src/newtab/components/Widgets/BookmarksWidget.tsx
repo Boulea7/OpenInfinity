@@ -5,12 +5,17 @@ import { useBookmarks } from '../../hooks';
 import { cn } from '../../utils';
 import { openBookmark, getFaviconUrl } from '../../services/bookmarks';
 import type { BaseWidgetProps } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { normalizeUiLanguage } from '../../../shared/locale';
+import { tr } from '../../../shared/tr';
 
 /**
  * Bookmarks Widget component
  * Displays recent bookmarks with permission management
  */
 export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
+  const { i18n } = useTranslation();
+  const lang = normalizeUiLanguage(i18n.language);
   const { viewSettings, openBehavior } = useSettingsStore();
   const { bookmarks, hasPermission, isLoading, error, requestPermission, refresh } = useBookmarks();
 
@@ -48,7 +53,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
       >
         <div className="flex items-center gap-2">
           <Bookmark className="w-5 h-5 text-white/80" />
-          <span className="font-medium text-white">书签</span>
+          <span className="font-medium text-white">{tr('书签', 'Bookmarks', lang)}</span>
           {hasPermission && bookmarks.length > 0 && (
             <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
               {bookmarks.length}
@@ -63,7 +68,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
                 refresh();
               }}
               className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
-              title="刷新书签"
+              title={tr('刷新书签', 'Refresh', lang)}
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -84,7 +89,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
             <div className="flex flex-col items-center justify-center py-6">
               <Lock className="w-8 h-8 text-white/40 mb-2" />
               <p className="text-sm text-white/60 text-center mb-3">
-                需要书签权限才能显示
+                {tr('需要书签权限才能显示', 'Bookmark permission is required', lang)}
               </p>
               {error && (
                 <p className="text-xs text-red-400 text-center mb-2">{error}</p>
@@ -93,7 +98,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
                 onClick={handleRequestPermission}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
-                授权访问书签
+                {tr('授权访问书签', 'Grant access', lang)}
               </button>
             </div>
           )}
@@ -102,7 +107,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
           {hasPermission && isLoading && bookmarks.length === 0 && (
             <div className="flex flex-col items-center justify-center py-6">
               <RefreshCw className="w-8 h-8 text-white/40 animate-spin mb-2" />
-              <p className="text-sm text-white/60">正在加载书签...</p>
+              <p className="text-sm text-white/60">{tr('正在加载书签...', 'Loading bookmarks...', lang)}</p>
             </div>
           )}
 
@@ -115,7 +120,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
                 onClick={refresh}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
-                重试
+                {tr('重试', 'Retry', lang)}
               </button>
             </div>
           )}
@@ -164,8 +169,8 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
           {hasPermission && !isLoading && bookmarks.length === 0 && !error && (
             <div className="text-center py-6 text-white/40">
               <Bookmark className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">暂无书签</p>
-              <p className="text-xs mt-1">添加一些书签后会在这里显示</p>
+              <p className="text-sm">{tr('暂无书签', 'No bookmarks', lang)}</p>
+              <p className="text-xs mt-1">{tr('添加一些书签后会在这里显示', 'Add some bookmarks and they will show up here', lang)}</p>
             </div>
           )}
         </div>

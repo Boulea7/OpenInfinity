@@ -9,6 +9,7 @@ import { getWeatherIcon } from '../services/weather';
 import { WeatherWidget } from './Widgets/WeatherWidget';
 import { cn } from '../utils';
 import { ensureFeaturePermissions, PERMISSION_GROUPS } from '../../shared/permissions';
+import { getWeatherConditionI18n } from '../utils/weatherI18n';
 
 interface CompactWeatherProps {
   className?: string;
@@ -86,6 +87,7 @@ export function CompactWeather({ className }: CompactWeatherProps) {
   const unitLabel = weatherSettings.unit === 'celsius' ? '°C' : '°F';
   const tempText = displayWeather ? `${displayWeather.current.temperature}${unitLabel}` : '';
   const WeatherIcon = displayWeather ? getWeatherIcon(displayWeather.current.conditionCode) : null;
+  const conditionText = displayWeather ? getWeatherConditionI18n(displayWeather.current.conditionCode, t) : '';
 
   return (
     <div className={cn('relative', className)}>
@@ -141,8 +143,8 @@ export function CompactWeather({ className }: CompactWeatherProps) {
               toggle();
             }
           }}
-          title={displayWeather ? `${displayWeather.location.name} · ${displayWeather.current.condition}` : t('weather.loading')}
-          aria-label={displayWeather ? `Weather: ${displayWeather.current.condition}, ${tempText}` : t('weather.loading')}
+          title={displayWeather ? `${displayWeather.location.name} · ${conditionText}` : t('weather.loading')}
+          aria-label={displayWeather ? `${conditionText}, ${tempText}` : t('weather.loading')}
           aria-expanded={isExpanded}
         >
           {WeatherIcon ? (

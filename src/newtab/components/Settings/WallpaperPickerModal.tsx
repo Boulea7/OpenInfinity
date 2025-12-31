@@ -51,29 +51,31 @@ const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 // Color filter options (aligned with presetWallpapers.primaryColor values)
+// Labels are translation keys - use getColorLabel() inside component
 const COLOR_OPTIONS = [
-  { id: 'any', color: 'transparent', label: '全部' },
-  { id: 'red', color: '#c00018', label: '红色' },
-  { id: 'orange', color: '#de8930', label: '橙色' },
-  { id: 'yellow', color: '#f7d946', label: '黄色' },
-  { id: 'green', color: '#22c55e', label: '绿色' },
-  { id: 'blue', color: '#3b82f6', label: '蓝色' },
-  { id: 'purple', color: '#a855f7', label: '紫色' },
-  { id: 'black', color: '#0f172a', label: '深色' },
+  { id: 'any', color: 'transparent' },
+  { id: 'red', color: '#c00018' },
+  { id: 'orange', color: '#de8930' },
+  { id: 'yellow', color: '#f7d946' },
+  { id: 'green', color: '#22c55e' },
+  { id: 'blue', color: '#3b82f6' },
+  { id: 'purple', color: '#a855f7' },
+  { id: 'black', color: '#0f172a' },
 ];
 
 // Tag options for filtering (Infinity Pro standard 10 tags)
+// Labels are translation keys - use getTagLabel() inside component
 const TAG_OPTIONS = [
-  { id: 'nature', label: '自然' },
-  { id: 'ocean', label: '海洋' },
-  { id: 'architecture', label: '建筑' },
-  { id: 'animals', label: '动物' },
-  { id: 'travel', label: '旅行' },
-  { id: 'food-drink', label: '美食' },
-  { id: 'anime', label: '动漫' },
-  { id: 'athletics', label: '运动' },
-  { id: 'technology', label: '技术' },
-  { id: 'street', label: '街头' },
+  { id: 'nature' },
+  { id: 'ocean' },
+  { id: 'architecture' },
+  { id: 'animals' },
+  { id: 'travel' },
+  { id: 'food-drink' },
+  { id: 'anime' },
+  { id: 'athletics' },
+  { id: 'technology' },
+  { id: 'street' },
 ];
 
 // Get selected source from localStorage (single select mode)
@@ -255,10 +257,11 @@ type SingleSubTab = 'cloud' | 'local' | 'solid' | 'recent' | 'favorites';
 type SortOption = 'default' | 'popularity' | 'recent';
 
 // Sort options for cloud wallpapers
+// Labels are translation keys - use getSortLabel() inside component
 const SORT_OPTIONS = [
-  { id: 'default' as const, label: '默认排序' },
-  { id: 'popularity' as const, label: '热度排序' },
-  { id: 'recent' as const, label: '收录时间' },
+  { id: 'default' as const },
+  { id: 'popularity' as const },
+  { id: 'recent' as const },
 ];
 
 export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
@@ -267,6 +270,46 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Translation helpers for filter options
+  const getColorLabel = (colorId: string): string => {
+    const colorLabels: Record<string, string> = {
+      any: t('settings.wallpaper.colors.any', 'All'),
+      red: t('settings.wallpaper.colors.red', 'Red'),
+      orange: t('settings.wallpaper.colors.orange', 'Orange'),
+      yellow: t('settings.wallpaper.colors.yellow', 'Yellow'),
+      green: t('settings.wallpaper.colors.green', 'Green'),
+      blue: t('settings.wallpaper.colors.blue', 'Blue'),
+      purple: t('settings.wallpaper.colors.purple', 'Purple'),
+      black: t('settings.wallpaper.colors.black', 'Dark'),
+    };
+    return colorLabels[colorId] || colorId;
+  };
+
+  const getTagLabel = (tagId: string): string => {
+    const tagLabels: Record<string, string> = {
+      nature: t('settings.wallpaper.tags.nature', 'Nature'),
+      ocean: t('settings.wallpaper.tags.ocean', 'Ocean'),
+      architecture: t('settings.wallpaper.tags.architecture', 'Architecture'),
+      animals: t('settings.wallpaper.tags.animals', 'Animals'),
+      travel: t('settings.wallpaper.tags.travel', 'Travel'),
+      'food-drink': t('settings.wallpaper.tags.food-drink', 'Food'),
+      anime: t('settings.wallpaper.tags.anime', 'Anime'),
+      athletics: t('settings.wallpaper.tags.athletics', 'Sports'),
+      technology: t('settings.wallpaper.tags.technology', 'Tech'),
+      street: t('settings.wallpaper.tags.street', 'Street'),
+    };
+    return tagLabels[tagId] || tagId;
+  };
+
+  const getSortLabel = (sortId: SortOption): string => {
+    const sortLabels: Record<SortOption, string> = {
+      default: t('settings.wallpaper.sort.default', 'Default'),
+      popularity: t('settings.wallpaper.sort.popularity', 'Popular'),
+      recent: t('settings.wallpaper.sort.recent', 'Recent'),
+    };
+    return sortLabels[sortId] || sortId;
+  };
 
   // State
   const [mainTab, setMainTab] = useState<MainTab>('single');
@@ -618,7 +661,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                       <line x1="4" y1="12" x2="12" y2="12" />
                       <line x1="4" y1="18" x2="8" y2="18" />
                     </svg>
-                    {SORT_OPTIONS.find(o => o.id === sortBy)?.label || '默认排序'}
+                    {getSortLabel(sortBy)}
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -633,7 +676,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                         onClick={() => setShowSortMenu(false)}
                       />
                       <div className="absolute right-0 top-full mt-1 z-20 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 min-w-[120px]">
-                        {SORT_OPTIONS.map(({ id, label }) => (
+                        {SORT_OPTIONS.map(({ id }) => (
                           <button
                             key={id}
                             type="button"
@@ -649,7 +692,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                               }
                             `}
                           >
-                            {label}
+                            {getSortLabel(id)}
                           </button>
                         ))}
                       </div>
@@ -668,7 +711,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                     <div className="mb-5">
                       <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">{t('settings.wallpaper.picker.colorFilter', '颜色')}</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {COLOR_OPTIONS.slice(1).map(({ id, color, label }) => (
+                        {COLOR_OPTIONS.slice(1).map(({ id, color }) => (
                           <button
                             key={id}
                             type="button"
@@ -678,7 +721,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                               ${selectedColor === id ? 'ring-2 ring-offset-1 ring-gray-400' : 'hover:scale-110'}
                             `}
                             style={{ backgroundColor: color }}
-                            title={label}
+                            title={getColorLabel(id)}
                           />
                         ))}
                       </div>
@@ -688,7 +731,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                     <div>
                       <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">{t('settings.wallpaper.picker.tagFilter', '标签')}</div>
                       <div className="flex flex-wrap gap-1.5">
-                        {TAG_OPTIONS.map(({ id, label }) => (
+                        {TAG_OPTIONS.map(({ id }) => (
                           <button
                             key={id}
                             type="button"
@@ -702,7 +745,7 @@ export const WallpaperPickerModal: React.FC<WallpaperPickerModalProps> = ({
                               }
                             `}
                           >
-                            {t(`settings.wallpaper.tags.${id}`, label)}
+                            {getTagLabel(id)}
                           </button>
                         ))}
                       </div>

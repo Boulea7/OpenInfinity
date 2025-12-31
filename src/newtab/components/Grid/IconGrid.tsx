@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { normalizeUiLanguage } from '../../../shared/locale';
+import { tr } from '../../../shared/tr';
 import { useShallow } from 'zustand/shallow';
 import {
   DndContext,
@@ -58,7 +60,8 @@ export function IconGrid({
   onEditIcon,
   onOpenFolder,
 }: IconGridProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = normalizeUiLanguage(i18n.language);
   const {
     icons,
     folders,
@@ -134,8 +137,9 @@ export function IconGrid({
   const [activeItem, setActiveItem] = useState<GridItem | null>(null);
 
   // P1-1: Hover merge state (500ms timer)
-  const [hoverTimer, setHoverTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const [hoverTarget, setHoverTarget] = useState<string | null>(null);
+  // Use refs instead of state to avoid re-renders during high-frequency drag events
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTargetRef = useRef<string | null>(null);
   const [pendingMerge, setPendingMerge] = useState<{
     icon1Id: string;
     icon2Id: string;
@@ -145,11 +149,11 @@ export function IconGrid({
 
   useEffect(() => {
     return () => {
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
       }
     };
-  }, [hoverTimer]);
+  }, []);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -375,15 +379,16 @@ export function IconGrid({
   }, [pageItems]);
 
   // Handle drag over (P1-1: 500ms hover merge)
+  // Using refs for timer/target to avoid re-renders during high-frequency drag events
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
       // Clear timer when not over any item or over itself
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        setHoverTimer(null);
-        setHoverTarget(null);
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+        hoverTargetRef.current = null;
       }
       if (pendingMerge) {
         setPendingMerge(null);
@@ -402,9 +407,9 @@ export function IconGrid({
       !overItem.folderId
     ) {
       const nextHoverTarget = String(over.id);
-      if (hoverTarget !== nextHoverTarget) {
+      if (hoverTargetRef.current !== nextHoverTarget) {
         // Clear previous timer
-        if (hoverTimer) clearTimeout(hoverTimer);
+        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
         if (pendingMerge) setPendingMerge(null);
 
         // Start new timer
@@ -418,21 +423,21 @@ export function IconGrid({
           });
         }, 500);
 
-        setHoverTimer(timer);
-        setHoverTarget(nextHoverTarget);
+        hoverTimerRef.current = timer;
+        hoverTargetRef.current = nextHoverTarget;
       }
     } else {
       // Not icon-over-icon case, clear timer
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        setHoverTimer(null);
-        setHoverTarget(null);
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+        hoverTargetRef.current = null;
       }
       if (pendingMerge) {
         setPendingMerge(null);
       }
     }
-  }, [pageItems, hoverTimer, hoverTarget, pendingMerge]);
+  }, [pageItems, pendingMerge]);
 
   // Handle drag end
   const handleDragEnd = useCallback(
@@ -441,11 +446,11 @@ export function IconGrid({
 
       setActiveItem(null);
 
-      // P1-1: Clear hover timer
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        setHoverTimer(null);
-        setHoverTarget(null);
+      // P1-1: Clear hover timer (using ref for performance)
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+        hoverTargetRef.current = null;
       }
 
       // P1-2: Check if pending merge (hover 500ms completed)
@@ -480,7 +485,7 @@ export function IconGrid({
         await reorderItems(active.id as string, over.id as string);
       }
     },
-    [pageItems, activeItem, addToFolder, reorderItems, hoverTimer, pendingMerge]
+    [pageItems, activeItem, addToFolder, reorderItems, pendingMerge]
   );
 
   // Handle context menu
@@ -524,7 +529,7 @@ export function IconGrid({
 
       // Show toast for system icons
       if (isSystemIconBeingDeleted) {
-        showToast('快捷方式已隐藏，可在设置 > 系统快捷方式中恢复');
+        showToast(tr('快捷方式已隐藏，可在设置 > 系统快捷方式中恢复', 'Shortcut hidden. You can restore it in Settings > System Shortcuts.', lang));
       }
     }, DELETE_ANIMATION_DURATION);
   }, [deleteIcon, DELETE_ANIMATION_DURATION, icons, showToast]);

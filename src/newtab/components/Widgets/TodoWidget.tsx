@@ -1,15 +1,20 @@
 import { useState, useCallback, useRef } from 'react';
 import { CheckSquare, Square, Plus, Trash2, Edit2, ChevronDown, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../stores';
 import { useTodos } from '../../hooks';
-import { cn } from '../../utils';
+import { cn, formatDate } from '../../utils';
 import type { BaseWidgetProps } from '../../types';
+import { normalizeUiLanguage } from '../../../shared/locale';
+import { tr } from '../../../shared/tr';
 
 /**
  * Todo Widget component
  * Displays and manages todo items within the sidebar
  */
 export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
+  const { i18n } = useTranslation();
+  const lang = normalizeUiLanguage(i18n.language);
   const { viewSettings } = useSettingsStore();
   const { todos, addTodo, toggleTodo, deleteTodo, updateTodo, clearCompleted } = useTodos();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,14 +47,14 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
 
   // Handle delete todo - must be defined before early return
   const handleDeleteTodo = useCallback(async (id: string) => {
-    if (confirm('确定要删除这个待办事项吗？')) {
+    if (confirm(tr('确定要删除这个待办事项吗？', 'Are you sure you want to delete this todo?', lang))) {
       try {
         await deleteTodo(id);
       } catch (error) {
         console.error('Failed to delete todo:', error);
       }
     }
-  }, [deleteTodo]);
+  }, [deleteTodo, lang]);
 
   // Handle start editing - must be defined before early return
   const handleStartEditing = useCallback((id: string, text: string) => {
@@ -120,24 +125,6 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
     }
   };
 
-  // Format date
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今天';
-    } else if (diffDays === 1) {
-      return '昨天';
-    } else if (diffDays < 7) {
-      return `${diffDays} 天前`;
-    } else {
-      return date.toLocaleDateString('zh-CN');
-    }
-  };
-
   return (
     <div className={cn('bg-white/5 rounded-lg overflow-hidden border border-white/10', className)}>
       {/* Header */}
@@ -147,7 +134,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
       >
         <div className="flex items-center gap-2">
           <CheckSquare className="w-5 h-5 text-white/80" />
-          <span className="font-medium text-white">待办事项</span>
+          <span className="font-medium text-white">{tr('待办事项', 'Todo', lang)}</span>
           <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
             {todos.filter(t => !t.done).length}
           </span>
@@ -159,7 +146,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
               setShowAddModal(true);
             }}
             className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
-            title="添加待办"
+            title={tr('添加待办', 'Add todo', lang)}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -183,7 +170,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                 value={newTodoText}
                 onChange={(e) => setNewTodoText(e.target.value)}
                 onKeyDown={handleAddKeydown}
-                placeholder="添加新待办事项..."
+                placeholder={tr('添加新待办事项...', 'Add a new todo...', lang)}
                 className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/15"
                 autoFocus
               />
@@ -193,7 +180,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                   disabled={!newTodoText.trim()}
                   className="flex-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
                 >
-                  添加
+                  {tr('添加', 'Add', lang)}
                 </button>
                 <button
                   onClick={() => {
@@ -202,7 +189,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                   }}
                   className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-sm rounded transition-colors"
                 >
-                  取消
+                  {tr('取消', 'Cancel', lang)}
                 </button>
               </div>
             </div>
@@ -213,8 +200,8 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
             {todos.length === 0 ? (
               <div className="text-center py-6 text-white/40">
                 <CheckSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">暂无待办事项</p>
-                <p className="text-xs mt-1">点击上方 + 按钮添加</p>
+                <p className="text-sm">{tr('暂无待办事项', 'No todos yet', lang)}</p>
+                <p className="text-xs mt-1">{tr('点击上方 + 按钮添加', 'Click + above to add one', lang)}</p>
               </div>
             ) : (
               todos.map((todo) => (
@@ -262,7 +249,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                     {/* Metadata */}
                     {todo.dueDate && (
                       <div className="text-xs text-white/40 mt-1">
-                        截止: {formatDate(todo.dueDate)}
+                        {tr('截止', 'Due', lang)}: {formatDate(todo.dueDate)}
                       </div>
                     )}
                   </div>
@@ -270,7 +257,9 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                   {/* Priority indicator */}
                   {todo.priority && todo.priority !== 'medium' && (
                     <div className={cn('text-xs', getPriorityColor(todo.priority))}>
-                      {todo.priority === 'high' ? '高' : '低'}
+                      {todo.priority === 'high'
+                        ? tr('高', 'High', lang)
+                        : tr('低', 'Low', lang)}
                     </div>
                   )}
 
@@ -280,7 +269,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                       <button
                         onClick={() => handleStartEditing(todo.id, todo.text)}
                         className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
-                        title="编辑"
+                        title={tr('编辑', 'Edit', lang)}
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
@@ -288,7 +277,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
                     <button
                       onClick={() => handleDeleteTodo(todo.id)}
                       className="p-1 text-white/60 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-                      title="删除"
+                      title={tr('删除', 'Delete', lang)}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -304,7 +293,7 @@ export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidget
               onClick={clearCompleted}
               className="w-full mt-3 p-2 text-xs text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
             >
-              清除已完成 ({todos.filter(t => t.done).length})
+              {tr('清除已完成', 'Clear completed', lang)} ({todos.filter(t => t.done).length})
             </button>
           )}
         </div>

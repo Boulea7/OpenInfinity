@@ -291,7 +291,7 @@ class GmailService {
     const poll = async () => {
       // Prevent concurrent poll() calls (race condition if request takes longer than interval)
       if (this.isPollingInFlight) {
-        console.log('[Gmail] Skipping poll - previous request still in flight');
+        console.info('[Gmail] Skipping poll - previous request still in flight');
         return;
       }
 

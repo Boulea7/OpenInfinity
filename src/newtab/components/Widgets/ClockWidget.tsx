@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/shallow';
 import { useSettingsStore } from '../../stores';
 import { getAutoTimezone } from '../../data/timezones';
 import { cn } from '../../utils';
@@ -17,17 +18,25 @@ interface ClockWidgetProps {
  */
 export function ClockWidget({ className, showDate = false, onClick }: ClockWidgetProps) {
   const { i18n } = useTranslation();
-  const { viewSettings, fontSettings, clockSettings } = useSettingsStore();
+  // Precise subscriptions to prevent re-renders from unrelated settings changes
+  const { viewSettings, fontSettings, clockSettings } = useSettingsStore(
+    useShallow((s) => ({
+      viewSettings: s.viewSettings,
+      fontSettings: s.fontSettings,
+      clockSettings: s.clockSettings,
+    }))
+  );
   const [time, setTime] = useState(new Date());
 
-  // Update time every second
+  // Dynamic tick interval: 1s when showing seconds, 60s otherwise (saves CPU)
   useEffect(() => {
+    const interval = clockSettings.showSeconds ? 1000 : 60000;
     const timer = setInterval(() => {
       setTime(new Date());
-    }, 1000);
+    }, interval);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [clockSettings.showSeconds]);
 
   if (!viewSettings.showClock) return null;
 

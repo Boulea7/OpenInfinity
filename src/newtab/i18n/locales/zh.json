@@ -134,7 +134,30 @@
         "dark": "暗色",
         "space": "太空",
         "architecture": "建筑",
-        "landscape": "风景"
+        "landscape": "风景",
+        "ocean": "海洋",
+        "animals": "动物",
+        "travel": "旅行",
+        "food-drink": "美食",
+        "anime": "动漫",
+        "athletics": "运动",
+        "technology": "技术",
+        "street": "街头"
+      },
+      "colors": {
+        "any": "全部",
+        "red": "红色",
+        "orange": "橙色",
+        "yellow": "黄色",
+        "green": "绿色",
+        "blue": "蓝色",
+        "purple": "紫色",
+        "black": "深色"
+      },
+      "sort": {
+        "default": "默认排序",
+        "popularity": "热度排序",
+        "recent": "收录时间"
       },
       "source": "壁纸来源",
       "sources": {
@@ -390,6 +413,11 @@
     "refresh": "刷新",
     "updatedAt": "更新于",
     "forecast": "未来预报",
+    "noData": "暂无天气数据",
+    "windSpeed": "风速",
+    "today": "今天",
+    "tomorrow": "明天",
+    "lastUpdate": "上次更新",
     "days": {
       "sunday": "星期日",
       "monday": "星期一",
@@ -480,6 +508,40 @@
     "unsavedChangesConfirm": "有未保存的更改，确定要关闭吗？",
     "emptyNote": "（空便签）"
   },
+  "history": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "selectTimeRange": "选择时间范围",
+    "range": {
+      "oneDay": "最近1天",
+      "threeDays": "最近3天",
+      "oneWeek": "最近1周",
+      "twoWeeks": "最近2周",
+      "oneMonth": "最近1月",
+      "allHistory": "全部历史"
+    }
+  },
+  "todo": {
+    "priority": {
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "none": "无"
+    },
+    "addPlaceholder": "添加新待办... 使用 #标签 分类 (按回车添加)",
+    "empty": "暂无待办事项",
+    "completed": "已完成",
+    "noCompleted": "暂无已完成事项",
+    "clearCompleted": "清除所有已完成",
+    "confirmClear": "确定清除？(再次点击确认)"
+  },
+  "sidebar": {
+    "todo": "待办事项",
+    "bookmarks": "书签",
+    "history": "历史记录",
+    "extensions": "扩展管理",
+    "weather": "天气详情"
+  },
   "contextMenu": {
     "open": "打开",
     "edit": "编辑",
@@ -500,6 +562,12 @@
     "save": "保存",
     "delete": "删除",
     "close": "关闭",
-    "today": "今天"
+    "today": "今天",
+    "loadFailed": "加载失败",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏",
+    "like": "点赞",
+    "liked": "已点赞",
+    "retry": "重试"
   }
 }

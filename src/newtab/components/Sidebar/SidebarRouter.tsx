@@ -5,7 +5,8 @@
  * Uses SidePanel for consistent slide-out behavior.
  */
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { SidePanel } from '../ui/SidePanel';
 
@@ -28,23 +29,21 @@ function SidebarLoading() {
   );
 }
 
-/**
- * Sidebar title mapping
- * Note: 'notes' removed - uses NotesView instead of sidebar
- */
-const SIDEBAR_TITLES: Record<string, string> = {
-  todo: '待办事项',
-  bookmarks: '书签',
-  history: '历史记录',
-  extensions: '扩展管理',
-  weather: '天气详情',
-};
-
 export function SidebarRouter() {
+  const { t } = useTranslation();
   const { sidePanel, closeSidePanel } = useNavigationStore();
 
+  // Sidebar title mapping with i18n
+  const sidebarTitles = useMemo(() => ({
+    todo: t('sidebar.todo', 'Todo'),
+    bookmarks: t('sidebar.bookmarks', 'Bookmarks'),
+    history: t('sidebar.history', 'History'),
+    extensions: t('sidebar.extensions', 'Extensions'),
+    weather: t('sidebar.weather', 'Weather'),
+  }), [t]);
+
   const isOpen = sidePanel !== 'none';
-  const title = sidePanel !== 'none' ? SIDEBAR_TITLES[sidePanel] : '';
+  const title = sidePanel !== 'none' ? sidebarTitles[sidePanel] || '' : '';
 
   const renderContent = () => {
     switch (sidePanel) {

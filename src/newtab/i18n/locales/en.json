@@ -134,7 +134,30 @@
         "dark": "Dark",
         "space": "Space",
         "architecture": "Architecture",
-        "landscape": "Landscape"
+        "landscape": "Landscape",
+        "ocean": "Ocean",
+        "animals": "Animals",
+        "travel": "Travel",
+        "food-drink": "Food",
+        "anime": "Anime",
+        "athletics": "Sports",
+        "technology": "Tech",
+        "street": "Street"
+      },
+      "colors": {
+        "any": "All",
+        "red": "Red",
+        "orange": "Orange",
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "purple": "Purple",
+        "black": "Dark"
+      },
+      "sort": {
+        "default": "Default",
+        "popularity": "Popular",
+        "recent": "Recent"
       },
       "source": "Wallpaper Source",
       "sources": {
@@ -382,6 +405,11 @@
     "refresh": "Refresh",
     "updatedAt": "Updated at",
     "forecast": "Forecast",
+    "noData": "No weather data",
+    "windSpeed": "Wind",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "lastUpdate": "Last update",
     "days": {
       "sunday": "Sunday",
       "monday": "Monday",
@@ -472,6 +500,40 @@
     "unsavedChangesConfirm": "You have unsaved changes. Are you sure you want to close?",
     "emptyNote": "(Empty note)"
   },
+  "history": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "selectTimeRange": "Select time range",
+    "range": {
+      "oneDay": "Last day",
+      "threeDays": "Last 3 days",
+      "oneWeek": "Last week",
+      "twoWeeks": "Last 2 weeks",
+      "oneMonth": "Last month",
+      "allHistory": "All history"
+    }
+  },
+  "todo": {
+    "priority": {
+      "high": "High",
+      "medium": "Med",
+      "low": "Low",
+      "none": "None"
+    },
+    "addPlaceholder": "Add new todo... Use #tag for categories (Enter to add)",
+    "empty": "No todos yet",
+    "completed": "Completed",
+    "noCompleted": "No completed items",
+    "clearCompleted": "Clear all completed",
+    "confirmClear": "Click again to confirm"
+  },
+  "sidebar": {
+    "todo": "Todo",
+    "bookmarks": "Bookmarks",
+    "history": "History",
+    "extensions": "Extensions",
+    "weather": "Weather"
+  },
   "contextMenu": {
     "open": "Open",
     "edit": "Edit",
@@ -492,6 +554,12 @@
     "save": "Save",
     "delete": "Delete",
     "close": "Close",
-    "today": "Today"
+    "today": "Today",
+    "loadFailed": "Load failed",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
+    "like": "Like",
+    "liked": "Liked",
+    "retry": "Retry"
   }
 }

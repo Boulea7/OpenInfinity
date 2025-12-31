@@ -4,6 +4,9 @@ import { db } from '../services/database';
 import { useSettingsStore } from '../stores';
 import type { Note } from '../services/database';
 
+// Precise selector to only subscribe to widgetSettings
+const selectWidgetSettings = (s: ReturnType<typeof useSettingsStore.getState>) => s.widgetSettings;
+
 /**
  * Hook for managing notes
  * Provides CRUD operations and real-time data synchronization
@@ -23,7 +26,8 @@ export interface UseNotesReturn {
  * Uses Dexie's useLiveQuery for real-time database synchronization
  */
 export function useNotes(): UseNotesReturn {
-  const { widgetSettings } = useSettingsStore();
+  // Precise subscription to prevent re-renders from unrelated settings changes
+  const widgetSettings = useSettingsStore(selectWidgetSettings);
 
   // Real-time query for notes
   const notes = useLiveQuery(() => {

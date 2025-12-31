@@ -312,15 +312,6 @@ export interface ImportResult {
 }
 
 /**
- * Permission status
- */
-export interface PermissionStatus {
-  bookmarks: boolean;
-  history: boolean;
-  geolocation: boolean;
-}
-
-/**
  * Storage usage info
  */
 export interface StorageUsage {

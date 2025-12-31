@@ -202,7 +202,7 @@ export async function getLocationWithIPFallback(): Promise<LocationData> {
       // Fall back to IP-based location
       const location = await getLocationByIP();
       return location;
-    } catch (ipError) {
+    } catch {
       console.error('Both location methods failed');
       throw new Error('Failed to obtain location. Please check your network connection.');
     }

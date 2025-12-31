@@ -74,7 +74,7 @@ export class WeatherManager {
 
         // Log success with provider info (helpful for debugging)
         if (i > 0) {
-          console.log(`[WeatherManager] Successfully fetched weather using fallback provider: ${provider.name}`);
+          console.info(`[WeatherManager] Successfully fetched weather using fallback provider: ${provider.name}`);
         }
 
         // Fetch city name via reverse geocoding
@@ -83,7 +83,7 @@ export class WeatherManager {
           if (cityName) {
             weatherData.location.name = cityName;
           }
-        } catch (error) {
+        } catch {
           // Silently use default location name
           console.debug('[WeatherManager] Geocoding failed, using default location name');
         }

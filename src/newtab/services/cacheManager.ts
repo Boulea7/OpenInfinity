@@ -43,7 +43,7 @@ export interface CacheStats {
  */
 export async function clearWeatherCache(): Promise<void> {
   await db.weatherCache.clear();
-  console.log('[CacheManager] Weather cache cleared');
+  console.info('[CacheManager] Weather cache cleared');
 }
 
 /**
@@ -51,7 +51,7 @@ export async function clearWeatherCache(): Promise<void> {
  */
 export function clearGeocodeCache(): void {
   localStorage.removeItem('geocode-cache-v1');
-  console.log('[CacheManager] Geocode cache cleared');
+  console.info('[CacheManager] Geocode cache cleared');
 }
 
 /**
@@ -59,7 +59,7 @@ export function clearGeocodeCache(): void {
  */
 export function clearSearchEngineIconCache(): void {
   localStorage.removeItem('engine-icon-cache-v1');
-  console.log('[CacheManager] Search engine icon cache cleared');
+  console.info('[CacheManager] Search engine icon cache cleared');
 }
 
 /**
@@ -68,7 +68,7 @@ export function clearSearchEngineIconCache(): void {
 export async function clearAllIconCaches(): Promise<void> {
   clearSearchEngineIconCache();
   clearGeocodeCache();
-  console.log('[CacheManager] All icon caches cleared');
+  console.info('[CacheManager] All icon caches cleared');
 }
 
 /**
@@ -79,7 +79,7 @@ export async function clearAllCaches(): Promise<void> {
   await clearResourceCache();
   clearGeocodeCache();
   clearSearchEngineIconCache();
-  console.log('[CacheManager] All caches cleared');
+  console.info('[CacheManager] All caches cleared');
 }
 
 /**
@@ -117,5 +117,5 @@ export async function clearExpiredCaches(): Promise<void> {
   clearExpiredIconCache();
   clearExpiredGeocodeCache();
   await clearExpiredResourceCache();
-  console.log('[CacheManager] Expired caches cleared');
+  console.info('[CacheManager] Expired caches cleared');
 }

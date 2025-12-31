@@ -369,7 +369,7 @@ const defaultSettings: SettingsState = {
   searchSettings: {
     hidden: false,
     showSuggestions: true,
-    placeholder: 'Search the web or type a URL...',
+    placeholder: '搜索或输入网址',
     engines: defaultSearchEngines,
     defaultEngine: getSmartDefaultEngine(), // Smart default based on region
     showButton: false,

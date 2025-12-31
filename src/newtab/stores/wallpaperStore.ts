@@ -215,6 +215,7 @@ interface WallpaperState {
 
   // Loading state
   isLoading: boolean;
+  isInitialized: boolean;  // Prevents duplicate initialization calls
   error: string | null;
 
   // Next wallpaper preloading (in-memory, not persisted)
@@ -322,12 +323,15 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
       likedWallpapers: [],
       favoritedPresets: [],
       isLoading: false,
+      isInitialized: false,
       error: null,
       preloadedNext: null,
       isPreloadingNext: false,
 
       loadWallpaper: async () => {
-        set({ isLoading: true, error: null });
+        // Prevent duplicate initialization calls (race condition fix)
+        if (get().isInitialized) return;
+        set({ isLoading: true, isInitialized: true, error: null });
         try {
           // Load the most recent wallpaper from DB
           const wallpapers = await db.wallpapers.orderBy('createdAt').reverse().first();

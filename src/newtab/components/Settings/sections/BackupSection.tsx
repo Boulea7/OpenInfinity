@@ -131,7 +131,7 @@ export const BackupSection: React.FC = () => {
           url: link.href,
         }));
 
-        console.log('Imported bookmarks:', bookmarks);
+        console.info('Imported bookmarks:', bookmarks);
         // TODO: Save bookmarks to store
         alert(t('settings.backup.bookmarkSuccess', `成功导入 ${bookmarks.length} 个书签`));
       } catch (error) {

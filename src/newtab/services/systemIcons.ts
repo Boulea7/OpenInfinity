@@ -6,6 +6,7 @@
  */
 
 import { db, type Icon, type SystemIconId } from './database';
+import { getCurrentUiLanguage, type UiLanguage } from '../../shared/locale';
 
 /**
  * System icon action types
@@ -160,6 +161,7 @@ export async function injectSystemIcons(
 
   const iconsToInject: Icon[] = [];
   let position = 0;
+  const lang = getCurrentUiLanguage();
 
   // Ensure gridColumns is at least 1 to prevent division issues
   const columns = Math.max(1, gridColumns);
@@ -179,7 +181,7 @@ export async function injectSystemIcons(
     const icon: Icon = {
       id: def.id, // Use system icon ID as database ID
       type: 'icon',
-      title: def.name,
+      title: lang === 'zh' ? def.name : def.nameEn,
       url: `system://${def.id}`, // Special URL scheme for system icons
       icon: {
         type: 'system',
@@ -322,6 +324,34 @@ export async function getHiddenSystemIcons(): Promise<Icon[]> {
 }
 
 /**
+ * Keep system icon titles in sync with the selected UI language.
+ * System icon titles are not user content and should follow the UI language.
+ */
+export async function syncSystemIconTitlesForLanguage(lang: UiLanguage): Promise<void> {
+  const allIcons = await db.icons.toArray();
+  const systemIcons = allIcons.filter((icon) => icon.isSystemIcon === true && !!icon.systemIconId);
+  if (systemIcons.length === 0) return;
+
+  const titleById = new Map<SystemIconId, string>(
+    SYSTEM_ICONS.map((def) => [def.id, lang === 'zh' ? def.name : def.nameEn])
+  );
+
+  const now = Date.now();
+  const updates: Icon[] = [];
+  for (const icon of systemIcons) {
+    const systemId = icon.systemIconId as SystemIconId | undefined;
+    if (!systemId) continue;
+    const nextTitle = titleById.get(systemId);
+    if (!nextTitle) continue;
+    if (icon.title === nextTitle) continue;
+    updates.push({ ...icon, title: nextTitle, updatedAt: now });
+  }
+
+  if (updates.length === 0) return;
+  await db.icons.bulkPut(updates);
+}
+
+/**
  * Re-inject a single system icon (used when restoring from settings)
  *
  * @param iconId - The system icon ID to reinject
@@ -347,7 +377,7 @@ export async function reinjectSystemIcon(
   const icon: Icon = {
     id: iconId,
     type: 'icon',
-    title: def.name,
+    title: getCurrentUiLanguage() === 'zh' ? def.name : def.nameEn,
     url: `system://${def.id}`,
     icon: {
       type: 'system',

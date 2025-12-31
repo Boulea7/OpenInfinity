@@ -73,6 +73,13 @@ export function isSafeUrl(url: string): boolean {
   const trimmed = url.trim();
   if (!trimmed) return false;
 
+  // Reject URLs containing null characters (potential bypass attempt)
+  if (trimmed.includes('\0')) return false;
+
+  // Reject protocol-relative URLs (//attacker.com)
+  // These resolve to the current page's protocol and could redirect to malicious sites
+  if (trimmed.startsWith('//')) return false;
+
   try {
     const parsed = new URL(trimmed);
     // Whitelist: only allow http and https protocols
@@ -80,9 +87,12 @@ export function isSafeUrl(url: string): boolean {
     return allowedProtocols.includes(parsed.protocol.toLowerCase());
   } catch {
     // Invalid URL format - could be relative URL or malformed
-    // For relative URLs starting with '/' or alphanumeric, allow them
-    // as they will be resolved against the current origin
-    if (/^[a-zA-Z0-9/]/.test(trimmed) && !trimmed.includes(':')) {
+    // Only allow relative URLs that start with:
+    // - Single slash: /path
+    // - Dot-slash: ./path or ../path
+    // - Hash: #anchor
+    // Must not contain colon (which could be protocol)
+    if (/^([./]|\.\.\/|#)/.test(trimmed) && !trimmed.includes(':')) {
       return true;
     }
     return false;
