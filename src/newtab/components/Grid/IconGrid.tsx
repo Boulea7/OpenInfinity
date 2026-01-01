@@ -43,6 +43,10 @@ import { cn } from '../../utils';
 import { openUrlSafe } from '../../utils/navigation';
 import { handleSystemIconClick, isSystemIcon } from '../../utils/systemIconHandlers';
 import { exportAllData } from '../../utils/backup';
+import { createLogger } from '../../utils/logger';
+
+// Logger instance for IconGrid module
+const logger = createLogger('IconGrid');
 
 interface IconGridProps {
   className?: string;
@@ -729,7 +733,7 @@ export function IconGrid({
 
     try {
       await createFolderWithIcons(folderName, [mergeInfo.sourceId, mergeInfo.targetId], mergeInfo.position);
-      console.info('Folder created via drag merge:', folderName);
+      logger.info('Folder created via drag merge:', folderName);
     } catch (error) {
       console.error('Failed to create folder:', error);
     } finally {

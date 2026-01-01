@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useWallpaperStore } from '../../stores';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useWallpaperStore, useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
+import { useShallow } from 'zustand/react/shallow';
 
 interface WallpaperBackgroundProps {
   className?: string;
@@ -18,13 +19,18 @@ interface ImageLayerState {
  * Supports: local images, URLs, solid colors, gradients, Bing daily
  */
 export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
-  const {
-    currentUrl,
-    activeSource,
-    solidColor,
-    gradient,
-    effects,
-  } = useWallpaperStore();
+  const { currentUrl, activeSource, solidColor, gradient, effects } = useWallpaperStore(
+    useShallow((state) => ({
+      currentUrl: state.currentUrl,
+      activeSource: state.activeSource,
+      solidColor: state.solidColor,
+      gradient: state.gradient,
+      effects: state.effects,
+    }))
+  );
+
+  const minimalMode = useSettingsStore((state) => state.minimalMode);
+  const animationIntensity = useSettingsStore((state) => state.viewSettings.animationIntensity);
 
   const [layer1, setLayer1] = useState<ImageLayerState>({ url: null, loaded: false, error: false });
   const [layer2, setLayer2] = useState<ImageLayerState>({ url: null, loaded: false, error: false });
@@ -75,16 +81,33 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
     }
   }, []);
 
-  // Calculate CSS filter based on effects
-  const filterStyle = {
-    filter: [
-      effects.blur > 0 ? `blur(${effects.blur / 5}px)` : '',
-      effects.brightness !== 100 ? `brightness(${effects.brightness / 100})` : '',
-      effects.grayscale ? 'grayscale(1)' : '',
-    ]
-      .filter(Boolean)
-      .join(' ') || 'none',
-  };
+  // Calculate CSS filter based on effects with performance-aware blur capping
+  const filterStyle = useMemo(() => {
+    // Calculate blur cap based on performance mode
+    const getBlurCap = () => {
+      if (minimalMode) return 0;
+      switch (animationIntensity) {
+        case 'none': return 0;
+        case 'light': return 5;
+        case 'normal': return 10;
+        case 'heavy': return 15;
+        default: return 10;
+      }
+    };
+
+    const blurCap = getBlurCap();
+    const cappedBlur = Math.min(effects.blur / 5, blurCap);
+
+    return {
+      filter: [
+        cappedBlur > 0 ? `blur(${cappedBlur}px)` : '',
+        effects.brightness !== 100 ? `brightness(${effects.brightness / 100})` : '',
+        effects.grayscale ? 'grayscale(1)' : '',
+      ]
+        .filter(Boolean)
+        .join(' ') || 'none',
+    };
+  }, [effects.blur, effects.brightness, effects.grayscale, minimalMode, animationIntensity]);
 
   // Render gradient background
   const renderGradient = () => {
@@ -113,7 +136,7 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
     if (activeSource === 'solid') {
       return (
         <div
-          className="absolute inset-0 transition-all duration-500"
+          className="absolute inset-0 transition-[background-color,filter] duration-500"
           style={{ backgroundColor: solidColor, ...filterStyle }}
         />
       );
@@ -123,7 +146,7 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
     if (activeSource === 'gradient') {
       return (
         <div
-          className="absolute inset-0 transition-all duration-500"
+          className="absolute inset-0 transition-[background-image,filter] duration-500"
           style={{ ...renderGradient(), ...filterStyle }}
         />
       );
@@ -157,7 +180,7 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
               decoding="async"
               className={cn(
                 'absolute inset-0 h-full w-full select-none object-cover object-center',
-                'pointer-events-none transition duration-700',
+                'pointer-events-none transition-opacity duration-700',
                 activeLayer === 1 ? 'opacity-100' : 'opacity-0'
               )}
               style={imageStyle}
@@ -175,7 +198,7 @@ export function WallpaperBackground({ className }: WallpaperBackgroundProps) {
               decoding="async"
               className={cn(
                 'absolute inset-0 h-full w-full select-none object-cover object-center',
-                'pointer-events-none transition duration-700',
+                'pointer-events-none transition-opacity duration-700',
                 activeLayer === 2 ? 'opacity-100' : 'opacity-0'
               )}
               style={imageStyle}

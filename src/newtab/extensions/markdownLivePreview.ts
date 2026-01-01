@@ -9,13 +9,24 @@ import { syntaxTree } from '@codemirror/language';
 export const markdownLivePreview = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
+    private lastCursorLine: number = -1;
 
     constructor(view: EditorView) {
       this.decorations = this.buildDecorations(view);
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.selectionSet || update.viewportChanged) {
+      // Get current cursor line number
+      const cursorPos = update.state.selection.main.head;
+      const cursorLine = update.state.doc.lineAt(cursorPos).number;
+
+      // Only rebuild decorations when document/viewport changes or cursor crosses line boundary
+      if (
+        update.docChanged ||
+        update.viewportChanged ||
+        (update.selectionSet && cursorLine !== this.lastCursorLine)
+      ) {
+        this.lastCursorLine = cursorLine;
         this.decorations = this.buildDecorations(update.view);
       }
     }
@@ -23,8 +34,18 @@ export const markdownLivePreview = ViewPlugin.fromClass(
     buildDecorations(view: EditorView): DecorationSet {
       const builder = new RangeSetBuilder<Decoration>();
       const { state } = view;
+
+      // Cache lineAt results to avoid repeated computation
+      const lineCache = new Map<number, number>();
+      const getLineNumber = (pos: number): number => {
+        if (!lineCache.has(pos)) {
+          lineCache.set(pos, state.doc.lineAt(pos).number);
+        }
+        return lineCache.get(pos)!;
+      };
+
       const cursorPos = state.selection.main.head;
-      const cursorLine = state.doc.lineAt(cursorPos).number;
+      const cursorLine = getLineNumber(cursorPos);
 
       // Iterate through visible syntax tree
       for (const { from, to } of view.visibleRanges) {
@@ -32,7 +53,7 @@ export const markdownLivePreview = ViewPlugin.fromClass(
           from,
           to,
           enter: (node) => {
-            const lineNumber = state.doc.lineAt(node.from).number;
+            const lineNumber = getLineNumber(node.from);
 
             // Skip decoration on cursor line
             if (lineNumber === cursorLine) {

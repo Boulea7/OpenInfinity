@@ -298,7 +298,7 @@ export const IconItem = React.memo(function IconItem({
         // Flex column layout: icon circle on top, text below
         'group relative flex flex-col items-center',
         'py-2 px-1',
-        'transition-all duration-300 ease-out',
+        'transition-[transform,opacity] duration-300 ease-out',
         'cursor-pointer select-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
 
@@ -356,7 +356,7 @@ export const IconItem = React.memo(function IconItem({
           <div
             className={cn(
               'flex items-center justify-center',
-              'transition-all duration-300 ease-out',
+              'transition-[transform,box-shadow] duration-300 ease-out',
               // In edit mode: no scale, use shadow for hover feedback
               // In normal mode: scale up on hover
               isDeleteMode

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useShallow } from 'zustand/react/shallow';
 import type { Folder } from '../../services/database';
 import { useIconStore, useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
@@ -30,8 +31,14 @@ export function FolderItem({
   onContextMenu,
   onClick,
 }: FolderItemProps) {
-  const { icons } = useIconStore();
-  const { iconStyle } = useSettingsStore();
+  const icons = useIconStore((state) => state.icons);
+  const iconStyle = useSettingsStore(
+    useShallow((state) => ({
+      size: state.iconStyle.size,
+      borderRadius: state.iconStyle.borderRadius,
+      showName: state.iconStyle.showName,
+    }))
+  );
   const [isHovered, setIsHovered] = useState(false);
   const [previewErrors, setPreviewErrors] = useState<Record<string, boolean>>({});
 
@@ -64,16 +71,13 @@ export function FolderItem({
     [transform, transition, isOverlay]
   );
 
-  // Get icons inside this folder (max 9 for 3x3 preview grid)
-  const folderIcons = useMemo(() => {
-    return icons
-      .filter(icon => icon.folderId === folder.id)
-      .slice(0, 9);
-  }, [icons, folder.id]);
-
-  // Calculate icon count (P0-4: use filtered icons instead of folder.children)
-  const iconCount = useMemo(() => {
-    return icons.filter(icon => icon.folderId === folder.id).length;
+  // Get icons inside this folder and calculate count (merged for performance)
+  const { folderIcons, iconCount } = useMemo(() => {
+    const filtered = icons.filter(icon => icon.folderId === folder.id);
+    return {
+      folderIcons: filtered.slice(0, 9), // Max 9 for 3x3 preview grid
+      iconCount: filtered.length,
+    };
   }, [icons, folder.id]);
 
   // Handle click (P0-3: stop propagation)
@@ -119,7 +123,7 @@ export function FolderItem({
         'group relative flex flex-col items-center',
         'py-2 px-1',
         'cursor-pointer select-none',
-        'transition-all duration-300 ease-out',
+        'transition-[transform,opacity] duration-300 ease-out',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/40',
 
         // NO background on container (transparent)
@@ -150,7 +154,7 @@ export function FolderItem({
           folderSize,
           'relative flex items-center justify-center',
           'overflow-hidden',
-          'transition-all duration-300 ease-out',
+          'transition-[transform,box-shadow] duration-300 ease-out',
           'group-hover:scale-110',
           // Drop target ring
           isOver && !isDragging && 'ring-2 ring-brand-orange-500 ring-offset-2 ring-offset-transparent',

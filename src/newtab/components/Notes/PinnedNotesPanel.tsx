@@ -16,7 +16,6 @@ interface PinnedNotesPanelProps {
  */
 export function PinnedNotesPanel({ className }: PinnedNotesPanelProps) {
   const { t } = useTranslation();
-  const { setViewSettings } = useSettingsStore();
 
   // Load pinned notes from database
   // Using useLiveQuery for real-time updates
@@ -28,14 +27,14 @@ export function PinnedNotesPanel({ className }: PinnedNotesPanelProps) {
 
   const handleClickNote = useCallback(() => {
     // Switch to notes view when clicking a pinned note
-    setViewSettings({ currentView: 'notes' });
-  }, [setViewSettings]);
+    useSettingsStore.getState().setViewSettings({ currentView: 'notes' });
+  }, []);
 
   if (!pinnedNotes || pinnedNotes.length === 0) return null;
 
   return (
     <div className={cn(
-      'fixed right-8 top-32 w-[340px] z-10 transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-right-4',
+      'fixed right-8 top-32 w-[340px] z-10 animate-in fade-in slide-in-from-right-4',
       className
     )}>
       <div className="glass rounded-2xl p-5 shadow-2xl border border-white/20 dark:border-white/10 backdrop-blur-xl">
@@ -60,7 +59,7 @@ export function PinnedNotesPanel({ className }: PinnedNotesPanelProps) {
             <div
               key={note.id}
               onClick={handleClickNote}
-              className="group relative flex flex-col p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 hover:border-orange-500/30 dark:hover:border-orange-500/30 hover:bg-white/80 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 cursor-pointer overflow-hidden"
+              className="group relative flex flex-col p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 hover:border-orange-500/30 dark:hover:border-orange-500/30 hover:bg-white/80 dark:hover:bg-white/10 hover:shadow-lg hover:shadow-orange-500/5 transition-[border-color,background-color,box-shadow] duration-300 cursor-pointer overflow-hidden"
             >
               <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5 line-clamp-1 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                 {note.title || t('notes.untitled')}
@@ -70,7 +69,7 @@ export function PinnedNotesPanel({ className }: PinnedNotesPanelProps) {
               </p>
 
               {/* Hover Indicator */}
-              <div className="absolute bottom-2 right-2 opacity-0 transform translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+              <div className="absolute bottom-2 right-2 opacity-0 transform translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-300">
                 <div className="p-1 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
                   <ChevronRight className="w-3 h-3" />
                 </div>

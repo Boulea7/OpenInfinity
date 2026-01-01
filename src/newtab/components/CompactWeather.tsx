@@ -22,7 +22,7 @@ interface CompactWeatherProps {
  */
 export function CompactWeather({ className }: CompactWeatherProps) {
   const { t } = useTranslation();
-  const { weatherSettings } = useSettingsStore();
+  const weatherSettings = useSettingsStore((state) => state.weatherSettings);
   const { weather, isLoading, error, forceRefresh } = useWeather();
   const { isExpanded, setExpanded, toggle } = useWeatherUiStore();
   const buttonRef = useRef<HTMLDivElement>(null);

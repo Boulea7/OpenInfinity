@@ -38,7 +38,7 @@ export const WeatherSection: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
             {t('settings.weather.unit', '温度单位')}
           </span>
-          <div className="flex gap-2">
+          <div className="flex justify-between">
             <button
               type="button"
               onClick={() => setWeatherSettings({ unit: 'celsius' })}
@@ -79,7 +79,7 @@ export const WeatherSection: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
             {t('settings.weather.location', '位置')}
           </span>
-          <div className="flex gap-2">
+          <div className="flex justify-between">
             <button
               type="button"
               onClick={() => setWeatherSettings({ location: { ...weatherSettings.location, type: 'auto' } })}

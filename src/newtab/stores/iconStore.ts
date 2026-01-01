@@ -570,9 +570,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   reorderItems: async (activeId, overId) => {
     const { icons, folders } = get();
 
-    // Find root items only
+    // Find root items only (exclude hidden icons to prevent position jumping)
     const allItems: GridItem[] = sortByPosition([
-      ...icons.filter(i => !i.folderId),
+      ...icons.filter(i => !i.folderId && !i.isHidden),
       ...folders,
     ]);
 

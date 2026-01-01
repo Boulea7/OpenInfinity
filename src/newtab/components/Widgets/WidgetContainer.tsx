@@ -7,6 +7,7 @@ import { NotesWidget } from './NotesWidget';
 import { WeatherWidget } from './WeatherWidget';
 import { BookmarksWidget } from './BookmarksWidget';
 import { HistoryWidget } from './HistoryWidget';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Sidebar configuration constants
@@ -34,7 +35,16 @@ export function WidgetContainer({
   initialWidth = SIDEBAR_CONFIG.defaultWidth,
   onWidthChange,
 }: WidgetContainerProps = {}) {
-  const { viewSettings, setViewSettings } = useSettingsStore();
+  const viewSettings = useSettingsStore(
+    useShallow((state) => ({
+      widgetSidebarPosition: state.viewSettings.widgetSidebarPosition,
+      widgetSidebarCollapsed: state.viewSettings.widgetSidebarCollapsed,
+      showTodoWidget: state.viewSettings.showTodoWidget,
+      showNotesWidget: state.viewSettings.showNotesWidget,
+      showBookmarksWidget: state.viewSettings.showBookmarksWidget,
+      showHistoryWidget: state.viewSettings.showHistoryWidget,
+    }))
+  );
   const [width, setWidth] = useState<number>(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
   const [expandedWidgets, setExpandedWidgets] = useState<Set<string>>(new Set());
@@ -90,6 +100,7 @@ export function WidgetContainer({
 
   // Toggle sidebar collapse state
   const handleToggleCollapsed = () => {
+    const { setViewSettings } = useSettingsStore.getState();
     setViewSettings({
       widgetSidebarCollapsed: !widgetSidebarCollapsed,
     });

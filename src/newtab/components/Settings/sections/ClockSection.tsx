@@ -24,7 +24,7 @@ export const ClockSection: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
             {t('settings.clock.format', '时间格式')}
           </span>
-          <div className="flex gap-2">
+          <div className="flex justify-between">
             <button
               type="button"
               onClick={() => setClockSettings({ format: '12h' })}

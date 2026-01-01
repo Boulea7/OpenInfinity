@@ -53,6 +53,14 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
 
   const selectedNote = allNotes?.find(n => n.id === selectedNoteId);
 
+  // Cache preview text for all notes (performance optimization)
+  const notesWithPreview = useMemo(() => {
+    return filteredNotes?.map(note => ({
+      ...note,
+      previewText: htmlToPlainText(note.content)
+    }));
+  }, [filteredNotes]);
+
   // Auto-select first note if none selected
   useEffect(() => {
     if (!selectedNoteId && filteredNotes && filteredNotes.length > 0) {
@@ -74,7 +82,8 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
       setEditTitle('');
       setEditContent('');
     }
-  }, [selectedNoteId, selectedNote]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNoteId]); // Intentionally omit selectedNote to prevent DB sync from resetting edit state
 
   const handleCreateNote = useCallback(async () => {
     const id = generateId();
@@ -96,8 +105,6 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
   // Auto-save content with debounce (faster for real-time feel)
   useEffect(() => {
     if (!selectedNoteId) return;
-    // Don't save if nothing changed
-    if (selectedNote?.content === editContent && selectedNote?.title === editTitle) return;
 
     const timer = setTimeout(() => {
       handleUpdate(selectedNoteId, {
@@ -107,7 +114,8 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
     }, 300); // 300ms debounce for real-time sync
 
     return () => clearTimeout(timer);
-  }, [editTitle, editContent, selectedNoteId, selectedNote, handleUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editTitle, editContent, selectedNoteId]); // Intentionally omit selectedNote and handleUpdate to prevent unnecessary re-saves
 
   const handleDelete = useCallback(async (id: string) => {
     if (confirm(t('notes.deleteNote') + '?')) {
@@ -140,12 +148,12 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
 
         {/* List Container */}
         <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide space-y-3">
-          {filteredNotes?.map(note => (
+          {notesWithPreview?.map(note => (
             <div
               key={note.id}
               onClick={() => setSelectedNoteId(note.id)}
               className={cn(
-                'group relative p-4 rounded-2xl border transition-all duration-200 cursor-pointer',
+                'group relative p-4 rounded-2xl border transition-[background-color,border-color,box-shadow] duration-200 cursor-pointer',
                 selectedNoteId === note.id
                   ? 'bg-white/20 dark:bg-white/10 border-white/20 shadow-lg backdrop-blur-md'
                   : 'bg-white/5 dark:bg-black/20 border-transparent hover:bg-white/10 hover:border-white/10'
@@ -159,7 +167,7 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
               </div>
 
               <p className="text-sm text-white/50 line-clamp-2 h-10 leading-relaxed font-normal">
-                {htmlToPlainText(note.content)}
+                {note.previewText}
               </p>
 
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5 text-xs text-white/30">
@@ -171,7 +179,7 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
             </div>
           ))}
 
-          {filteredNotes?.length === 0 && (
+          {notesWithPreview?.length === 0 && (
             <div className="text-center py-10 text-white/30">
               <StickyNote className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p>{t('notes.noNotes')}</p>

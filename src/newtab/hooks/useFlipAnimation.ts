@@ -4,28 +4,35 @@ import { useLayoutEffect, useRef } from 'react';
  * A simpler, lightweight hook to animate children reordering using the FLIP technique.
  * It tracks the positions of children by their ID (via data-flip-id attribute)
  * and animates them when they move.
+ *
+ * Optimized to only trigger animations when the actual order of elements changes,
+ * not when other properties update.
  */
 export function useFlipAnimation<T extends HTMLElement>(deps: any[]) {
     const containerRef = useRef<T>(null);
     const positions = useRef<Map<string, DOMRect>>(new Map());
+    const prevOrderKey = useRef<string>('');  // Cache previous order to detect changes
 
     useLayoutEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
-        // 1. First (Capture positions before change - handled by the Cleanup/Previous effect cycle)
-        // Actually in React strict mode / frequent updates, it's easier to capture "Snapshot" 
-        // immediately before the browser paints the new state, but React's useLayoutEffect 
-        // runs AFTER the DOM update but BEFORE paint.
-
-        // So we need to have captured the "Before" positions previously.
-        // The trick is: We capture "After" positions at the end of this effect, 
-        // which become the "Before" positions for the NEXT render.
-
-        const newPositions = new Map<string, DOMRect>();
+        // 1. Extract current order from DOM
         const children = Array.from(container.children) as HTMLElement[];
+        const currentOrderKey = children
+            .map(child => child.getAttribute('data-flip-id'))
+            .filter(Boolean)
+            .join('|');
 
-        // Calculate new positions
+        // 2. Early return if order hasn't changed
+        // This prevents unnecessary animations when only data updates (not reordering)
+        if (currentOrderKey === prevOrderKey.current) {
+            return;
+        }
+        prevOrderKey.current = currentOrderKey;
+
+        // 3. Calculate new positions
+        const newPositions = new Map<string, DOMRect>();
         children.forEach((child) => {
             const id = child.getAttribute('data-flip-id');
             if (id) {
@@ -33,7 +40,7 @@ export function useFlipAnimation<T extends HTMLElement>(deps: any[]) {
             }
         });
 
-        // 2. Play Animation (Invert & Play)
+        // 4. Play Animation (Invert & Play)
         children.forEach((child) => {
             const id = child.getAttribute('data-flip-id');
             if (!id) return;
@@ -59,7 +66,7 @@ export function useFlipAnimation<T extends HTMLElement>(deps: any[]) {
             }
         });
 
-        // Save current positions for next time
+        // 5. Save current positions for next time
         positions.current = newPositions;
     }, deps);
 

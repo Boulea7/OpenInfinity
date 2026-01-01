@@ -36,7 +36,7 @@ export const GeneralSection: React.FC = () => {
         <span className="text-sm text-gray-700 dark:text-gray-300 block mb-3">
           {t('settings.general.theme', '主题')}
         </span>
-        <div className="flex gap-2">
+        <div className="flex justify-between">
           {themes.map(({ value, icon, label }) => (
             <button
               key={value}
@@ -63,7 +63,7 @@ export const GeneralSection: React.FC = () => {
         <span className="text-sm text-gray-700 dark:text-gray-300 block mb-3">
           {t('settings.general.language', '语言')}
         </span>
-        <div className="flex gap-2">
+        <div className="flex justify-between">
           <button
             type="button"
             onClick={() => handleLanguageChange('zh')}

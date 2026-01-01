@@ -342,7 +342,7 @@
 
   /* iOS-style delete mode shake animation */
   .animate-shake {
-    animation: icon-shake 0.15s ease-in-out infinite;
+    animation: icon-shake var(--animation-duration) ease-in-out infinite;
   }
 
   /* View transition animations */

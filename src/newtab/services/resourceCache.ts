@@ -99,6 +99,21 @@ function recordFailure(url: string): void {
 }
 
 /**
+ * Cleanup expired failure records to prevent memory leaks
+ * Removes entries older than 1 hour
+ */
+function cleanupExpiredFailures(): void {
+  const now = Date.now();
+  const expireTime = 60 * 60 * 1000; // 1 hour
+
+  for (const [url, record] of failedResources.entries()) {
+    if (now - record.lastAttempt > expireTime) {
+      failedResources.delete(url);
+    }
+  }
+}
+
+/**
  * Fetch resource with timeout
  */
 async function fetchWithTimeout(url: string): Promise<Response> {
@@ -193,6 +208,7 @@ export async function getCachedResource(
       };
 
       await db.resourceCache.put(entry);
+      failedResources.delete(url);  // Clean up failure record on success
       return dataUrl;
     });
 
@@ -281,4 +297,9 @@ export async function clearResourceCache(): Promise<void> {
   await db.resourceCache.clear();
   failedResources.clear();
   console.info('[ResourceCache] All cache cleared');
+}
+
+// Periodic cleanup of expired failure records
+if (typeof window !== 'undefined') {
+  setInterval(cleanupExpiredFailures, 10 * 60 * 1000); // Every 10 minutes
 }

@@ -1,16 +1,31 @@
 import DOMPurify from 'dompurify';
 
 /**
+ * Check if content is HTML format (lightweight detection)
+ */
+function isHtmlContent(content: string): boolean {
+  if (!content) return false;
+  const trimmed = content.trim();
+  return trimmed.startsWith('<') || trimmed.includes('</');
+}
+
+/**
  * Safely strip HTML tags and return plain text
- * Uses DOMPurify to prevent XSS attacks
+ * Uses DOMPurify ONLY for HTML content (performance optimized)
  */
 export function stripHtml(html: string): string {
   if (!html) return '';
 
-  // Sanitize HTML first
-  const clean = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
+  // Fast path: Markdown/plain text - no sanitization needed
+  if (!isHtmlContent(html)) {
+    return html
+      .replace(/[#*_~`[\]()]/g, '')  // Remove Markdown syntax
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
 
-  // Remove extra whitespace and newlines
+  // Slow path: HTML content - use DOMPurify for safety
+  const clean = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
   return clean.replace(/\s+/g, ' ').trim();
 }
 

@@ -4,6 +4,13 @@ import { db, generateId, type Wallpaper } from '../services/database';
 import { compressImage, validateImageFile } from '../utils/imageCompression';
 import { wallpaperManager, type WallpaperMetadata as ProviderWallpaperMetadata } from '../services/wallpaper';
 import { hasOrigins, PERMISSION_GROUPS } from '../../shared/permissions';
+import { createLogger, createRateLimitedLogger } from '../utils/logger';
+
+// Logger instances for WallpaperStore module
+const logger = createLogger('WallpaperStore');
+// Rate-limited logger for high-frequency events (e.g., visibility changes)
+// Use 3000ms interval to balance between noise reduction and debugging visibility
+const rateLimitedLogger = createRateLimitedLogger('WallpaperStore', 3000);
 
 // Module-level auto-change timer management
 let autoChangeTimer: ReturnType<typeof setInterval> | null = null;
@@ -24,7 +31,7 @@ function stopAutoChangeTimer(): void {
   if (autoChangeTimer) {
     clearInterval(autoChangeTimer);
     autoChangeTimer = null;
-    console.info('Auto-change timer stopped');
+    logger.info('Auto-change timer stopped');
   }
 
   // Clean up visibility change listener
@@ -116,7 +123,7 @@ async function trimWallpaperHistory(): Promise<void> {
     const idsToDelete = oldest.map((w) => w.id);
     await db.wallpapers.bulkDelete(idsToDelete);
 
-    console.info(`[Wallpaper] Trimmed ${idsToDelete.length} old entries from history`);
+    logger.info(`Trimmed ${idsToDelete.length} old entries from history`);
   } catch (error) {
     console.warn('[Wallpaper] Failed to trim history:', error);
   }
@@ -547,18 +554,18 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
         stopAutoChangeTimer();
 
         if (!state.autoChange.enabled) {
-          console.info('Auto-change is disabled, not starting timer');
+          logger.info('Auto-change is disabled, not starting timer');
           return;
         }
 
         const intervalMs = getIntervalMs(state.autoChange.interval);
 
         if (intervalMs <= 0) {
-          console.info('Auto-change interval is "never", not starting timer');
+          logger.info('Auto-change interval is "never", not starting timer');
           return;
         }
 
-        console.info(`Starting auto-change timer: ${state.autoChange.interval} (${intervalMs}ms)`);
+        logger.info(`Starting auto-change timer: ${state.autoChange.interval} (${intervalMs}ms)`);
 
         // Set up interval for automatic changes
         autoChangeTimer = setInterval(() => {
@@ -572,7 +579,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
             if (autoChangeTimer) {
               clearInterval(autoChangeTimer);
               autoChangeTimer = null;
-              console.info('Auto-change timer paused (tab hidden)');
+              rateLimitedLogger.info('Auto-change timer paused (tab hidden)');
             }
           } else {
             // Tab visible - resume timer if auto-change is still enabled
@@ -583,7 +590,7 @@ export const useWallpaperStore = create<WallpaperState & WallpaperActions>()(
                 autoChangeTimer = setInterval(() => {
                   void currentState.fetchRandomWallpaper();
                 }, currentIntervalMs);
-                console.info('Auto-change timer resumed (tab visible)');
+                rateLimitedLogger.info('Auto-change timer resumed (tab visible)');
               }
             }
           }

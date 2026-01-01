@@ -135,6 +135,13 @@ async function upsertWeatherCache(
   });
 
   await db.weatherCache.put(cacheEntry);
+
+  // Store active cache key for efficient lookup
+  await db.settings.put({
+    key: 'weather_active_cache_key',
+    value: cacheKey
+  });
+
   return cacheEntry;
 }
 
@@ -155,7 +162,7 @@ export interface UseWeatherReturn {
  * Fetches and caches weather data, provides real-time updates
  */
 export function useWeather(): UseWeatherReturn {
-  const { weatherSettings } = useSettingsStore();
+  const weatherSettings = useSettingsStore((state) => state.weatherSettings);
   const { i18n, t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,14 +180,24 @@ export function useWeather(): UseWeatherReturn {
   }, []);
 
   // Real-time query for weather cache
-  // Filter by current unit to prevent showing data with wrong temperature unit
+  // Use primary key lookup for O(1) performance instead of full table scan
   const weather = useLiveQuery(async () => {
     try {
-      // Get the most recent weather cache entry matching current unit
-      const caches = await db.weatherCache
-        .filter((item) => item.id.endsWith(`_${weatherSettings.unit}`))
-        .sortBy('fetchedAt');
-      return caches.length > 0 ? caches[caches.length - 1] : null;
+      // Get active cache key from settings
+      const activeCacheSetting = await db.settings.get('weather_active_cache_key');
+      if (!activeCacheSetting) return null;
+
+      const cacheKey = activeCacheSetting.value as string;
+
+      // Direct lookup by primary key - O(1) complexity
+      const cached = await db.weatherCache.get(cacheKey);
+
+      // Validate cache matches current unit (defensive check)
+      if (cached && !cached.id.endsWith(`_${weatherSettings.unit}`)) {
+        return null;
+      }
+
+      return cached || null;
     } catch (err) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       console.error('Failed to query weather cache:', msg);

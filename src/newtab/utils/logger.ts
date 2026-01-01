@@ -33,6 +33,48 @@ export function createLogger(module: string) {
 }
 
 /**
+ * Rate-limited logger - prevents log spam from high-frequency events
+ *
+ * @param module - Module name for log prefix
+ * @param intervalMs - Minimum interval between same logs (default: 1000ms)
+ */
+export function createRateLimitedLogger(module: string, intervalMs = 1000) {
+  const logger = createLogger(module);
+  const lastLogTime = new Map<string, number>();
+  const MAX_CACHE_SIZE = 100; // Prevent memory leak from unlimited Map growth
+
+  const rateLimitedMethod = (logFn: (...args: unknown[]) => void) => {
+    return (...args: unknown[]) => {
+      // Use first argument as key (usually a string message)
+      // Avoid JSON.stringify for performance - just use string conversion
+      const key = String(args[0] || '');
+      const now = Date.now();
+      const last = lastLogTime.get(key) || 0;
+
+      if (now - last > intervalMs) {
+        logFn(...args);
+        lastLogTime.set(key, now);
+
+        // Cleanup old entries to prevent memory leak
+        if (lastLogTime.size > MAX_CACHE_SIZE) {
+          const oldestKey = lastLogTime.keys().next().value;
+          if (oldestKey !== undefined) {
+            lastLogTime.delete(oldestKey);
+          }
+        }
+      }
+    };
+  };
+
+  return {
+    debug: rateLimitedMethod(logger.debug),
+    info: rateLimitedMethod(logger.info),
+    warn: logger.warn,   // warn/error should not be rate-limited
+    error: logger.error,
+  };
+}
+
+/**
  * Global logger instance
  * Use createLogger() for module-specific logging
  */

@@ -8,6 +8,7 @@ import type { BaseWidgetProps } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { normalizeUiLanguage } from '../../../shared/locale';
 import { tr } from '../../../shared/tr';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Bookmarks Widget component
@@ -16,13 +17,18 @@ import { tr } from '../../../shared/tr';
 export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
   const { i18n } = useTranslation();
   const lang = normalizeUiLanguage(i18n.language);
-  const { viewSettings, openBehavior } = useSettingsStore();
+  const { showBookmarksWidget, bookmarksOpenBehavior } = useSettingsStore(
+    useShallow((state) => ({
+      showBookmarksWidget: state.viewSettings.showBookmarksWidget,
+      bookmarksOpenBehavior: state.openBehavior.bookmarks,
+    }))
+  );
   const { bookmarks, hasPermission, isLoading, error, requestPermission, refresh } = useBookmarks();
 
   // Handle bookmark click - must be defined before early return
   const handleBookmarkClick = useCallback((url: string) => {
-    openBookmark(url, openBehavior.bookmarks);
-  }, [openBehavior.bookmarks]);
+    openBookmark(url, bookmarksOpenBehavior);
+  }, [bookmarksOpenBehavior]);
 
   // Handle request permission - must be defined before early return
   const handleRequestPermission = useCallback(async () => {
@@ -34,7 +40,7 @@ export function BookmarksWidget({ isExpanded, onToggleExpand, className }: BaseW
   }, [requestPermission]);
 
   // Don't render if widget is disabled
-  if (!viewSettings.showBookmarksWidget) return null;
+  if (!showBookmarksWidget) return null;
 
   return (
     <div className={cn('bg-white/5 rounded-lg overflow-hidden border border-white/10', className)}>

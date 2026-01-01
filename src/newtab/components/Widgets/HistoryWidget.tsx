@@ -6,6 +6,7 @@ import { cn } from '../../utils';
 import { openHistoryItem, getFaviconUrl, formatRelativeTime } from '../../services/history';
 import type { BaseWidgetProps } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * History Widget component
@@ -13,7 +14,12 @@ import { useTranslation } from 'react-i18next';
  */
 export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
   const { t } = useTranslation();
-  const { viewSettings, openBehavior } = useSettingsStore();
+  const { showHistoryWidget, historyOpenBehavior } = useSettingsStore(
+    useShallow((state) => ({
+      showHistoryWidget: state.viewSettings.showHistoryWidget,
+      historyOpenBehavior: state.openBehavior.history,
+    }))
+  );
   const {
     historyItems,
     hasPermission,
@@ -27,8 +33,8 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
 
   // Handle history item click - must be defined before early return
   const handleHistoryClick = useCallback((url: string) => {
-    openHistoryItem(url, openBehavior.history);
-  }, [openBehavior.history]);
+    openHistoryItem(url, historyOpenBehavior);
+  }, [historyOpenBehavior]);
 
   // Handle delete history item - must be defined before early return
   const handleDelete = useCallback(async (e: React.MouseEvent, url: string) => {
@@ -58,7 +64,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
   }, [requestPermission]);
 
   // Don't render if widget is disabled
-  if (!viewSettings.showHistoryWidget) return null;
+  if (!showHistoryWidget) return null;
 
   return (
     <div className={cn('bg-white/5 rounded-lg overflow-hidden border border-white/10', className)}>

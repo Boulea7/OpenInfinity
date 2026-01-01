@@ -119,7 +119,12 @@ export function TodoSidebar() {
   }, [todos]);
 
   // Use custom FLIP animation hook for active list
-  const activeListRef = useFlipAnimation<HTMLDivElement>(activeTodos);
+  // Extract stable ID sequence to avoid unnecessary animation triggers
+  const activeTodoIds = useMemo(
+    () => activeTodos.map(t => t.id),
+    [activeTodos]
+  );
+  const activeListRef = useFlipAnimation<HTMLDivElement>(activeTodoIds);
 
   const handleAddTodo = useCallback(async () => {
     if (newTodoText.trim()) {
