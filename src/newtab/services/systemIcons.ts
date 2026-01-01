@@ -326,11 +326,14 @@ export async function getHiddenSystemIcons(): Promise<Icon[]> {
 /**
  * Keep system icon titles in sync with the selected UI language.
  * System icon titles are not user content and should follow the UI language.
+ *
+ * @param lang - Target UI language
+ * @returns Array of updated system icons (for store synchronization)
  */
-export async function syncSystemIconTitlesForLanguage(lang: UiLanguage): Promise<void> {
+export async function syncSystemIconTitlesForLanguage(lang: UiLanguage): Promise<Icon[]> {
   const allIcons = await db.icons.toArray();
   const systemIcons = allIcons.filter((icon) => icon.isSystemIcon === true && !!icon.systemIconId);
-  if (systemIcons.length === 0) return;
+  if (systemIcons.length === 0) return [];
 
   const titleById = new Map<SystemIconId, string>(
     SYSTEM_ICONS.map((def) => [def.id, lang === 'zh' ? def.name : def.nameEn])
@@ -347,8 +350,9 @@ export async function syncSystemIconTitlesForLanguage(lang: UiLanguage): Promise
     updates.push({ ...icon, title: nextTitle, updatedAt: now });
   }
 
-  if (updates.length === 0) return;
+  if (updates.length === 0) return [];
   await db.icons.bulkPut(updates);
+  return updates;
 }
 
 /**

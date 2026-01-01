@@ -8,9 +8,10 @@ import {
   reinjectSystemIcon,
   injectSystemIcons,
   hasSystemIcons,
+  syncSystemIconTitlesForLanguage,
 } from '../services/systemIcons';
 import { tr } from '../../shared/tr';
-import { getCurrentUiLanguage } from '../../shared/locale';
+import { getCurrentUiLanguage, type UiLanguage } from '../../shared/locale';
 
 // Default grid columns for folders (fixed layout inside folder modal)
 const FOLDER_GRID_COLUMNS = 6;
@@ -86,6 +87,7 @@ interface IconActions {
   hideSystemIcon: (iconId: SystemIconId) => Promise<void>;
   restoreSystemIcon: (iconId: SystemIconId) => Promise<void>;
   initializeSystemIcons: () => Promise<void>;
+  syncSystemIcons: (lang: UiLanguage) => Promise<void>;
 
   // Folder utilities
   generateUniqueFolderName: (baseName?: string) => string;
@@ -859,6 +861,33 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       await get().loadIcons();
     } catch (error) {
       console.error('[iconStore] Failed to initialize system icons:', error);
+    }
+  },
+
+  /**
+   * Sync system icon titles with the current UI language.
+   * Updates both IndexedDB and local store state for real-time reactivity.
+   */
+  syncSystemIcons: async (lang: UiLanguage) => {
+    try {
+      const updatedIcons = await syncSystemIconTitlesForLanguage(lang);
+
+      if (updatedIcons.length === 0) return;
+
+      // Update local store state with new titles
+      set((state) => ({
+        icons: state.icons.map((icon) => {
+          const updated = updatedIcons.find((u) => u.id === icon.id);
+          return updated ? { ...icon, title: updated.title, updatedAt: updated.updatedAt } : icon;
+        }),
+      }));
+
+      // Broadcast updates to other tabs
+      updatedIcons.forEach((icon) => {
+        syncIcon.updated({ id: icon.id, title: icon.title });
+      });
+    } catch (error) {
+      console.error('[iconStore] Failed to sync system icons:', error);
     }
   },
 

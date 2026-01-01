@@ -8,7 +8,6 @@ import type { Icon, Folder } from './services/database';
 import { clearExpiredIconCache } from './utils/iconCache';
 import { hasOrigins, PERMISSION_GROUPS } from '../shared/permissions';
 import { applyDocumentLanguage, normalizeUiLanguage } from '../shared/locale';
-import { syncSystemIconTitlesForLanguage } from './services/systemIcons';
 import {
   WallpaperBackground,
   SearchBar,
@@ -60,11 +59,12 @@ function App() {
       minimalModeSettings: s.minimalModeSettings,
     }))
   );
-  const { loadIcons, isLoading, initializeSystemIcons } = useIconStore(
+  const { loadIcons, isLoading, initializeSystemIcons, syncSystemIcons } = useIconStore(
     useShallow((s) => ({
       loadIcons: s.loadIcons,
       isLoading: s.isLoading,
       initializeSystemIcons: s.initializeSystemIcons,
+      syncSystemIcons: s.syncSystemIcons,
     }))
   );
   const openPanel = useNavigationStore((s) => s.openPanel);
@@ -110,13 +110,12 @@ function App() {
       localStorage.setItem('language', language);
     }
     applyDocumentLanguage(normalizeUiLanguage(language));
-    syncSystemIconTitlesForLanguage(normalizeUiLanguage(language)).catch((err) => {
-      console.error('[App] Failed to sync system icon titles:', err);
-    });
+    // Sync system icon titles via store for real-time UI update
+    syncSystemIcons(normalizeUiLanguage(language));
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
-  }, [language, i18n]);
+  }, [language, i18n, syncSystemIcons]);
 
   useEffect(() => {
     const initializeWallpaper = async () => {
