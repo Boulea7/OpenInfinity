@@ -1,6 +1,7 @@
 import { useCallback, lazy, Suspense } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { Plus, User, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SidePanel } from '../ui/SidePanel';
 import { useNavigationStore, type NavigationTab } from '../../stores/navigationStore';
 import { cn } from '../../utils';
@@ -32,6 +33,7 @@ function PanelSkeleton() {
  * Main navigation panel container featuring a top glassmorphism tab bar.
  */
 export function InfinityNavPanel() {
+    const { t } = useTranslation();
     const { isPanelOpen, activeTab, setActiveTab, closePanel } = useNavigationStore(
         useShallow((state) => ({
             isPanelOpen: state.isPanelOpen,
@@ -49,9 +51,9 @@ export function InfinityNavPanel() {
     );
 
     const TABS: ReadonlyArray<{ id: NavigationTab; label: string; icon: typeof Plus }> = [
-        { id: 'add', label: '添加', icon: Plus },
-        { id: 'my', label: '我的', icon: User },
-        { id: 'settings', label: '设置', icon: Settings },
+        { id: 'add', label: t('navigation.add'), icon: Plus },
+        { id: 'my', label: t('navigation.my'), icon: User },
+        { id: 'settings', label: t('navigation.settings'), icon: Settings },
     ];
 
     // Render dummy content for now, to be replaced in subsequent steps

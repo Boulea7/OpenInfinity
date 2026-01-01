@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../stores';
 import {
   checkBookmarksPermission,
@@ -31,6 +32,7 @@ export interface UseBookmarksReturn {
  * Bookmarks data management hook
  */
 export function useBookmarks(): UseBookmarksReturn {
+  const { t } = useTranslation();
   // Precise subscription to prevent re-renders from unrelated settings changes
   const widgetSettings = useSettingsStore(selectWidgetSettings);
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
@@ -54,14 +56,14 @@ export function useBookmarks(): UseBookmarksReturn {
       const items = await getRecentBookmarks(widgetSettings.bookmarksWidget.maxItems);
       setBookmarks(items);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch bookmarks';
+      const message = err instanceof Error ? err.message : t('bookmarks.fetchError', 'Failed to fetch bookmarks');
       console.error('Bookmarks fetch error:', err);
       setError(message);
       setBookmarks([]);
     } finally {
       setIsLoading(false);
     }
-  }, [hasPermission, widgetSettings.bookmarksWidget.maxItems]);
+  }, [hasPermission, widgetSettings.bookmarksWidget.maxItems, t]);
 
   /**
    * Request permission
@@ -78,11 +80,11 @@ export function useBookmarks(): UseBookmarksReturn {
 
       return granted;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to request permission';
+      const message = err instanceof Error ? err.message : t('bookmarks.permissionError', 'Failed to request permission');
       setError(message);
       return false;
     }
-  }, [fetchBookmarks]);
+  }, [fetchBookmarks, t]);
 
   /**
    * Manual refresh

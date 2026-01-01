@@ -1,7 +1,9 @@
 import { Minus, QrCode, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../../utils';
 
 export function FollowUsSection() {
+    const { t } = useTranslation();
     return (
         <div className="flex flex-col gap-3">
             {/* WeChat Official Account */}
@@ -10,11 +12,11 @@ export function FollowUsSection() {
                 "bg-white dark:bg-gray-900"
             )}>
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">关注Infinity微信公众号</h3>
+                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">{t('myTab.followUs.wechat.title')}</h3>
                     <Minus className="w-4 h-4 text-gray-400" />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    关注我们的微信公众号（微信号：infinitydaily），获取Infinity最新产品动态，还能带你发现更多好玩有趣的扩展和网站。
+                    {t('myTab.followUs.wechat.description')}
                 </p>
                 <div className="flex justify-center py-2">
                     <div className="w-32 h-32 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -29,7 +31,7 @@ export function FollowUsSection() {
                 "bg-white dark:bg-gray-900"
             )}>
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">分享</h3>
+                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">{t('myTab.followUs.share.title')}</h3>
                     <Minus className="w-4 h-4 text-gray-400" />
                 </div>
                 <div className="flex gap-3">
@@ -51,7 +53,7 @@ export function FollowUsSection() {
                 "bg-white dark:bg-gray-900"
             )}>
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">关注我们</h3>
+                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">{t('myTab.followUs.follow.title')}</h3>
                     <Minus className="w-4 h-4 text-gray-400" />
                 </div>
                 <div>

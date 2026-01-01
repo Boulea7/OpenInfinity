@@ -6,16 +6,13 @@ import { cn } from '../../utils';
 import { openHistoryItem, getFaviconUrl, formatRelativeTime } from '../../services/history';
 import type { BaseWidgetProps } from '../../types';
 import { useTranslation } from 'react-i18next';
-import { normalizeUiLanguage } from '../../../shared/locale';
-import { tr } from '../../../shared/tr';
 
 /**
  * History Widget component
  * Displays browsing history with permission management
  */
 export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
-  const { i18n } = useTranslation();
-  const lang = normalizeUiLanguage(i18n.language);
+  const { t } = useTranslation();
   const { viewSettings, openBehavior } = useSettingsStore();
   const {
     historyItems,
@@ -37,7 +34,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
   const handleDelete = useCallback(async (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
 
-    if (!confirm(tr('确定要删除这条历史记录吗？', 'Are you sure you want to delete this history item?', lang))) {
+    if (!confirm(t('history.deleteConfirm'))) {
       return;
     }
 
@@ -49,7 +46,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
     } finally {
       setDeletingUrl(null);
     }
-  }, [deleteItem, lang]);
+  }, [deleteItem, t]);
 
   // Handle request permission - must be defined before early return
   const handleRequestPermission = useCallback(async () => {
@@ -80,7 +77,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
       >
         <div className="flex items-center gap-2">
           <Clock className="w-5 h-5 text-white/80" />
-          <span className="font-medium text-white">{tr('历史记录', 'History', lang)}</span>
+          <span className="font-medium text-white">{t('history.title')}</span>
           {hasPermission && historyItems.length > 0 && (
             <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
               {historyItems.length}
@@ -95,7 +92,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
                 refresh();
               }}
               className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors"
-              title={tr('刷新历史', 'Refresh', lang)}
+              title={t('history.refresh')}
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -116,7 +113,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
             <div className="flex flex-col items-center justify-center py-6">
               <Lock className="w-8 h-8 text-white/40 mb-2" />
               <p className="text-sm text-white/60 text-center mb-3">
-                {tr('需要历史记录权限才能显示', 'History permission is required', lang)}
+                {t('history.permissionRequired')}
               </p>
               {error && (
                 <p className="text-xs text-red-400 text-center mb-2">{error}</p>
@@ -125,7 +122,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
                 onClick={handleRequestPermission}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
-                {tr('授权访问历史记录', 'Grant access', lang)}
+                {t('history.grantAccess')}
               </button>
             </div>
           )}
@@ -134,7 +131,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
           {hasPermission && isLoading && historyItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-6">
               <RefreshCw className="w-8 h-8 text-white/40 animate-spin mb-2" />
-              <p className="text-sm text-white/60">{tr('正在加载历史记录...', 'Loading history...', lang)}</p>
+              <p className="text-sm text-white/60">{t('history.loading')}</p>
             </div>
           )}
 
@@ -147,7 +144,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
                 onClick={refresh}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
-                {tr('重试', 'Retry', lang)}
+                {t('history.retry')}
               </button>
             </div>
           )}
@@ -186,7 +183,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
                       </span>
                       {item.visitCount > 1 && (
                         <span className="text-xs text-white/30">
-                          {tr(`访问 ${item.visitCount} 次`, `${item.visitCount} visits`, lang)}
+                          {t('history.visits', { count: item.visitCount })}
                         </span>
                       )}
                     </div>
@@ -198,7 +195,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
                       onClick={(e) => handleDelete(e, item.url)}
                       disabled={deletingUrl === item.url}
                       className="p-1 text-white/60 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors disabled:opacity-50"
-                      title={tr('删除', 'Delete', lang)}
+                      title={t('history.delete')}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -213,7 +210,7 @@ export function HistoryWidget({ isExpanded, onToggleExpand, className }: BaseWid
           {hasPermission && !isLoading && historyItems.length === 0 && !error && (
             <div className="text-center py-6 text-white/40">
               <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">{tr('暂无历史记录', 'No history yet', lang)}</p>
+              <p className="text-sm">{t('history.noHistory')}</p>
             </div>
           )}
         </div>

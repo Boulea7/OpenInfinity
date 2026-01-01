@@ -1,7 +1,9 @@
 import { ChevronRight, Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../../utils';
 
 export function BackupSection() {
+    const { t } = useTranslation();
     return (
         <div className={cn(
             "rounded-xl p-0 overflow-hidden",
@@ -9,7 +11,7 @@ export function BackupSection() {
         )}>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">备份与恢复</h3>
+                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">{t('myTab.backup.title')}</h3>
                 <Minus className="w-4 h-4 text-gray-400" />
             </div>
 
@@ -17,8 +19,8 @@ export function BackupSection() {
             <div className="flex flex-col">
                 <button className="flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
                     <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">导出备份数据</span>
-                        <span className="text-xs text-gray-400">从当前本地数据导出</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{t('myTab.backup.export.title')}</span>
+                        <span className="text-xs text-gray-400">{t('myTab.backup.export.description')}</span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
@@ -27,8 +29,8 @@ export function BackupSection() {
 
                 <button className="flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
                     <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">导入备份数据</span>
-                        <span className="text-xs text-gray-400">从备份文件恢复数据</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{t('myTab.backup.import.title')}</span>
+                        <span className="text-xs text-gray-400">{t('myTab.backup.import.description')}</span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
@@ -37,8 +39,8 @@ export function BackupSection() {
 
                 <button className="flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
                     <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">修复数据</span>
-                        <span className="text-xs text-gray-400">找回丢失或损坏的数据</span>
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{t('myTab.backup.repair.title')}</span>
+                        <span className="text-xs text-gray-400">{t('myTab.backup.repair.description')}</span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>

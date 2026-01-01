@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../../utils';
 
 /**
@@ -5,16 +6,17 @@ import { cn } from '../../../utils';
  * Placeholder for cloud synchronization settings
  */
 export function CloudSyncSection() {
+    const { t } = useTranslation();
     return (
         <div className={cn(
             "rounded-xl p-4 space-y-2",
             "bg-white dark:bg-gray-900"
         )}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                云同步
+                {t('myTab.cloudSync.title')}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-                云同步功能开发中。
+                {t('myTab.cloudSync.inDevelopment')}
             </p>
         </div>
     );

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { MouseEvent } from 'react';
 import { FileText, Plus, Trash2, Edit2, Eye, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../../stores';
 import { useNotes } from '../../hooks';
 import { cn } from '../../utils';
@@ -13,7 +14,9 @@ import type { BaseWidgetProps } from '../../types';
  */
 export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
   const { t } = useTranslation();
-  const { viewSettings } = useSettingsStore();
+  const { viewSettings } = useSettingsStore(
+    useShallow((state) => ({ viewSettings: state.viewSettings }))
+  );
   const { notes, addNote, updateNote, deleteNote } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);

@@ -140,8 +140,8 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className, hideHeade
               {Math.round(weather.current.temperature)}°
             </span>
             <div className="flex items-center gap-2 mt-1 text-white/50 text-xs font-medium uppercase tracking-wider pl-1">
-              <span>H:{weather.forecast[0]?.high}°</span>
-              <span>L:{weather.forecast[0]?.low}°</span>
+              <span>{t('weather.high')}:{weather.forecast[0]?.high}°</span>
+              <span>{t('weather.low')}:{weather.forecast[0]?.low}°</span>
             </div>
           </div>
           <div className="relative">
@@ -154,7 +154,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className, hideHeade
           <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm shadow-sm group hover:bg-white/10 transition-colors">
             <Wind className="w-5 h-5 text-blue-300 mb-1.5 opacity-80 group-hover:opacity-100" />
             <span className="text-xs text-white/40 mb-0.5">{t('weather.wind')}</span>
-            <span className="text-sm font-semibold">{weather.current.windSpeed} <span className="text-[10px] font-normal opacity-60">km/h</span></span>
+            <span className="text-sm font-semibold">{weather.current.windSpeed} <span className="text-[10px] font-normal opacity-60">{t('weather.windSpeedUnit')}</span></span>
           </div>
           <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm shadow-sm group hover:bg-white/10 transition-colors">
             <Droplets className="w-5 h-5 text-cyan-300 mb-1.5 opacity-80 group-hover:opacity-100" />
@@ -301,7 +301,7 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className, hideHeade
                   <div className="flex flex-col items-center p-2 bg-white/5 rounded-lg">
                     <Wind className="w-4 h-4 text-white/60 mb-1" />
                     <span className="text-xs text-white/50">{t('weather.wind')}</span>
-                    <span className="text-sm text-white font-medium">{weather.current.windSpeed} km/h</span>
+                    <span className="text-sm text-white font-medium">{weather.current.windSpeed} {t('weather.windSpeedUnit')}</span>
                   </div>
                 </div>
               </div>

@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   checkHistoryPermission,
   requestHistoryPermission,
@@ -30,6 +31,7 @@ export interface UseHistoryReturn {
 }
 
 export function useHistory(): UseHistoryReturn {
+  const { t } = useTranslation();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,12 +88,12 @@ export function useHistory(): UseHistoryReturn {
       }
     } catch (err) {
       console.error('History fetch error:', err);
-      setError('Failed to fetch history');
+      setError(t('history.fetchError', 'Failed to fetch history'));
     } finally {
       setIsLoading(false);
       isLoadingRef.current = false;
     }
-  }, [hasPermission, isSearching, currentSearchQuery, currentSearchRange]);
+  }, [hasPermission, isSearching, currentSearchQuery, currentSearchRange, t]);
 
   /**
    * Load more history (Infinite Scroll)
@@ -185,10 +187,10 @@ export function useHistory(): UseHistoryReturn {
       setHasPermission(granted);
       return granted;
     } catch {
-      setError('Permission request failed');
+      setError(t('history.permissionError', 'Permission request failed'));
       return false;
     }
-  }, []);
+  }, [t]);
 
   /**
    * Check permission on mount

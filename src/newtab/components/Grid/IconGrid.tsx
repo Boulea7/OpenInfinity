@@ -719,7 +719,10 @@ export function IconGrid({
         if (currentUrl) {
           let blobUrl: string | null = null;
           try {
-            const response = await fetch(currentUrl);
+            const response = await fetch(currentUrl, {
+              referrerPolicy: 'no-referrer',
+              credentials: 'omit',
+            });
             const blob = await response.blob();
             blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');

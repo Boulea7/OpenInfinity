@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   importBookmarks,
   type ImportProgress,
@@ -24,6 +25,7 @@ export interface UseBookmarkImportReturn {
  * @returns Import state and control functions
  */
 export function useBookmarkImport(): UseBookmarkImportReturn {
+  const { t } = useTranslation();
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -47,10 +49,10 @@ export function useBookmarkImport(): UseBookmarkImportReturn {
       setResult(importResult);
 
       if (!importResult.success) {
-        setError(importResult.errors[0] || 'Import failed');
+        setError(importResult.errors[0] || t('bookmarkImport.importFailed', 'Import failed'));
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage = err instanceof Error ? err.message : t('bookmarkImport.unknownError', 'Unknown error occurred');
       setError(errorMessage);
       setResult({
         success: false,
@@ -62,7 +64,7 @@ export function useBookmarkImport(): UseBookmarkImportReturn {
     } finally {
       setIsImporting(false);
     }
-  }, []);
+  }, [t]);
 
   const resetError = useCallback(() => {
     setError(null);

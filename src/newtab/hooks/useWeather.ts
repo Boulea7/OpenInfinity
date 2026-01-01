@@ -270,7 +270,7 @@ export function useWeather(): UseWeatherReturn {
         );
         await upsertWeatherCache(location, weatherSettings.unit, weatherData);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch weather data';
+        const message = err instanceof Error ? err.message : t('weather.fetchError', 'Failed to fetch weather data');
         console.error('Weather fetch error:', err);
         if (isMountedRef.current) setError(message);
       } finally {
@@ -304,10 +304,10 @@ export function useWeather(): UseWeatherReturn {
       // Fetch fresh data after clearing cache
       await fetchWeatherData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to clear cache';
+      const message = err instanceof Error ? err.message : t('weather.clearCacheError', 'Failed to clear cache');
       setError(message);
     }
-  }, [fetchWeatherData]);
+  }, [fetchWeatherData, t]);
 
   /**
    * Force refresh weather data (ignore cache)
@@ -365,7 +365,7 @@ export function useWeather(): UseWeatherReturn {
         );
         await upsertWeatherCache(location, weatherSettings.unit, weatherData);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to refresh weather data';
+        const message = err instanceof Error ? err.message : t('weather.refreshError', 'Failed to refresh weather data');
         if (isMountedRef.current) setError(message);
       } finally {
         if (isMountedRef.current) setIsLoading(false);

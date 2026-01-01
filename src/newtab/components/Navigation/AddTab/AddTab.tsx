@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { Search, Plus, TrendingUp, Share2, AppWindow, Newspaper, Clapperboard, Image, ShoppingBag, MessageCircle, Plane, Coffee, Gamepad2, GraduationCap, Cpu, TrendingDown, BookOpen, MoreHorizontal, Flame, DollarSign, Video, ShoppingCart, Users, Sparkles } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
+import { useTranslation } from 'react-i18next';
 import { useNavigationStore } from '../../../stores/navigationStore';
 import { PRESET_WEBSITES, PRESET_CATEGORIES } from '../../../data/presetWebsites';
 import { WebsiteCard } from './WebsiteCard';
@@ -36,6 +37,7 @@ const getCategoryIcon = (iconName: string) => {
 };
 
 export function AddTab() {
+    const { t } = useTranslation();
     const {
         selectedCategory,
         searchQuery,
@@ -111,13 +113,13 @@ export function AddTab() {
                         type="search"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="搜索网站"
+                        placeholder={t('addTab.searchPlaceholder')}
                         className="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700 transition-all"
                     />
                 </div>
                 <button
                     className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors duration-200"
-                    title="添加自定义网站"
+                    title={t('addTab.addCustomWebsite')}
                 >
                     <Plus className="w-5 h-5" />
                 </button>
@@ -150,7 +152,7 @@ export function AddTab() {
                             )}
                         >
                             <MoreHorizontal className="w-5 h-5 flex-shrink-0" />
-                            <span className="text-sm font-medium">全部</span>
+                            <span className="text-sm font-medium">{t('addTab.all')}</span>
                         </button>
 
                         {/* Category Buttons */}
@@ -188,7 +190,7 @@ export function AddTab() {
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <Search className="w-10 h-10 mb-3 opacity-20" />
-                            <p className="text-sm">未找到相关网站</p>
+                            <p className="text-sm">{t('addTab.noWebsitesFound')}</p>
                         </div>
                     )}
                 </div>

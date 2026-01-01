@@ -14,16 +14,13 @@ import { CheckCircle2, Circle, ListTodo } from 'lucide-react';
 import { useTodos } from '../../hooks';
 import type { TodoItem } from '../../services/database';
 import { formatDate } from '../../utils';
-import { normalizeUiLanguage } from '../../../shared/locale';
-import { tr } from '../../../shared/tr';
 
 interface HomeTodoListProps {
   className?: string;
 }
 
 export const HomeTodoList: React.FC<HomeTodoListProps> = ({ className = '' }) => {
-  const { i18n } = useTranslation();
-  const lang = normalizeUiLanguage(i18n.language);
+  const { t } = useTranslation();
   // Only fetch incomplete todos for better performance
   const { todos, toggleTodo } = useTodos();
 
@@ -50,7 +47,7 @@ export const HomeTodoList: React.FC<HomeTodoListProps> = ({ className = '' }) =>
           <div className="flex items-center gap-2">
             <ListTodo className="w-4 h-4 text-white/70" />
             <h3 className="text-sm font-medium text-white/90">
-              {tr('待办事项', 'Todo', lang)}
+              {t('todo.title')}
             </h3>
           </div>
         </div>
@@ -61,7 +58,7 @@ export const HomeTodoList: React.FC<HomeTodoListProps> = ({ className = '' }) =>
             <CheckCircle2 className="w-6 h-6 text-green-400/70" />
           </div>
           <p className="text-sm text-white/50">
-            {tr('所有任务已完成', 'All tasks completed', lang)}
+            {t('todo.allCompleted')}
           </p>
         </div>
       </div>
@@ -85,7 +82,7 @@ export const HomeTodoList: React.FC<HomeTodoListProps> = ({ className = '' }) =>
           <div className="flex items-center gap-2">
             <ListTodo className="w-4 h-4 text-white/70" />
             <h3 className="text-sm font-medium text-white/90">
-              {tr('待办事项', 'Todo', lang)}
+              {t('todo.title')}
             </h3>
           </div>
           <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded-full">

@@ -82,9 +82,13 @@
     },
     "openBehavior": {
       "title": "Open Behavior",
+      "subtitle": "Only applies to OpenInfinity internal modules",
       "website": "Website",
+      "websites": "Open Websites in New Tab",
       "search": "Search",
+      "searchResults": "Open Third-party Search Results in New Tab",
       "bookmark": "Bookmark",
+      "bookmarks": "Open Bookmarks in New Tab",
       "history": "History",
       "currentTab": "Current Tab",
       "newTab": "New Tab"
@@ -198,7 +202,8 @@
       "format24h": "24-hour",
       "showSeconds": "Show Seconds",
       "displayOptions": "Display Options",
-      "systemTimezone": "Using system timezone"
+      "systemTimezone": "Using system timezone",
+      "ariaLabel": "{{time}}. Click to open clock settings"
     },
     "icons": {
       "title": "Icon Settings",
@@ -233,7 +238,9 @@
       "sizeMedium": "Medium",
       "sizeLarge": "Large",
       "borderRadius": "Border Radius",
-      "opacity": "Opacity"
+      "opacity": "Opacity",
+      "clearAfterSearch": "Clear Search Box After Search",
+      "openInNewTab": "Open Search Results in New Tab"
     },
     "layout": {
       "title": "Layout Settings",
@@ -252,6 +259,12 @@
       "showPagination": "Show Pagination",
       "showClock": "Show Clock",
       "showWeather": "Show Weather",
+      "animationIntensity": "Animation Intensity",
+      "animationNone": "None",
+      "animationLight": "Light",
+      "animationNormal": "Normal",
+      "animationHeavy": "Heavy",
+      "showPinnedNotes": "Show Pinned Notes",
       "autoFillGrid": "Auto Fill Grid",
       "autoFillGridDesc": "When enabled, icons will automatically fill empty spaces; when disabled, empty positions will be preserved",
       "widgetSidebar": {
@@ -280,7 +293,23 @@
       "showClock": "Show Clock",
       "showWeather": "Show Weather",
       "showTopSites": "Show Top Sites",
-      "showBookmarks": "Show Bookmarks"
+      "showBookmarks": "Show Bookmarks",
+      "showRandomWallpaper": "Show Random Wallpaper Button",
+      "showPagination": "Show Pagination",
+      "showHomeTodoList": "Show Home Todo List",
+      "showHomeTodoListDesc": "Display uncompleted todos on the home page"
+    },
+    "icon": {
+      "title": "Icon",
+      "hideName": "Hide Icon Names",
+      "shadow": "Icon Shadow",
+      "animation": "Hover Animation",
+      "borderRadius": "Border Radius",
+      "opacity": "Opacity"
+    },
+    "systemIcons": {
+      "title": "System Shortcuts",
+      "description": "Control which system shortcuts to display on the home page. Deleted shortcuts can be restored here."
     },
     "weather": {
       "title": "Weather",
@@ -296,13 +325,6 @@
       "regionChina": "China",
       "regionIntl": "International",
       "noCityFound": "No matching cities found"
-    },
-    "clock": {
-      "title": "Clock",
-      "format": "Time Format",
-      "hour": "hour",
-      "showSeconds": "Show Seconds",
-      "autoDetect": "Auto Detect Timezone"
     },
     "reset": {
       "title": "Reset Settings",
@@ -407,6 +429,9 @@
     "forecast": "Forecast",
     "noData": "No weather data",
     "windSpeed": "Wind",
+    "windSpeedUnit": "km/h",
+    "high": "H",
+    "low": "L",
     "today": "Today",
     "tomorrow": "Tomorrow",
     "lastUpdate": "Last update",
@@ -498,9 +523,11 @@
     "count": "{{count}} Notes",
     "selectToView": "Select a note to view",
     "unsavedChangesConfirm": "You have unsaved changes. Are you sure you want to close?",
-    "emptyNote": "(Empty note)"
+    "emptyNote": "(Empty note)",
+    "daysAgo": "{{days}} days ago"
   },
   "history": {
+    "title": "History",
     "today": "Today",
     "yesterday": "Yesterday",
     "selectTimeRange": "Select time range",
@@ -511,9 +538,19 @@
       "twoWeeks": "Last 2 weeks",
       "oneMonth": "Last month",
       "allHistory": "All history"
-    }
+    },
+    "refresh": "Refresh",
+    "permissionRequired": "History permission is required",
+    "grantAccess": "Grant access",
+    "loading": "Loading history...",
+    "retry": "Retry",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this history item?",
+    "noHistory": "No history yet",
+    "visits": "{{count}} visits"
   },
   "todo": {
+    "title": "Todo",
     "priority": {
       "high": "High",
       "medium": "Med",
@@ -525,7 +562,8 @@
     "completed": "Completed",
     "noCompleted": "No completed items",
     "clearCompleted": "Clear all completed",
-    "confirmClear": "Click again to confirm"
+    "confirmClear": "Click again to confirm",
+    "allCompleted": "All tasks completed"
   },
   "sidebar": {
     "todo": "Todo",
@@ -533,6 +571,42 @@
     "history": "History",
     "extensions": "Extensions",
     "weather": "Weather"
+  },
+  "bookmarks": {
+    "permissionDescription": "Allow access to your browser bookmarks to browse and manage them here.",
+    "loadFailed": "Failed to load bookmarks",
+    "searchPlaceholder": "Search bookmarks...",
+    "switchToTreeView": "Switch to tree view",
+    "switchToFolderView": "Switch to folder view",
+    "backToParent": "Back to parent",
+    "backToHome": "Back to home",
+    "noResults": "No bookmarks found",
+    "empty": "No bookmarks",
+    "tabs": {
+      "all": "All",
+      "bar": "Bookmarks Bar",
+      "other": "Other",
+      "mobile": "Mobile",
+      "recent": "Recently Added"
+    }
+  },
+  "extensions": {
+    "permissionDescription": "Allow viewing and managing installed browser extensions.",
+    "searchPlaceholder": "Search extensions...",
+    "filter": {
+      "all": "All",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "noResults": "No extensions found",
+    "empty": "No extensions",
+    "openOptions": "Extension options",
+    "openHomepage": "Open homepage/store",
+    "permissions": "Permissions",
+    "uninstall": "Uninstall",
+    "hostPermissions": "Host Permissions",
+    "noWarningPermissions": "No special warning permissions",
+    "noPermissionsNeeded": "This extension requires no special permissions"
   },
   "contextMenu": {
     "open": "Open",
@@ -561,5 +635,125 @@
     "like": "Like",
     "liked": "Liked",
     "retry": "Retry"
+  },
+  "iconEditor": {
+    "addIcon": "Add Shortcut",
+    "editIcon": "Edit Shortcut",
+    "title": "Title",
+    "url": "URL",
+    "customIconUrl": "Custom Icon URL (optional)",
+    "saving": "Saving...",
+    "add": "Add",
+    "titleRequired": "Please enter a title",
+    "urlRequired": "Please enter a URL",
+    "urlInvalid": "Please enter a valid URL",
+    "saveFailed": "Failed to save icon",
+    "websiteUrl": "Website URL",
+    "websiteName": "Website Name",
+    "selectIcon": "Select Icon",
+    "systemIconNotEditable": "System shortcuts cannot be edited",
+    "systemIconDesc": "This is a built-in system shortcut and cannot be modified. To hide this shortcut, go to Settings > System Shortcuts."
+  },
+  "folder": {
+    "createFolder": "Create Folder",
+    "nameInputHint": "Name the merged icons",
+    "containsIcons": "Contains Icons",
+    "folderName": "Folder Name",
+    "folderNamePlaceholder": "Enter folder name",
+    "newFolder": "New Folder",
+    "create": "Create",
+    "renameFolder": "Rename folder",
+    "itemCount": "{{count}} item",
+    "itemCount_plural": "{{count}} items",
+    "folderEmpty": "Folder is empty",
+    "dragHint": "Drag icons here to add them",
+    "removeFromFolder": "Remove from folder"
+  },
+  "iconTypeSelector": {
+    "textIcon": "Text Icon",
+    "faviconIcon": "Website Icon",
+    "customIcon": "Custom Icon",
+    "reuploadHint": "Click the dashed box above to re-upload",
+    "displayText": "Display Text",
+    "textPlaceholder": "1-2 characters",
+    "fontSize": "Size",
+    "backgroundColor": "Background Color",
+    "customColor": "Custom color"
+  },
+  "navigation": {
+    "add": "Add",
+    "my": "My",
+    "settings": "Settings"
+  },
+  "addTab": {
+    "searchPlaceholder": "Search websites",
+    "addCustomWebsite": "Add custom website",
+    "all": "All",
+    "noWebsitesFound": "No websites found"
+  },
+  "myTab": {
+    "about": {
+      "title": "About",
+      "version": "v11.0.19",
+      "aboutUs": "About Us",
+      "contactUs": "Contact Us",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    },
+    "cloudSync": {
+      "title": "Cloud Sync",
+      "inDevelopment": "Cloud sync feature is under development."
+    },
+    "followUs": {
+      "wechat": {
+        "title": "Follow Infinity WeChat Official Account",
+        "description": "Follow our WeChat official account (ID: infinitydaily) to get the latest Infinity product updates and discover more interesting extensions and websites."
+      },
+      "share": {
+        "title": "Share"
+      },
+      "follow": {
+        "title": "Follow Us"
+      }
+    },
+    "support": {
+      "title": "Support",
+      "qqGroup": "QQ Group",
+      "qqCopied": "QQ group number copied",
+      "qqCopyFailed": "Failed to copy, please copy manually: 123456789"
+    },
+    "feedback": {
+      "title": "User Feedback",
+      "description": "If you like Infinity New Tab, please rate us or give us feedback to help us improve.",
+      "fiveStars": "5-Star Rating",
+      "feedback": "Feedback"
+    },
+    "backup": {
+      "title": "Backup & Restore",
+      "export": {
+        "title": "Export Backup Data",
+        "description": "Export from current local data"
+      },
+      "import": {
+        "title": "Import Backup Data",
+        "description": "Restore data from backup file"
+      },
+      "repair": {
+        "title": "Repair Data",
+        "description": "Recover lost or corrupted data"
+      }
+    },
+    "account": {
+      "syncDevices": "Keep in sync with other devices",
+      "lastSyncTime": "Last sync time: December 18, 2025 02:11",
+      "manageBackups": "Manage backup history",
+      "backupNow": "Backup Now"
+    },
+    "donate": {
+      "title": "Donate",
+      "description": "Your support means a lot to us",
+      "random": "¥Any amount",
+      "donateButton": "Donate Now"
+    }
   }
 }

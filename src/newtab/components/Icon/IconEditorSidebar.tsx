@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Globe } from 'lucide-react';
 import type { Icon } from '../../services/database';
 import { useIconStore } from '../../stores';
@@ -13,6 +14,7 @@ interface IconEditorSidebarProps {
 }
 
 export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSidebarProps) {
+  const { t } = useTranslation();
   const { addIcon, updateIcon } = useIconStore();
 
   const [title, setTitle] = useState('');
@@ -28,17 +30,17 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
   const normalizeWebsiteUrl = useCallback((raw: string): string => {
     const trimmed = (raw || '').trim();
     if (!trimmed) {
-      throw new Error('Please enter a URL');
+      throw new Error(t('iconEditor.urlRequired'));
     }
 
     const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
     const parsed = new URL(withScheme);
     const protocol = parsed.protocol.toLowerCase();
     if (protocol !== 'http:' && protocol !== 'https:') {
-      throw new Error('Please enter a valid URL');
+      throw new Error(t('iconEditor.urlInvalid'));
     }
     return parsed.toString();
-  }, []);
+  }, [t]);
 
   const buildGoogleFaviconUrl = useCallback((normalizedUrl: string): string => {
     const hostname = new URL(normalizedUrl).hostname;
@@ -137,7 +139,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
 
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
-      setError('Please enter a title');
+      setError(t('iconEditor.titleRequired'));
       return;
     }
 
@@ -163,7 +165,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
       onClose();
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Failed to save icon');
+      setError(err instanceof Error ? err.message : t('iconEditor.saveFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +203,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-zinc-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {editingIcon ? '编辑图标' : '添加图标'}
+            {editingIcon ? t('iconEditor.editIcon') : t('iconEditor.addIcon')}
           </h2>
           <button
             type="button"
@@ -222,10 +224,10 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
                 <Globe size={32} className="text-zinc-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                系统快捷方式不可编辑
+                {t('iconEditor.systemIconNotEditable')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[280px]">
-                这是一个内置的系统快捷方式，无法修改其属性。如需隐藏此快捷方式，可在设置 &gt; 系统快捷方式中进行管理。
+                {t('iconEditor.systemIconDesc')}
               </p>
             </div>
           ) : (
@@ -233,7 +235,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
           {/* URL Field */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              网站地址
+              {t('iconEditor.websiteUrl')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -252,7 +254,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
           {/* Name Field */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              网站名称
+              {t('iconEditor.websiteName')}
             </label>
             <input
               type="text"
@@ -266,7 +268,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
           {/* Icon Selector */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              选择图标
+              {t('iconEditor.selectIcon')}
             </label>
             <div className="bg-white dark:bg-zinc-900 rounded-xl">
               <IconTypeSelectorContainer
@@ -311,7 +313,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
                 onClick={handleClose}
                 className="w-full py-2.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium rounded-lg transition-colors"
               >
-                关闭
+                {t('common.close')}
               </button>
             ) : (
               <>
@@ -321,14 +323,14 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
                   disabled={isLoading}
                   className="w-full py-2.5 bg-brand-orange-500 hover:bg-brand-orange-600 text-white font-medium rounded-lg shadow-sm shadow-brand-orange-500/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isLoading ? '保存中...' : '确定'}
+                  {isLoading ? t('iconEditor.saving') : t('common.save')}
                 </button>
                 <button
                   type="button"
                   onClick={handleClose}
                   className="w-full py-2.5 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-600 dark:text-gray-300 font-medium rounded-lg transition-colors"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
               </>
             )}

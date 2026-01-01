@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { CheckSquare, Square, Plus, Trash2, Edit2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../../stores';
 import { useTodos } from '../../hooks';
 import { cn, formatDate } from '../../utils';
@@ -15,7 +16,9 @@ import { tr } from '../../../shared/tr';
 export function TodoWidget({ isExpanded, onToggleExpand, className }: BaseWidgetProps) {
   const { i18n } = useTranslation();
   const lang = normalizeUiLanguage(i18n.language);
-  const { viewSettings } = useSettingsStore();
+  const { viewSettings } = useSettingsStore(
+    useShallow((state) => ({ viewSettings: state.viewSettings }))
+  );
   const { todos, addTodo, toggleTodo, deleteTodo, updateTodo, clearCompleted } = useTodos();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTodoText, setNewTodoText] = useState('');

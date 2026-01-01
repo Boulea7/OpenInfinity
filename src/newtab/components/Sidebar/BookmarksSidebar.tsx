@@ -21,6 +21,7 @@ import {
   Clock,
   Check
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PermissionGate } from '../ui/PermissionGate';
 import { hasPermissions, ensureOptionalPermissions, PERMISSION_GROUPS } from '../../../shared/permissions';
 import { cn, getGoogleFaviconUrl } from '../../utils';
@@ -54,6 +55,7 @@ interface BreadcrumbItem {
 }
 
 export function BookmarksSidebar() {
+  const { t } = useTranslation();
   const [hasPermission, setHasPermission] = useState(false);
   const [isCheckingPermission, setIsCheckingPermission] = useState(true);
 
@@ -87,8 +89,8 @@ export function BookmarksSidebar() {
   return (
     <PermissionGate
       hasPermission={hasPermission}
-      permissionName="书签"
-      description="允许访问您的浏览器书签，以便在这里浏览和管理。"
+      permissionName={t('sidebar.bookmarks')}
+      description={t('bookmarks.permissionDescription')}
       onRequestPermission={handleRequestPermission}
       icon={<Star className="w-8 h-8 text-amber-500" />}
     >
@@ -98,6 +100,7 @@ export function BookmarksSidebar() {
 }
 
 function BookmarksSidebarContent() {
+  const { t } = useTranslation();
   const [bookmarks, setBookmarks] = useState<BookmarkTreeNode[]>([]);
   const [recentBookmarks, setRecentBookmarks] = useState<BookmarkTreeNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,11 +172,11 @@ function BookmarksSidebarContent() {
       }
     } catch (err) {
       console.error('Failed to fetch bookmarks:', err);
-      setError('无法加载书签');
+      setError(t('bookmarks.loadFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [showRecentlyAdded]);
+  }, [showRecentlyAdded, t]);
 
   // Load on mount and when settings change
   useEffect(() => {
@@ -227,12 +230,12 @@ function BookmarksSidebarContent() {
   // Enter a folder (folder mode)
   const enterFolder = useCallback((folder: BookmarkTreeNode) => {
     setCurrentFolderId(folder.id);
-    setBreadcrumbs(prev => [...prev, { id: folder.id, title: folder.title || '书签' }]);
+    setBreadcrumbs(prev => [...prev, { id: folder.id, title: folder.title || t('sidebar.bookmarks') }]);
     // Scroll to top when entering folder
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
-  }, []);
+  }, [t]);
 
   // Navigate to a breadcrumb
   const navigateToBreadcrumb = useCallback((index: number) => {
@@ -283,16 +286,16 @@ function BookmarksSidebarContent() {
   // Define tabs dynamically
   const tabs: TabDefinition[] = useMemo(() => {
     const baseTabs: TabDefinition[] = [
-      { value: 'all', label: '全部' },
-      { value: 'bar', label: '收藏夹栏', folderId: '1' }, // Rename Bookmarks Bar
-      { value: 'other', label: '其他', folderId: '2' },
-      { value: 'mobile', label: '移动端', folderId: '3' },
+      { value: 'all', label: t('bookmarks.tabs.all') },
+      { value: 'bar', label: t('bookmarks.tabs.bar'), folderId: '1' },
+      { value: 'other', label: t('bookmarks.tabs.other'), folderId: '2' },
+      { value: 'mobile', label: t('bookmarks.tabs.mobile'), folderId: '3' },
     ];
     if (showRecentlyAdded) {
-      return [{ value: 'recent', label: '最近添加', icon: <Clock className="w-3 h-3" /> }, ...baseTabs];
+      return [{ value: 'recent', label: t('bookmarks.tabs.recent'), icon: <Clock className="w-3 h-3" /> }, ...baseTabs];
     }
     return baseTabs;
-  }, [showRecentlyAdded]);
+  }, [showRecentlyAdded, t]);
 
   // Filter by tab first, then by folder navigation, then by search query
   const filteredBookmarks = useMemo(() => {
@@ -397,7 +400,7 @@ function BookmarksSidebarContent() {
           </div>
 
           <span className="text-[13px] text-zinc-700 dark:text-zinc-200 truncate font-medium flex-1 text-left">
-            {node.title || '书签'}
+            {node.title || t('sidebar.bookmarks')}
           </span>
 
           {hasChildren && (
@@ -463,7 +466,7 @@ function BookmarksSidebarContent() {
         </div>
         <div className="flex-1 min-w-0">
           <span className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100 truncate block">
-            {node.title || '书签'}
+            {node.title || t('sidebar.bookmarks')}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -492,7 +495,7 @@ function BookmarksSidebarContent() {
           onClick={refresh}
           className="text-xs text-blue-500 hover:text-blue-600 hover:underline"
         >
-          重试
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -512,7 +515,7 @@ function BookmarksSidebarContent() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索书签..."
+                placeholder={t('bookmarks.searchPlaceholder')}
                 className={cn(
                   "w-full pl-9 pr-3 py-1.5 rounded-lg text-sm bg-transparent",
                   "text-gray-900 dark:text-gray-100",
@@ -530,7 +533,7 @@ function BookmarksSidebarContent() {
                   }
                 }}
                 className="mr-1 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors"
-                title={viewMode === 'folder' ? '切换到树形视图' : '切换到文件夹视图'}
+                title={viewMode === 'folder' ? t('bookmarks.switchToTreeView') : t('bookmarks.switchToFolderView')}
               >
                 {viewMode === 'folder' ? (
                   <ListIcon className="w-4 h-4" />
@@ -568,7 +571,7 @@ function BookmarksSidebarContent() {
                   )}>
                     {showRecentlyAdded && <Check className="w-3.5 h-3.5" />}
                   </div>
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">最近添加</span>
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{t('bookmarks.tabs.recent')}</span>
                 </button>
               </div>
             )}
@@ -611,7 +614,7 @@ function BookmarksSidebarContent() {
                 }
               }}
               className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors flex-shrink-0"
-              title="返回上一级"
+              title={t('bookmarks.backToParent')}
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
             </button>
@@ -630,7 +633,7 @@ function BookmarksSidebarContent() {
             <button
               onClick={() => navigateToBreadcrumb(-1)}
               className="p-1 text-zinc-400 hover:text-blue-500 transition-colors"
-              title="回到主页"
+              title={t('bookmarks.backToHome')}
             >
               <Home className="w-3.5 h-3.5" />
             </button>
@@ -653,7 +656,7 @@ function BookmarksSidebarContent() {
               )}
             </div>
             <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              {searchQuery ? '未找到相关书签' : '暂无书签'}
+              {searchQuery ? t('bookmarks.noResults') : t('bookmarks.empty')}
             </p>
           </div>
         ) : activeTab === 'recent' ? (

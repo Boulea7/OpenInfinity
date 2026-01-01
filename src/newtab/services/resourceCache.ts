@@ -109,6 +109,8 @@ async function fetchWithTimeout(url: string): Promise<Response> {
     const response = await fetch(url, {
       signal: controller.signal,
       cache: 'force-cache', // Prefer browser cache
+      referrerPolicy: 'no-referrer',
+      credentials: 'omit',
     });
     clearTimeout(timeoutId);
     return response;

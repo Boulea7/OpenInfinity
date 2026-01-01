@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Icon } from '../../services/database';
 import { useIconStore } from '../../stores';
 import { Modal } from '../ui/Modal';
@@ -15,6 +16,7 @@ interface IconEditorProps {
  * Modal form for adding or editing website shortcuts
  */
 export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
+  const { t } = useTranslation();
   const { addIcon, updateIcon } = useIconStore();
 
   // Form state
@@ -91,12 +93,12 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
 
     // Validate inputs
     if (!title.trim()) {
-      setError('Please enter a title');
+      setError(t('iconEditor.titleRequired'));
       return;
     }
 
     if (!url.trim()) {
-      setError('Please enter a URL');
+      setError(t('iconEditor.urlRequired'));
       return;
     }
 
@@ -107,7 +109,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
     }
 
     if (!isValidUrl(normalizedUrl)) {
-      setError('Please enter a valid URL');
+      setError(t('iconEditor.urlInvalid'));
       return;
     }
 
@@ -141,7 +143,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save icon');
+      setError(err instanceof Error ? err.message : t('iconEditor.saveFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +158,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingIcon ? 'Edit Shortcut' : 'Add Shortcut'}
+      title={editingIcon ? t('iconEditor.editIcon') : t('iconEditor.addIcon')}
       size="sm"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,7 +223,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
             htmlFor="icon-title"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
-            Title
+            {t('iconEditor.title')}
           </label>
           <input
             id="icon-title"
@@ -248,7 +250,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
             htmlFor="icon-url"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
-            URL
+            {t('iconEditor.url')}
           </label>
           <input
             id="icon-url"
@@ -275,7 +277,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
             htmlFor="icon-image"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
-            Custom Icon URL (optional)
+            {t('iconEditor.customIconUrl')}
           </label>
           <input
             id="icon-image"
@@ -315,7 +317,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
               'transition-colors duration-200'
             )}
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -328,7 +330,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
               'transition-colors duration-200'
             )}
           >
-            {isLoading ? 'Saving...' : editingIcon ? 'Save' : 'Add'}
+            {isLoading ? t('iconEditor.saving') : editingIcon ? t('common.save') : t('iconEditor.add')}
           </button>
         </div>
       </form>

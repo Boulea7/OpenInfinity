@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Shield,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PermissionGate } from '../ui/PermissionGate';
 import { hasPermissions, ensureOptionalPermissions, PERMISSION_GROUPS } from '../../../shared/permissions';
 import { cn } from '../../utils';
@@ -64,6 +65,7 @@ function ToggleSwitch({ checked, onChange, disabled }: { checked: boolean; onCha
 }
 
 export function ExtensionsSidebar() {
+  const { t } = useTranslation();
   const [hasPermission, setHasPermission] = useState(false);
   const [isCheckingPermission, setIsCheckingPermission] = useState(true);
 
@@ -97,8 +99,8 @@ export function ExtensionsSidebar() {
   return (
     <PermissionGate
       hasPermission={hasPermission}
-      permissionName="扩展管理"
-      description="允许查看和管理已安装的浏览器扩展。"
+      permissionName={t('sidebar.extensions')}
+      description={t('extensions.permissionDescription')}
       onRequestPermission={handleRequestPermission}
       icon={<Puzzle className="w-8 h-8 text-zinc-500" />}
     >
@@ -108,6 +110,7 @@ export function ExtensionsSidebar() {
 }
 
 function ExtensionsSidebarContent() {
+  const { t } = useTranslation();
   const [extensions, setExtensions] = useState<ExtensionInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -285,7 +288,7 @@ function ExtensionsSidebarContent() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索扩展..."
+              placeholder={t('extensions.searchPlaceholder')}
               className={cn(
                 "w-full pl-9 pr-3 py-1.5 rounded-lg text-sm bg-transparent",
                 "text-gray-900 dark:text-gray-100",
@@ -311,7 +314,7 @@ function ExtensionsSidebarContent() {
                     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'
                 )}
               >
-                {f === 'all' ? '全部' : f === 'enabled' ? '已启用' : '已禁用'}
+                {f === 'all' ? t('extensions.filter.all') : f === 'enabled' ? t('extensions.filter.enabled') : t('extensions.filter.disabled')}
               </button>
             );
           })}
@@ -330,7 +333,7 @@ function ExtensionsSidebarContent() {
               )}
             </div>
             <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              {searchQuery ? '未找到相关扩展' : '暂无扩展'}
+              {searchQuery ? t('extensions.noResults') : t('extensions.empty')}
             </p>
           </div>
         ) : (
@@ -395,7 +398,7 @@ function ExtensionsSidebarContent() {
                     <button
                       onClick={() => openUrlSafe(ext.optionsUrl!)}
                       className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-                      title="扩展选项"
+                      title={t('extensions.openOptions')}
                     >
                       <Settings className="w-4 h-4" />
                     </button>
@@ -405,7 +408,7 @@ function ExtensionsSidebarContent() {
                   <button
                     onClick={() => openUrlSafe(ext.homepageUrl || `https://chrome.google.com/webstore/detail/${ext.id}`)}
                     className="p-1.5 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                    title="打开主页/商店"
+                    title={t('extensions.openHomepage')}
                   >
                     <ExternalLink className="w-4 h-4" />
                   </button>
@@ -421,7 +424,7 @@ function ExtensionsSidebarContent() {
                     )}
                   >
                     <Shield className="w-3.5 h-3.5" />
-                    权限
+                    {t('extensions.permissions')}
                     {expandedPermissions.has(ext.id) ? (
                       <ChevronDown className="w-3.5 h-3.5" />
                     ) : (
@@ -434,10 +437,10 @@ function ExtensionsSidebarContent() {
                 <button
                   onClick={() => uninstallExtension(ext.id)}
                   className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-60 hover:opacity-100"
-                  title="卸载扩展"
+                  title={t('extensions.uninstall')}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>卸载</span>
+                  <span>{t('extensions.uninstall')}</span>
                 </button>
               </div>
 
@@ -448,7 +451,7 @@ function ExtensionsSidebarContent() {
                   {/* Host Permissions */}
                   {ext.hostPermissions && ext.hostPermissions.length > 0 && (
                     <div className="flex items-start text-xs">
-                      <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">Host权限</span>
+                      <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">{t('extensions.hostPermissions')}</span>
                       <div className="flex-1 flex flex-col gap-1">
                         {ext.hostPermissions.map((host, i) => (
                           <span key={i} className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] bg-white dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 w-fit">
@@ -461,7 +464,7 @@ function ExtensionsSidebarContent() {
 
                   {/* General Permissions (Warnings) */}
                   <div className="flex items-start text-xs">
-                    <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">权限</span>
+                    <span className="w-20 flex-shrink-0 text-zinc-500 dark:text-zinc-400 py-0.5">{t('extensions.permissions')}</span>
                     <div className="flex-1 flex flex-col gap-1">
                       {permissionWarnings[ext.id]?.length ? (
                         permissionWarnings[ext.id].map((warning, i) => (
@@ -471,7 +474,7 @@ function ExtensionsSidebarContent() {
                         ))
                       ) : (
                         <span className="text-zinc-400 italic py-0.5">
-                          {(ext.permissions && ext.permissions.length > 0) ? '无特殊警告权限' : '此扩展不需要特殊权限'}
+                          {(ext.permissions && ext.permissions.length > 0) ? t('extensions.noWarningPermissions') : t('extensions.noPermissionsNeeded')}
                         </span>
                       )}
                     </div>

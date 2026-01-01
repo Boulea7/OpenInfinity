@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragOverlay,
@@ -41,6 +42,7 @@ export function FolderModal({
   onEditIcon,
   onAddIcon,
 }: FolderModalProps) {
+  const { t } = useTranslation();
   const { icons, updateFolder, removeFromFolder, reorderFolderIcons, deleteIcon } = useIconStore();
 
   // Edit mode for folder name
@@ -168,13 +170,13 @@ export function FolderModal({
                 onClick={saveNameEdit}
                 className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-sm"
               >
-                Save
+                {t('common.save')}
               </button>
               <button
                 onClick={cancelNameEdit}
                 className="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           ) : (
@@ -197,7 +199,7 @@ export function FolderModal({
                 <button
                   onClick={startEditingName}
                   className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  title="Rename folder"
+                  title={t('folder.renameFolder')}
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
@@ -214,7 +216,7 @@ export function FolderModal({
 
         {/* Icon count */}
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {folderIcons.length} {folderIcons.length === 1 ? 'item' : 'items'}
+          {t('folder.itemCount', { count: folderIcons.length })}
         </p>
 
         {/* Icons grid with glassmorphism */}
@@ -257,7 +259,7 @@ export function FolderModal({
                         );
                       }}
                       className="w-5 h-5 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs"
-                      title="Remove from folder"
+                      title={t('folder.removeFromFolder')}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
@@ -272,7 +274,7 @@ export function FolderModal({
                         );
                       }}
                       className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
-                      title="Delete"
+                      title={t('common.delete')}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -296,8 +298,8 @@ export function FolderModal({
                       d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                     />
                   </svg>
-                  <p className="text-sm">Folder is empty</p>
-                  <p className="text-xs mt-1">Drag icons here to add them</p>
+                  <p className="text-sm">{t('folder.folderEmpty')}</p>
+                  <p className="text-xs mt-1">{t('folder.dragHint')}</p>
                 </div>
               ) : (
                 <button
@@ -312,7 +314,7 @@ export function FolderModal({
                   )}
                 >
                   <Plus className="w-6 h-6 mb-1" />
-                  <span className="text-xs">Add</span>
+                  <span className="text-xs">{t('iconEditor.add')}</span>
                 </button>
               )}
             </div>
@@ -336,7 +338,7 @@ export function FolderModal({
               'transition-colors duration-200'
             )}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Plus, Check, Globe, Lock, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { IconType, IconDraft, TextIconConfig, FaviconCandidate } from './types';
 import { PRESET_COLORS } from './types';
 import TextIconEditor from './TextIconEditor';
@@ -60,6 +61,7 @@ export default function IconTypeSelectorShared({
   fileInputRef,
   hideFaviconOption = false,
 }: Props) {
+  const { t } = useTranslation();
   const validFavicon = faviconCandidates.find((s) => s.status === 'success');
 
   const getFaviconUiState = (): 'locked' | 'loading' | 'error' | 'ready' => {
@@ -125,7 +127,7 @@ export default function IconTypeSelectorShared({
             {/* Show fallback text only if no preview URL */}
             {!textIconPreviewUrl && (textConfig.text || (websiteName || '').slice(0, 2) || 'Go')}
           </div>
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">纯色图标</span>
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{t('iconTypeSelector.textIcon')}</span>
           {type === 'text' && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-orange-500 rounded-full flex items-center justify-center shadow-sm border border-white dark:border-zinc-900">
               <Check size={10} className="text-white" />
@@ -163,7 +165,7 @@ export default function IconTypeSelectorShared({
                   </div>
                 )}
               </div>
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">网站图标</span>
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{t('iconTypeSelector.faviconIcon')}</span>
               {type === 'favicon' && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-orange-500 rounded-full flex items-center justify-center shadow-sm border border-white dark:border-zinc-900">
                   <Check size={10} className="text-white" />
@@ -196,7 +198,7 @@ export default function IconTypeSelectorShared({
               <Plus size={20} />
             )}
           </div>
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">本地图标</span>
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{t('iconTypeSelector.customIcon')}</span>
         </button>
       </div>
 
@@ -210,7 +212,7 @@ export default function IconTypeSelectorShared({
 
         {type === 'custom' && (
           <div className="text-center text-xs text-zinc-500 dark:text-zinc-400 py-2">
-            点击上方虚线框可重新上传
+            {t('iconTypeSelector.reuploadHint')}
           </div>
         )}
       </div>

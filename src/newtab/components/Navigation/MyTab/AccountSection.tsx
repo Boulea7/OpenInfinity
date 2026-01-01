@@ -1,8 +1,10 @@
 import { ChevronRight, Cloud } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../../utils';
 import { useState } from 'react';
 
 export function AccountSection() {
+    const { t } = useTranslation();
     const [syncEnabled, setSyncEnabled] = useState(true);
 
     return (
@@ -31,8 +33,8 @@ export function AccountSection() {
             {/* Sync Toggle Row */}
             <div className="flex items-center justify-between py-1">
                 <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-200">与其他设备保持同步</span>
-                    <span className="text-xs text-gray-400">上次同步时间：2025年12月18日 02:11</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-200">{t('myTab.account.syncDevices')}</span>
+                    <span className="text-xs text-gray-400">{t('myTab.account.lastSyncTime')}</span>
                 </div>
                 <button
                     onClick={() => setSyncEnabled(!syncEnabled)}
@@ -53,12 +55,12 @@ export function AccountSection() {
             {/* Actions Footer */}
             <div className="flex items-center justify-between pt-1">
                 <button className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-gray-200 hover:text-gray-600 dark:hover:text-gray-400 transition-colors duration-200">
-                    <span>管理历史备份节点</span>
+                    <span>{t('myTab.account.manageBackups')}</span>
                     <ChevronRight className="w-4 h-4" />
                 </button>
                 <button className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-gray-200 hover:text-gray-600 dark:hover:text-gray-400 transition-colors duration-200">
                     <Cloud className="w-4 h-4" />
-                    <span>立即备份</span>
+                    <span>{t('myTab.account.backupNow')}</span>
                 </button>
             </div>
         </div>

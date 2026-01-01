@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { TextIconConfig } from './types';
 import { PRESET_COLORS } from './types';
 
@@ -15,6 +16,7 @@ interface Props {
  * - Select background color from presets or custom
  */
 export default function TextIconEditor({ config, onChange }: Props) {
+  const { t } = useTranslation();
   const { text, fontSize, color } = config;
 
   const updateConfig = (updates: Partial<TextIconConfig>) => {
@@ -34,13 +36,13 @@ export default function TextIconEditor({ config, onChange }: Props) {
       {/* Text Input */}
       <div>
         <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
-          显示文字
+          {t('iconTypeSelector.displayText')}
         </label>
         <input
           type="text"
           value={text}
           onChange={handleTextChange}
-          placeholder="1-2个字符"
+          placeholder={t('iconTypeSelector.textPlaceholder')}
           maxLength={2}
           className="w-full px-3 py-2 text-center text-lg font-bold tracking-widest
                      bg-zinc-50 dark:bg-zinc-800
@@ -56,7 +58,7 @@ export default function TextIconEditor({ config, onChange }: Props) {
       {/* Font Size Slider */}
       <div className="flex items-center gap-3">
         <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-          大小: {fontSize}px
+          {t('iconTypeSelector.fontSize')}: {fontSize}px
         </label>
         <input
           type="range"
@@ -71,7 +73,7 @@ export default function TextIconEditor({ config, onChange }: Props) {
       {/* Color Picker */}
       <div>
         <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
-          背景颜色
+          {t('iconTypeSelector.backgroundColor')}
         </label>
         <div className="flex flex-wrap gap-2 justify-between">
           {PRESET_COLORS.map((c) => (
@@ -107,7 +109,7 @@ export default function TextIconEditor({ config, onChange }: Props) {
               background:
                 'linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)',
             }}
-            title="自定义颜色"
+            title={t('iconTypeSelector.customColor')}
           >
             <input
               type="color"

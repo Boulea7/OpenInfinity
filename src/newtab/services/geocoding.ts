@@ -152,6 +152,8 @@ async function fetchCityName(
     // The Nominatim API will use the browser's default User-Agent
     const response = await fetch(url, {
       signal: AbortSignal.timeout(GEOCODE_TIMEOUT_MS),
+      referrerPolicy: 'no-referrer',
+      credentials: 'omit',
     });
 
     if (!response.ok) {

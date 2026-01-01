@@ -3,6 +3,7 @@
  * Using Dexie.js for IndexedDB access
  */
 import Dexie, { type Table } from 'dexie';
+import { tr } from '../../shared/tr';
 
 /**
  * Data normalization helpers for migration safety
@@ -538,7 +539,10 @@ class OpenInfinityDB extends Dexie {
           await trans.table('todos').bulkAdd([
             {
               id: crypto.randomUUID(),
-              text: '欢迎使用Open Infinity新标签页，这是一条示例待办事项。',
+              text: tr(
+                '欢迎使用Open Infinity新标签页，这是一条示例待办事项。',
+                'Welcome to Open Infinity New Tab, this is a sample todo item.'
+              ),
               done: false,
               priority: 'high',
               children: [],
@@ -548,11 +552,17 @@ class OpenInfinityDB extends Dexie {
             },
             {
               id: crypto.randomUUID(),
-              text: '尝试输入 #工作 或 #生活 来分类你的任务',
+              text: tr(
+                '尝试输入 #工作 或 #生活 来分类你的任务',
+                'Try typing #work or #life to categorize your tasks'
+              ),
               done: false,
               priority: 'medium',
               children: [],
-              tags: ['工作', '生活'],
+              tags: [
+                tr('工作', 'work'),
+                tr('生活', 'life'),
+              ],
               createdAt: now - 1000,
               updatedAt: now - 1000,
             },
@@ -585,7 +595,10 @@ class OpenInfinityDB extends Dexie {
       trans.table('todos').bulkAdd([
         {
           id: crypto.randomUUID(),
-          text: '欢迎使用Open Infinity新标签页，这是一条示例待办事项。',
+          text: tr(
+            '欢迎使用Open Infinity新标签页，这是一条示例待办事项。',
+            'Welcome to Open Infinity New Tab, this is a sample todo item.'
+          ),
           done: false,
           priority: 'high',
           children: [],
@@ -595,11 +608,17 @@ class OpenInfinityDB extends Dexie {
         },
         {
           id: crypto.randomUUID(),
-          text: '尝试输入 #工作 或 #生活 来分类你的任务',
+          text: tr(
+            '尝试输入 #工作 或 #生活 来分类你的任务',
+            'Try typing #work or #life to categorize your tasks'
+          ),
           done: false,
           priority: 'medium',
           children: [],
-          tags: ['工作', '生活'],
+          tags: [
+            tr('工作', 'work'),
+            tr('生活', 'life'),
+          ],
           createdAt: now - 1000,
           updatedAt: now - 1000,
         },

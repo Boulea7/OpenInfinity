@@ -1,8 +1,10 @@
 import { Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../../utils';
 import { useState } from 'react';
 
 export function DonateSection() {
+    const { t } = useTranslation();
     const [selectedAmount, setSelectedAmount] = useState<number | 'random'>(10);
     const amounts = [10, 15, 20, 25];
 
@@ -12,12 +14,12 @@ export function DonateSection() {
             "bg-white dark:bg-gray-900"
         )}>
             <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">打赏</h3>
+                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">{t('myTab.donate.title')}</h3>
                 <Minus className="w-4 h-4 text-gray-400" />
             </div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400">
-                您的支持是对我们极大的肯定
+                {t('myTab.donate.description')}
             </p>
 
             {/* Illustration - Heart with coins concept */}
@@ -61,12 +63,12 @@ export function DonateSection() {
                     )}>
                         {selectedAmount === 'random' && <div className="w-2 h-2 rounded-full bg-current" />}
                     </div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">¥随意</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('myTab.donate.random')}</span>
                 </button>
             </div>
 
             <button className="w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm font-medium transition-colors duration-200">
-                我要打赏
+                {t('myTab.donate.donateButton')}
             </button>
         </div>
     );

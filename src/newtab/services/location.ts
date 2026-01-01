@@ -5,6 +5,7 @@
 
 import type { LocationData } from '../types';
 import { checkLocationPermission } from './locationPermission';
+import { tr } from '../../shared/tr';
 
 const IS_DEV = !!(import.meta as any)?.env?.DEV;
 function debugLog(level: 'info' | 'warn', ...args: unknown[]) {
@@ -108,6 +109,8 @@ async function getLocationByIP(): Promise<LocationData> {
   try {
     const response = await fetch('https://ipapi.co/json/', {
       signal: AbortSignal.timeout(5000),
+      referrerPolicy: 'no-referrer',
+      credentials: 'omit',
     });
 
     if (!response.ok) {
@@ -130,7 +133,7 @@ async function getLocationByIP(): Promise<LocationData> {
 
     // Build location name from available data
     const nameParts = [data.city, data.region, data.country_name].filter(Boolean);
-    const name = nameParts.length > 0 ? nameParts.join(', ') : 'Unknown Location';
+    const name = nameParts.length > 0 ? nameParts.join(', ') : tr('未知位置', 'Unknown Location');
 
     return {
       type: 'auto',
@@ -154,7 +157,7 @@ async function getLocationByIP(): Promise<LocationData> {
 // Beijing coordinates for fallback when location is denied
 const BEIJING_FALLBACK: LocationData = {
   type: 'auto',
-  name: '北京',
+  name: tr('北京', 'Beijing'),
   latitude: 39.9042,
   longitude: 116.4074,
 };

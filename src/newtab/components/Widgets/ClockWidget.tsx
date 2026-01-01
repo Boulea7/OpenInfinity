@@ -17,7 +17,7 @@ interface ClockWidgetProps {
  * Click to open clock settings
  */
 export function ClockWidget({ className, showDate = false, onClick }: ClockWidgetProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   // Precise subscriptions to prevent re-renders from unrelated settings changes
   const { viewSettings, fontSettings, clockSettings } = useSettingsStore(
     useShallow((s) => ({
@@ -84,7 +84,7 @@ export function ClockWidget({ className, showDate = false, onClick }: ClockWidge
       }}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      aria-label={onClick ? `${timeString}. Click to open clock settings` : undefined}
+      aria-label={onClick ? t('settings.clock.ariaLabel', { time: timeString }) : undefined}
     >
       {/* Time */}
       <div

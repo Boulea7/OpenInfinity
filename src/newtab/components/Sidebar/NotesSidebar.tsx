@@ -6,10 +6,12 @@
 
 import { useState, useMemo } from 'react';
 import { FileText, Search, Pin, Trash2, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNotes } from '../../hooks';
 import { cn } from '../../utils';
 
 export function NotesSidebar() {
+  const { t } = useTranslation();
   const { notes, addNote, deleteNote, updateNote } = useNotes();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function NotesSidebar() {
   // Handle create new note
   const handleCreateNote = async () => {
     try {
-      const newNote = await addNote('新笔记');
+      const newNote = await addNote(t('notes.newNote'));
       if (newNote) {
         setSelectedNoteId(newNote.id);
         setEditingContent(newNote.content);
@@ -97,10 +99,10 @@ export function NotesSidebar() {
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '昨天';
-    if (diffDays < 7) return `${diffDays}天前`;
-    return date.toLocaleDateString('zh-CN');
+    if (diffDays === 0) return t('history.today');
+    if (diffDays === 1) return t('history.yesterday');
+    if (diffDays < 7) return t('notes.daysAgo', { days: diffDays });
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   // Get note preview (first line or truncated content)
@@ -120,7 +122,7 @@ export function NotesSidebar() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索笔记..."
+              placeholder={t('notes.searchPlaceholder')}
               className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -139,7 +141,7 @@ export function NotesSidebar() {
           {filteredNotes.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">暂无笔记</p>
+              <p className="text-sm">{t('notes.noNotes')}</p>
             </div>
           ) : (
             filteredNotes.map(note => (
@@ -161,7 +163,7 @@ export function NotesSidebar() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                  {getNotePreview(note.content) || '空笔记'}
+                  {getNotePreview(note.content) || t('notes.emptyNote')}
                 </p>
               </button>
             ))
@@ -204,14 +206,14 @@ export function NotesSidebar() {
                 onChange={(e) => setEditingContent(e.target.value)}
                 onBlur={handleSave}
                 className="flex-1 p-4 resize-none bg-transparent focus:outline-none text-gray-900 dark:text-gray-100"
-                placeholder="开始记录..."
+                placeholder={t('notes.contentPlaceholder')}
               />
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               <div className="text-center">
                 <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>选择或创建笔记</p>
+                <p>{t('notes.selectToView')}</p>
               </div>
             </div>
           )}

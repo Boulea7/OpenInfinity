@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import type { Icon } from '../../services/database';
 import { cn, getGoogleFaviconUrl } from '../../utils';
@@ -22,20 +23,27 @@ export function FolderNameModal({
   onConfirm,
   previewIcons,
 }: FolderNameModalProps) {
-  const [folderName, setFolderName] = useState('New Folder');
+  const { t } = useTranslation();
+  const [folderName, setFolderName] = useState('');
   const [previewErrors, setPreviewErrors] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setFolderName(t('folder.newFolder'));
+    }
+  }, [isOpen, t]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (folderName.trim()) {
       onConfirm(folderName.trim());
-      setFolderName('New Folder');
+      setFolderName(t('folder.newFolder'));
       onClose();
     }
   };
 
   const handleCancel = () => {
-    setFolderName('New Folder');
+    setFolderName(t('folder.newFolder'));
     onClose();
   };
 
@@ -49,10 +57,10 @@ export function FolderNameModal({
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white leading-tight">
-              创建文件夹
+              {t('folder.createFolder')}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              为合并的图标命名
+              {t('folder.nameInputHint')}
             </p>
           </div>
         </div>
@@ -63,7 +71,7 @@ export function FolderNameModal({
           {previewIcons && previewIcons.length > 0 && (
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-                包含图标
+                {t('folder.containsIcons')}
               </label>
               <div className="flex gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800/50 overflow-x-auto custom-scrollbar">
                 {previewIcons.map(icon => (
@@ -111,14 +119,14 @@ export function FolderNameModal({
           {/* Input Section */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-900 dark:text-gray-100 ml-1">
-              文件夹名称
+              {t('folder.folderName')}
             </label>
             <input
               type="text"
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
               onFocus={(e) => e.target.select()}
-              placeholder="输入文件夹名称"
+              placeholder={t('folder.folderNamePlaceholder')}
               autoFocus
               className={cn(
                 'w-full px-4 py-2.5 rounded-lg',
@@ -144,7 +152,7 @@ export function FolderNameModal({
               'active:scale-95 transition-all duration-200'
             )}
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -156,7 +164,7 @@ export function FolderNameModal({
               'active:scale-95 transition-all duration-200'
             )}
           >
-            创建
+            {t('folder.create')}
           </button>
         </div>
       </form>

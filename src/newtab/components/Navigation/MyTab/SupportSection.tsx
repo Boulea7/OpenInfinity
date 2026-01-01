@@ -1,10 +1,12 @@
 import { Minus, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn, copyToClipboard } from '../../../utils';
 
 export function SupportSection() {
+    const { t } = useTranslation();
     const handleCopyQQ = async () => {
         const ok = await copyToClipboard('123456789');
-        alert(ok ? 'QQ群号已复制' : '复制失败，请手动复制：123456789');
+        alert(ok ? t('myTab.support.qqCopied') : t('myTab.support.qqCopyFailed'));
     };
 
     return (
@@ -13,7 +15,7 @@ export function SupportSection() {
             "bg-white dark:bg-gray-900"
         )}>
             <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">支持</h3>
+                <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">{t('myTab.support.title')}</h3>
                 <Minus className="w-4 h-4 text-gray-400" />
             </div>
 
@@ -26,7 +28,7 @@ export function SupportSection() {
                 )}
             >
                 <Users className="w-4 h-4" aria-hidden="true" />
-                <span>QQ群</span>
+                <span>{t('myTab.support.qqGroup')}</span>
             </button>
         </div>
     );
