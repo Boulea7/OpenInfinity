@@ -79,6 +79,7 @@ function App() {
   const [editingIcon, setEditingIcon] = useState<Icon | null>(null);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [openedFolder, setOpenedFolder] = useState<Folder | null>(null);
+  const [folderOriginRect, setFolderOriginRect] = useState<DOMRect | null>(null);
 
   // Search state moved to searchStore to prevent App re-renders
   // when user types in SearchBar
@@ -201,8 +202,9 @@ function App() {
     setShowIconEditor(true);
   }, []);
 
-  const handleOpenFolder = useCallback((folder: Folder) => {
+  const handleOpenFolder = useCallback((folder: Folder, rect?: DOMRect) => {
     setOpenedFolder(folder);
+    setFolderOriginRect(rect || null);
     setShowFolderModal(true);
   }, []);
 
@@ -214,6 +216,7 @@ function App() {
   const handleCloseFolderModal = useCallback(() => {
     setShowFolderModal(false);
     setOpenedFolder(null);
+    setFolderOriginRect(null);
   }, []);
 
   // Dynamic layout animation based on grid rows
@@ -366,6 +369,7 @@ function App() {
         folder={openedFolder}
         onEditIcon={handleEditIcon}
         onAddIcon={handleAddIcon}
+        originRect={folderOriginRect}
       />
 
       <InfinityLogo />

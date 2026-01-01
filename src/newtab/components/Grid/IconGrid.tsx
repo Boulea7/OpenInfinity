@@ -34,6 +34,7 @@ import {
 import type { GridItem, Icon, Folder } from '../../services/database';
 import { useIconStore, useSettingsStore, useWallpaperStore } from '../../stores';
 import { useWeather } from '../../hooks';
+import { useFolderMerge } from '../../hooks/useFolderMerge';
 import { IconItem } from '../Icon/IconItem';
 import { FolderItem } from '../Icon/FolderItem';
 import { FolderNameModal } from '../Icon/FolderNameModal';
@@ -47,7 +48,7 @@ interface IconGridProps {
   className?: string;
   onAddIcon?: () => void;
   onEditIcon?: (_icon: Icon) => void;
-  onOpenFolder?: (_folder: Folder) => void;
+  onOpenFolder?: (_folder: Folder, _rect?: DOMRect) => void;
 }
 
 /**
@@ -136,24 +137,25 @@ export function IconGrid({
   // Drag state
   const [activeItem, setActiveItem] = useState<GridItem | null>(null);
 
-  // P1-1: Hover merge state (500ms timer)
-  // Use refs instead of state to avoid re-renders during high-frequency drag events
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hoverTargetRef = useRef<string | null>(null);
-  const [pendingMerge, setPendingMerge] = useState<{
-    icon1Id: string;
-    icon2Id: string;
+  // Folder merge state machine (replaces old hover timer refs)
+  const {
+    state: mergeState,
+    startDrag,
+    enterTarget,
+    leaveTarget,
+    confirmMerge,
+    cancelDrag,
+    isMergeTarget,
+    isMergeReady,
+  } = useFolderMerge();
+
+  // Merge modal state
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeInfo, setMergeInfo] = useState<{
+    sourceId: string;
+    targetId: string;
     position: { x: number; y: number };
   } | null>(null);
-  const [showMergeModal, setShowMergeModal] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-      }
-    };
-  }, []);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -375,117 +377,71 @@ export function IconGrid({
     const item = pageItems.find((i) => i.id === active.id);
     if (item) {
       setActiveItem(item);
+      // Start merge tracking for icon drags
+      if (item.type === 'icon') {
+        startDrag(item.id);
+      }
     }
-  }, [pageItems]);
+  }, [pageItems, startDrag]);
 
-  // Handle drag over (P1-1: 500ms hover merge)
-  // Using refs for timer/target to avoid re-renders during high-frequency drag events
+  // Handle drag over - uses useFolderMerge hook for state machine management
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
-      // Clear timer when not over any item or over itself
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-        hoverTimerRef.current = null;
-        hoverTargetRef.current = null;
-      }
-      if (pendingMerge) {
-        setPendingMerge(null);
-      }
+      leaveTarget();
       return;
     }
 
-    const overItem = pageItems.find(item => item.id === over.id);
     const activeItemData = pageItems.find(item => item.id === active.id);
+    const overItem = pageItems.find(item => item.id === over.id);
 
-    // P1-1: If dragging icon over another icon (not folder), start merge timer
+    // Only icon-to-icon merge (both at root level)
     if (
       activeItemData?.type === 'icon' &&
       overItem?.type === 'icon' &&
-      !activeItemData.folderId && // Only for root-level icons
+      !activeItemData.folderId &&
       !overItem.folderId
     ) {
-      const nextHoverTarget = String(over.id);
-      if (hoverTargetRef.current !== nextHoverTarget) {
-        // Clear previous timer
-        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-        if (pendingMerge) setPendingMerge(null);
-
-        // Start new timer
-        const timer = setTimeout(() => {
-          console.info('Hover merge triggered after 500ms');
-          // Set pending merge instead of creating immediately
-          setPendingMerge({
-            icon1Id: String(active.id),
-            icon2Id: String(over.id),
-            position: overItem.position,
-          });
-        }, 500);
-
-        hoverTimerRef.current = timer;
-        hoverTargetRef.current = nextHoverTarget;
-      }
+      enterTarget(String(over.id), overItem.position);
     } else {
-      // Not icon-over-icon case, clear timer
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-        hoverTimerRef.current = null;
-        hoverTargetRef.current = null;
-      }
-      if (pendingMerge) {
-        setPendingMerge(null);
-      }
+      leaveTarget();
     }
-  }, [pageItems, pendingMerge]);
+  }, [pageItems, enterTarget, leaveTarget]);
 
   // Handle drag end
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
-
       setActiveItem(null);
 
-      // P1-1: Clear hover timer (using ref for performance)
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-        hoverTimerRef.current = null;
-        hoverTargetRef.current = null;
-      }
-
-      // P1-2: Check if pending merge (hover 500ms completed)
-      if (pendingMerge) {
-        const activeId = String(active.id);
-        const overId = over ? String(over.id) : null;
-        const shouldMerge = Boolean(
-          overId &&
-          pendingMerge.icon1Id === activeId &&
-          pendingMerge.icon2Id === overId
-        );
-
-        if (shouldMerge) {
-          // Show naming modal
+      // Check if merge is ready (500ms hover completed)
+      if (isMergeReady) {
+        const mergeResult = confirmMerge();
+        if (mergeResult && over && String(over.id) === mergeResult.targetId) {
+          // Show folder naming modal
           setShowMergeModal(true);
+          setMergeInfo(mergeResult);
           return;
         }
-
-        // Not dropped on the merge target; clear stale merge intent
-        setPendingMerge(null);
       }
+
+      // Cancel merge state if not completing a merge
+      cancelDrag();
 
       if (!over || active.id === over.id) return;
 
-      // Check if dropping onto a folder
       const overItem = pageItems.find((item) => item.id === over.id);
+
+      // Drop onto folder: add icon to folder
       if (overItem?.type === 'folder' && activeItem?.type === 'icon') {
-        // Add icon to folder
         await addToFolder(active.id as string, over.id as string);
       } else {
         // Reorder items
         await reorderItems(active.id as string, over.id as string);
       }
     },
-    [pageItems, activeItem, addToFolder, reorderItems, pendingMerge]
+    [pageItems, activeItem, addToFolder, reorderItems, isMergeReady, confirmMerge, cancelDrag]
   );
 
   // Handle context menu
@@ -769,24 +725,22 @@ export function IconGrid({
 
   // Handle folder merge confirmation
   const handleMergeConfirm = useCallback(async (folderName: string) => {
-    if (!pendingMerge) return;
-
-    const { icon1Id, icon2Id, position } = pendingMerge;
+    if (!mergeInfo) return;
 
     try {
-      await createFolderWithIcons(folderName, [icon1Id, icon2Id], position);
-      console.info('Folder created via hover merge:', folderName);
+      await createFolderWithIcons(folderName, [mergeInfo.sourceId, mergeInfo.targetId], mergeInfo.position);
+      console.info('Folder created via drag merge:', folderName);
     } catch (error) {
       console.error('Failed to create folder:', error);
     } finally {
-      setPendingMerge(null);
+      setMergeInfo(null);
       setShowMergeModal(false);
     }
-  }, [pendingMerge, createFolderWithIcons]);
+  }, [mergeInfo, createFolderWithIcons]);
 
   // Get preview icons for merge modal
-  const mergePreviewIcons = pendingMerge
-    ? icons.filter(icon => [pendingMerge.icon1Id, pendingMerge.icon2Id].includes(icon.id))
+  const mergePreviewIcons = mergeInfo
+    ? icons.filter(icon => [mergeInfo.sourceId, mergeInfo.targetId].includes(icon.id))
     : [];
 
   // Render drag overlay
@@ -852,10 +806,11 @@ export function IconGrid({
                     folder={item as Folder}
                     isSelected={selectedItems.includes(item.id)}
                     onContextMenu={(e) => handleContextMenu(e, item)}
-                    onClick={(folder) => {
+                    onClick={(folder, rect) => {
                       // P0-3: Stop propagation to prevent background click handler
                       selectItem(folder.id);
-                      onOpenFolder?.(folder);
+                      // Pass rect for iOS-style expand animation origin
+                      onOpenFolder?.(folder, rect);
                     }}
                   />
                 );
@@ -870,6 +825,9 @@ export function IconGrid({
                   isDragging={activeItem?.id === item.id}
                   isDeleteMode={isDeleteMode}
                   isDeleting={deletingItems.has(item.id)}
+                  isMergeTarget={isMergeTarget(item.id)}
+                  isMergeReady={isMergeTarget(item.id) && isMergeReady}
+                  mergeProgress={isMergeTarget(item.id) ? mergeState.progress : 0}
                   onEdit={(icon) => onEditIcon?.(icon)}
                   onContextMenu={(e) => {
                     e.preventDefault();
@@ -998,12 +956,12 @@ export function IconGrid({
         </div>
       )}
 
-      {/* Folder Name Modal for hover merge */}
+      {/* Folder Name Modal for drag merge */}
       <FolderNameModal
         isOpen={showMergeModal}
         onClose={() => {
           setShowMergeModal(false);
-          setPendingMerge(null);
+          setMergeInfo(null);
         }}
         onConfirm={handleMergeConfirm}
         previewIcons={mergePreviewIcons}

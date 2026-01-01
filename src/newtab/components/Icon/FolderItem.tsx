@@ -12,7 +12,7 @@ interface FolderItemProps {
   isSelected?: boolean;
   isOverlay?: boolean;
   onContextMenu?: (_e: React.MouseEvent, _folder: Folder) => void;
-  onClick?: (_folder: Folder) => void;
+  onClick?: (_folder: Folder, _rect?: DOMRect) => void;
 }
 
 /**
@@ -77,9 +77,12 @@ export function FolderItem({
   }, [icons, folder.id]);
 
   // Handle click (P0-3: stop propagation)
+  // Pass the folder element's bounding rect for expand animation origin
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClick?.(folder);
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    onClick?.(folder, rect);
   };
 
   // Handle context menu

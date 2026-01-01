@@ -9,6 +9,8 @@ import {
   injectSystemIcons,
   hasSystemIcons,
 } from '../services/systemIcons';
+import { tr } from '../../shared/tr';
+import { getCurrentUiLanguage } from '../../shared/locale';
 
 // Default grid columns for folders (fixed layout inside folder modal)
 const FOLDER_GRID_COLUMNS = 6;
@@ -84,6 +86,11 @@ interface IconActions {
   hideSystemIcon: (iconId: SystemIconId) => Promise<void>;
   restoreSystemIcon: (iconId: SystemIconId) => Promise<void>;
   initializeSystemIcons: () => Promise<void>;
+
+  // Folder utilities
+  generateUniqueFolderName: (baseName?: string) => string;
+  checkAndDissolveFolder: (folderId: string) => Promise<void>;
+  createFolderWithAutoName: (iconIds: string[], position: { x: number; y: number }) => Promise<string>;
 }
 
 /**
@@ -253,7 +260,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   deleteIcon: async (id) => {
-    const { icons } = get();
+    const { icons, checkAndDissolveFolder } = get();
     const icon = icons.find(i => i.id === id);
 
     // System icons are hidden instead of deleted
@@ -261,6 +268,9 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       await get().hideSystemIcon(icon.systemIconId);
       return;
     }
+
+    // Remember the folder ID before deletion for auto-dissolve check
+    const originalFolderId = icon?.folderId;
 
     await db.icons.delete(id);
 
@@ -271,6 +281,12 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     // P2-1: Broadcast to other tabs
     syncIcon.deleted(id);
+
+    // Auto-dissolve folder if the deleted icon was in a folder
+    // and only 1 icon remains
+    if (originalFolderId) {
+      await checkAndDissolveFolder(originalFolderId);
+    }
   },
 
   addFolder: async (name, position) => {
@@ -412,6 +428,12 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 
   removeFromFolder: async (iconId) => {
+    const { icons, checkAndDissolveFolder } = get();
+
+    // Get the original folder ID before removing
+    const icon = icons.find(i => i.id === iconId);
+    const originalFolderId = icon?.folderId;
+
     await db.icons.update(iconId, { folderId: undefined, updatedAt: Date.now() });
 
     set(state => ({
@@ -422,6 +444,11 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     // P1-3: Broadcast to other tabs
     syncIcon.updated({ id: iconId, folderId: undefined });
+
+    // Auto-dissolve folder if only 1 icon remains
+    if (originalFolderId) {
+      await checkAndDissolveFolder(originalFolderId);
+    }
   },
 
   deleteSelected: async () => {
@@ -833,6 +860,107 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     } catch (error) {
       console.error('[iconStore] Failed to initialize system icons:', error);
     }
+  },
+
+  /**
+   * Generate a unique folder name by checking existing folders
+   * If baseName exists, appends incrementing number: Folder, Folder1, Folder2, etc.
+   */
+  generateUniqueFolderName: (baseName?: string) => {
+    const { folders } = get();
+    const lang = getCurrentUiLanguage();
+
+    // Default base name based on language
+    const defaultName = tr('文件夹', 'Folder', lang);
+    const base = baseName?.trim() || defaultName;
+
+    // Get all existing folder names for duplicate checking
+    const existingNames = new Set(folders.map(f => f.name));
+
+    // If base name doesn't exist, use it directly
+    if (!existingNames.has(base)) {
+      return base;
+    }
+
+    // Find the next available number suffix
+    let counter = 1;
+    while (existingNames.has(`${base}${counter}`)) {
+      counter++;
+    }
+
+    return `${base}${counter}`;
+  },
+
+  /**
+   * Check if a folder has only one icon and automatically dissolve it
+   * Moves the single icon back to the folder's original position
+   */
+  checkAndDissolveFolder: async (folderId: string) => {
+    const { icons, folders } = get();
+
+    // Find the folder
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) {
+      return;
+    }
+
+    // Get icons in this folder
+    const folderIcons = icons.filter(icon => icon.folderId === folderId);
+
+    // Only dissolve if exactly 1 icon remains
+    if (folderIcons.length !== 1) {
+      return;
+    }
+
+    const singleIcon = folderIcons[0];
+    const folderPosition = folder.position;
+
+    // Use transaction for atomic update
+    await db.transaction('rw', [db.icons, db.folders], async () => {
+      // Move the icon to the folder's position
+      await db.icons.update(singleIcon.id, {
+        folderId: undefined,
+        position: folderPosition,
+        updatedAt: Date.now(),
+      });
+
+      // Delete the empty folder
+      await db.folders.delete(folderId);
+    });
+
+    // Update local state
+    set(state => ({
+      icons: state.icons.map(icon =>
+        icon.id === singleIcon.id
+          ? { ...icon, folderId: undefined, position: folderPosition }
+          : icon
+      ),
+      folders: state.folders.filter(f => f.id !== folderId),
+    }));
+
+    // Broadcast changes to other tabs
+    syncIcon.updated({ id: singleIcon.id, folderId: undefined, position: folderPosition });
+    syncFolder.deleted(folderId);
+
+    console.info(`[iconStore] Auto-dissolved folder "${folder.name}" with single icon`);
+  },
+
+  /**
+   * Create a folder with auto-generated unique name
+   * Used for drag-and-drop merge operations
+   */
+  createFolderWithAutoName: async (iconIds: string[], position: { x: number; y: number }) => {
+    const { generateUniqueFolderName, createFolderWithIcons } = get();
+
+    // Generate a unique folder name
+    const folderName = generateUniqueFolderName();
+
+    // Create folder with icons using existing method
+    const folderId = await createFolderWithIcons(folderName, iconIds, position);
+
+    console.info(`[iconStore] Created folder "${folderName}" with ${iconIds.length} icons at position (${position.x}, ${position.y})`);
+
+    return folderId;
   },
 }));
 

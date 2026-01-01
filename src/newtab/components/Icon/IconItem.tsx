@@ -80,6 +80,9 @@ interface IconItemProps {
   isOverlay?: boolean;
   isDeleteMode?: boolean;
   isDeleting?: boolean; // Exit animation state
+  isMergeTarget?: boolean; // Whether this icon is a merge target (folder creation)
+  isMergeReady?: boolean; // Merge is ready (500ms hold completed)
+  mergeProgress?: number; // Merge progress 0-1
   onContextMenu?: (_e: React.MouseEvent, _icon: Icon) => void;
   onClick?: (_icon: Icon) => void;
   onEdit?: (_icon: Icon) => void;
@@ -103,6 +106,9 @@ export const IconItem = React.memo(function IconItem({
   isOverlay = false,
   isDeleteMode = false,
   isDeleting = false,
+  isMergeTarget = false,
+  isMergeReady = false,
+  mergeProgress = 0,
   onContextMenu,
   onClick,
   onEdit,
@@ -325,6 +331,27 @@ export const IconItem = React.memo(function IconItem({
       <div className={cn('flex flex-col items-center', isDeleteMode && 'animate-shake')}>
         {/* Icon Circle positioning wrapper - provides context for delete button */}
         <div className="relative">
+          {/* Merge progress ring - shows circular progress during hover hold */}
+          {isMergeTarget && mergeProgress > 0 && mergeProgress < 1 && (
+            <div
+              className="absolute inset-0 rounded-full pointer-events-none z-10"
+              style={{
+                background: `conic-gradient(
+                  rgba(249, 115, 22, 0.6) ${mergeProgress * 360}deg,
+                  transparent ${mergeProgress * 360}deg
+                )`,
+                padding: '2px',
+                mask: 'radial-gradient(transparent 55%, black 55%)',
+                WebkitMask: 'radial-gradient(transparent 55%, black 55%)',
+              }}
+            />
+          )}
+
+          {/* Merge ready glow effect - pulsing ring when ready to merge */}
+          {isMergeReady && (
+            <div className="absolute inset-0 rounded-full bg-brand-orange-500/20 animate-ping-slow pointer-events-none z-10" />
+          )}
+
           {/* Icon Circle Container - ONLY contains the icon, no text */}
           <div
             className={cn(
@@ -336,7 +363,10 @@ export const IconItem = React.memo(function IconItem({
                 ? 'group-hover:shadow-lg group-hover:shadow-black/30'
                 : 'group-hover:scale-110',
               // Selected ring
-              isSelected && 'ring-2 ring-brand-orange-500 ring-offset-2 ring-offset-transparent'
+              isSelected && 'ring-2 ring-brand-orange-500 ring-offset-2 ring-offset-transparent',
+              // Merge target states - override normal hover effects
+              isMergeTarget && !isMergeReady && 'scale-110 animate-merge-target',
+              isMergeReady && 'scale-105 animate-pulse-subtle ring-2 ring-brand-orange-500'
             )}
             style={{
               ...iconSizeStyle,
