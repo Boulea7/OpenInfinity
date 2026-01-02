@@ -118,14 +118,17 @@ export async function removeOrigins(origins: readonly string[]): Promise<boolean
 
 // Common permission groups for features
 export const PERMISSION_GROUPS = {
-  // Weather feature base origins (no API keys required)
-  // Keep this minimal to reduce consent surface.
+  // Weather feature - all provider origins consolidated
+  // This includes Open-Meteo (free), QWeather (China), and OpenWeatherMap (global fallback)
   weather: [
     'https://api.open-meteo.com/*',
     'https://nominatim.openstreetmap.org/*',
+    'https://devapi.qweather.com/*',
+    'https://*.qweatherapi.com/*',
+    'https://api.openweathermap.org/*',
   ],
 
-  // Optional weather providers (only needed if user configures API keys)
+  // Legacy: kept for backward compatibility (may be removed in future)
   weatherQWeather: [
     'https://devapi.qweather.com/*',
     'https://*.qweatherapi.com/*',
