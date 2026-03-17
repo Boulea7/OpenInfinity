@@ -486,15 +486,15 @@ export function useWeather(): UseWeatherReturn {
 
   /**
    * Re-fetch when temperature unit changes
+   * Note: Removed weather dependency to prevent deadlock when useLiveQuery
+   * returns null during unit mismatch
    */
   useEffect(() => {
-    if (!weather) return;
-
     if (prevUnitRef.current !== weatherSettings.unit) {
       prevUnitRef.current = weatherSettings.unit;
       forceRefresh();
     }
-  }, [weatherSettings.unit, weather, forceRefresh]);
+  }, [weatherSettings.unit, forceRefresh]);
 
   /**
    * Re-fetch when language changes (weather descriptions are localized)

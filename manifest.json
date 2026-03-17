@@ -74,6 +74,6 @@
     "type": "module"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'self'; connect-src 'self' https://api.unsplash.com https://api.pexels.com https://api.open-meteo.com https://devapi.qweather.com https://*.qweatherapi.com https://api.openweathermap.org https://api.bigdatacloud.net https://www.googleapis.com https://nominatim.openstreetmap.org https://ipapi.co https://wallhaven.cc https://w.wallhaven.cc; img-src 'self' data: blob: https:"
   }
 }

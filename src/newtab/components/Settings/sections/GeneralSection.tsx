@@ -36,14 +36,14 @@ export const GeneralSection: React.FC = () => {
         <span className="text-sm text-gray-700 dark:text-gray-300 block mb-3">
           {t('settings.general.theme', '主题')}
         </span>
-        <div className="flex justify-between">
+        <div className="flex w-full gap-1">
           {themes.map(({ value, icon, label }) => (
             <button
               key={value}
               type="button"
               onClick={() => setTheme(value)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded
+                flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded
                 transition-all duration-200
                 ${theme === value
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
@@ -63,12 +63,12 @@ export const GeneralSection: React.FC = () => {
         <span className="text-sm text-gray-700 dark:text-gray-300 block mb-3">
           {t('settings.general.language', '语言')}
         </span>
-        <div className="flex justify-between">
+        <div className="flex w-full gap-1">
           <button
             type="button"
             onClick={() => handleLanguageChange('zh')}
             className={`
-              px-4 py-2 rounded text-sm
+              flex-1 px-4 py-2 rounded text-sm text-center
               transition-all duration-200
               ${language === 'zh'
                 ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
@@ -82,7 +82,7 @@ export const GeneralSection: React.FC = () => {
             type="button"
             onClick={() => handleLanguageChange('en')}
             className={`
-              px-4 py-2 rounded text-sm
+              flex-1 px-4 py-2 rounded text-sm text-center
               transition-all duration-200
               ${language === 'en'
                 ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'

@@ -1,3 +1,44 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  Author: OpenInfinity Contributors                                        ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * Icon Store Module
+ *
+ * Central state management for desktop icons and folders in the new tab page.
+ * This store provides comprehensive CRUD operations, drag-and-drop functionality,
+ * pagination, multi-selection, and cross-tab synchronization via BroadcastChannel.
+ *
+ * Key Features:
+ * - Icon and folder CRUD operations with IndexedDB persistence
+ * - Drag-and-drop reordering with position recalculation
+ * - iOS-style delete mode with wobble animation support
+ * - Folder auto-dissolution when only one icon remains
+ * - System icon management (hide/restore/sync)
+ * - Multi-tab synchronization via BroadcastChannel API
+ * - Position-based pagination with dynamic column/row support
+ *
+ * @module stores/iconStore
+ * @see {@link useSettingsStore} for grid configuration (columns, rows)
+ * @see {@link database} for IndexedDB schema and operations
+ */
+
 import { create } from 'zustand';
 import { db, generateId, type Icon, type Folder, type GridItem, type SystemIconId, isValidPosition, ensurePosition, isValidIcon, ensureIcon } from '../services/database';
 import { syncIcon, syncFolder, listenForSync, type SyncMessage } from '../utils/sync';
@@ -13,91 +54,368 @@ import {
 import { tr } from '../../shared/tr';
 import { getCurrentUiLanguage, type UiLanguage } from '../../shared/locale';
 
-// Default grid columns for folders (fixed layout inside folder modal)
+/**
+ * Fixed grid columns for folder modal layout.
+ * Folders use a consistent 6-column grid regardless of main grid settings.
+ * @constant {number}
+ */
 const FOLDER_GRID_COLUMNS = 6;
 
-// Default grid columns fallback when settings are unavailable
+/**
+ * Fallback grid columns when settings store is unavailable or returns invalid value.
+ * This ensures grid calculations never fail due to division by zero.
+ * @constant {number}
+ */
 const DEFAULT_GRID_COLUMNS = 6;
 
 /**
- * Icon store state
+ * Icon Store State Interface
+ *
+ * Defines the complete state shape for icon and folder management.
+ * State is divided into three categories: data, UI state, and loading states.
+ *
+ * @interface IconState
  */
 interface IconState {
-  // Data
+  /**
+   * Array of all icons stored in the database.
+   * Includes both user-created icons and system icons.
+   * Icons may be at root level (folderId undefined) or inside folders.
+   */
   icons: Icon[];
+
+  /**
+   * Array of all folders stored in the database.
+   * Folders contain icons referenced by the icon's folderId property.
+   */
   folders: Folder[];
 
-  // UI State
+  /**
+   * Current active page index for pagination (0-based).
+   * Used when grid items exceed the visible area.
+   */
   currentPage: number;
-  selectedItems: string[];
-  draggedItem: GridItem | null;
-  editingItem: GridItem | null;
-  isDeleteMode: boolean; // iOS-style delete mode
 
-  // Loading states
+  /**
+   * Array of selected item IDs for multi-selection operations.
+   * Can contain both icon and folder IDs.
+   */
+  selectedItems: string[];
+
+  /**
+   * Currently dragged item during drag-and-drop operations.
+   * Null when no drag operation is in progress.
+   */
+  draggedItem: GridItem | null;
+
+  /**
+   * Item currently being edited (rename, properties, etc.).
+   * Null when no edit dialog is open.
+   */
+  editingItem: GridItem | null;
+
+  /**
+   * iOS-style delete mode flag.
+   * When true, icons display wobble animation and delete badges.
+   */
+  isDeleteMode: boolean;
+
+  /**
+   * Loading state flag for async operations.
+   * True during initial data fetch or bulk operations.
+   */
   isLoading: boolean;
+
+  /**
+   * Error message from the last failed operation.
+   * Null when no error has occurred.
+   */
   error: string | null;
 }
 
 /**
- * Icon store actions
+ * Icon Store Actions Interface
+ *
+ * Defines all available operations for icon and folder management.
+ * Actions are grouped by functionality: data loading, CRUD, batch ops,
+ * drag-and-drop, selection, pagination, and system icon management.
+ *
+ * @interface IconActions
  */
 interface IconActions {
-  // Data loading
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Data Loading
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Loads all icons and folders from IndexedDB into the store.
+   * Performs defensive normalization to fix corrupted or migrated data.
+   * @returns Promise that resolves when loading is complete
+   */
   loadIcons: () => Promise<void>;
 
-  // Icon CRUD
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Icon CRUD Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Creates a new icon with auto-generated ID and position.
+   * @param icon - Icon data without auto-generated fields
+   * @returns Promise resolving to the new icon's ID
+   */
   addIcon: (icon: Omit<Icon, 'id' | 'type' | 'position' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+
+  /**
+   * Updates an existing icon with partial data.
+   * @param id - Icon ID to update
+   * @param updates - Partial icon data to merge
+   */
   updateIcon: (id: string, updates: Partial<Icon>) => Promise<void>;
+
+  /**
+   * Deletes an icon by ID. System icons are hidden instead of deleted.
+   * @param id - Icon ID to delete
+   */
   deleteIcon: (id: string) => Promise<void>;
 
-  // Folder CRUD
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Folder CRUD Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Creates a new folder with the given name.
+   * @param name - Folder display name
+   * @param position - Optional grid position; auto-calculated if not provided
+   * @returns Promise resolving to the new folder's ID
+   */
   addFolder: (name: string, position?: { x: number; y: number }) => Promise<string>;
+
+  /**
+   * Updates an existing folder with partial data.
+   * @param id - Folder ID to update
+   * @param updates - Partial folder data to merge
+   */
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
+
+  /**
+   * Deletes a folder and moves its contents to root level.
+   * Child icons are repositioned to maintain grid layout.
+   * @param id - Folder ID to delete
+   */
   deleteFolder: (id: string) => Promise<void>;
+
+  /**
+   * Moves an icon into a folder.
+   * @param iconId - Icon ID to move
+   * @param folderId - Target folder ID
+   */
   addToFolder: (iconId: string, folderId: string) => Promise<void>;
+
+  /**
+   * Removes an icon from its folder back to root level.
+   * Triggers auto-dissolve check if folder has only one icon remaining.
+   * @param iconId - Icon ID to remove from folder
+   */
   removeFromFolder: (iconId: string) => Promise<void>;
 
-  // Batch operations
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Batch Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Deletes all currently selected items (icons and folders).
+   * System icons are hidden instead of deleted.
+   */
   deleteSelected: () => Promise<void>;
+
+  /**
+   * Moves multiple items into a target folder.
+   * Only icons are moved; folders cannot be nested.
+   * @param itemIds - Array of icon IDs to move
+   * @param folderId - Target folder ID
+   */
   moveToFolder: (itemIds: string[], folderId: string) => Promise<void>;
 
-  // Drag and drop
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Drag and Drop
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Sets the currently dragged item for visual feedback.
+   * @param item - The dragged grid item, or null when drag ends
+   */
   setDraggedItem: (item: GridItem | null) => void;
+
+  /**
+   * Reorders root-level items by swapping positions.
+   * Recalculates all positions based on visual order.
+   * @param activeId - ID of the dragged item
+   * @param overId - ID of the drop target item
+   */
   reorderItems: (activeId: string, overId: string) => Promise<void>;
+
+  /**
+   * Reorders icons within a folder.
+   * Uses folder-specific grid layout (FOLDER_GRID_COLUMNS).
+   * @param folderId - Parent folder ID
+   * @param activeId - ID of the dragged icon
+   * @param overId - ID of the drop target icon
+   */
   reorderFolderIcons: (folderId: string, activeId: string, overId: string) => Promise<void>;
+
+  /**
+   * Creates a new folder containing the specified icons.
+   * Used for drag-and-drop merge operations.
+   * @param name - Folder name
+   * @param iconIds - Array of icon IDs to include
+   * @param position - Optional grid position for the folder
+   * @returns Promise resolving to the new folder's ID
+   */
   createFolderWithIcons: (name: string, iconIds: string[], position?: { x: number; y: number }) => Promise<string>;
 
+  // ═══════════════════════════════════════════════════════════════════════════
   // Selection
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Selects or toggles selection of an item.
+   * @param id - Item ID to select
+   * @param multi - If true, toggles selection; if false, replaces selection
+   */
   selectItem: (id: string, multi?: boolean) => void;
+
+  /**
+   * Clears all selected items.
+   */
   clearSelection: () => void;
 
+  // ═══════════════════════════════════════════════════════════════════════════
   // Pagination
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Sets the current page index with bounds checking.
+   * @param page - Target page index (0-based)
+   */
   setCurrentPage: (page: number) => void;
+
+  /**
+   * Calculates total number of pages based on visible items and grid size.
+   * @returns Total page count (minimum 1)
+   */
   getTotalPages: () => number;
 
-  // Edit mode
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Edit Mode
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Sets the item currently being edited.
+   * @param item - Item to edit, or null to close edit dialog
+   */
   setEditingItem: (item: GridItem | null) => void;
 
-  // Delete mode (iOS-style)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Delete Mode (iOS-style)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Enters iOS-style delete mode with wobble animation.
+   * Clears current selection when entering.
+   */
   enterDeleteMode: () => void;
+
+  /**
+   * Exits delete mode, stopping wobble animation.
+   */
   exitDeleteMode: () => void;
 
-  // System icons
+  // ═══════════════════════════════════════════════════════════════════════════
+  // System Icons
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Hides a system icon without deleting it.
+   * Icon can be restored later via settings.
+   * @param iconId - System icon identifier
+   */
   hideSystemIcon: (iconId: SystemIconId) => Promise<void>;
+
+  /**
+   * Restores a previously hidden system icon.
+   * Reinjects the icon if it was deleted from database.
+   * @param iconId - System icon identifier
+   */
   restoreSystemIcon: (iconId: SystemIconId) => Promise<void>;
+
+  /**
+   * Initializes system icons on first load.
+   * Injects default icons if not already present in database.
+   */
   initializeSystemIcons: () => Promise<void>;
+
+  /**
+   * Syncs system icon titles with the current UI language.
+   * Updates both database and local state for real-time reactivity.
+   * @param lang - Target UI language code
+   */
   syncSystemIcons: (lang: UiLanguage) => Promise<void>;
 
-  // Folder utilities
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Folder Utilities
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Generates a unique folder name by checking existing names.
+   * Appends incrementing numbers if base name exists: Folder, Folder1, Folder2, etc.
+   * @param baseName - Optional base name (defaults to localized "Folder")
+   * @returns Unique folder name string
+   */
   generateUniqueFolderName: (baseName?: string) => string;
+
+  /**
+   * Checks if a folder has only one icon and auto-dissolves it.
+   * The single icon inherits the folder's position.
+   * @param folderId - Folder ID to check
+   */
   checkAndDissolveFolder: (folderId: string) => Promise<void>;
+
+  /**
+   * Creates a folder with auto-generated unique name.
+   * Convenience method for drag-and-drop merge operations.
+   * @param iconIds - Array of icon IDs to include
+   * @param position - Grid position for the new folder
+   * @returns Promise resolving to the new folder's ID
+   */
   createFolderWithAutoName: (iconIds: string[], position: { x: number; y: number }) => Promise<string>;
 }
 
 /**
- * Helper: Get next available position in grid
- * P1-1: Reads columns from settingsStore
+ * Calculates the next available grid position for a new item.
+ *
+ * Scans all visible root-level items to find the last occupied position,
+ * then returns the next position in row-major order. If the last row is full,
+ * starts a new row.
+ *
+ * @param icons - Array of all icons in the store
+ * @param folders - Array of all folders in the store
+ * @returns Grid position object with x (column) and y (row) coordinates
+ *
+ * @example
+ * ```ts
+ * // With 6 columns and items at positions (0,0), (1,0), (2,0)
+ * const nextPos = getNextPosition(icons, folders);
+ * // Returns { x: 3, y: 0 }
+ *
+ * // When last row is full (items at 0-5 in row 0)
+ * const nextPos = getNextPosition(icons, folders);
+ * // Returns { x: 0, y: 1 }
+ * ```
+ *
+ * @remarks
+ * - Reads column count from settingsStore for dynamic grid support
+ * - Excludes hidden icons from position calculation
+ * - Clamps column count to minimum 1 to prevent division errors
  */
 function getNextPosition(
   icons: Icon[],
@@ -105,10 +423,12 @@ function getNextPosition(
 ): { x: number; y: number } {
   // Clamp to minimum 1 to prevent division issues
   const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
+
   // Exclude hidden icons from position calculation
   const rootIcons = icons.filter(i => !i.folderId && !i.isHidden);
   const allItems = [...rootIcons, ...folders];
 
+  // Empty grid starts at origin
   if (allItems.length === 0) {
     return { x: 0, y: 0 };
   }
@@ -127,22 +447,79 @@ function getNextPosition(
 }
 
 /**
- * Helper: Sort items by position (row-major order)
+ * Sorts grid items by position in row-major order.
+ *
+ * Items are sorted first by row (y coordinate), then by column (x coordinate)
+ * within the same row. This matches the visual layout order on screen.
+ *
+ * @param items - Array of grid items to sort
+ * @returns New sorted array (original array is not mutated)
+ *
+ * @example
+ * ```ts
+ * const items = [
+ *   { id: 'a', position: { x: 2, y: 0 } },
+ *   { id: 'b', position: { x: 0, y: 1 } },
+ *   { id: 'c', position: { x: 0, y: 0 } },
+ * ];
+ * const sorted = sortByPosition(items);
+ * // Returns: [{ id: 'c', ... }, { id: 'a', ... }, { id: 'b', ... }]
+ * ```
  */
 function sortByPosition(items: GridItem[]): GridItem[] {
   return [...items].sort((a, b) => {
+    // Primary sort by row (y)
     if (a.position.y !== b.position.y) {
       return a.position.y - b.position.y;
     }
+    // Secondary sort by column (x) within same row
     return a.position.x - b.position.x;
   });
 }
 
 /**
- * Icon and folder management store
+ * Icon and Folder Management Store
+ *
+ * Zustand store for managing desktop icons and folders in OpenInfinity.
+ * Provides reactive state updates and comprehensive CRUD operations with
+ * IndexedDB persistence and cross-tab synchronization.
+ *
+ * @example
+ * ```tsx
+ * // In a React component
+ * import { useIconStore } from '@/stores/iconStore';
+ *
+ * function IconGrid() {
+ *   const { icons, folders, loadIcons, addIcon } = useIconStore();
+ *
+ *   useEffect(() => {
+ *     loadIcons();
+ *   }, []);
+ *
+ *   const handleAddIcon = async () => {
+ *     await addIcon({
+ *       title: 'GitHub',
+ *       url: 'https://github.com',
+ *       icon: { type: 'favicon', value: 'https://github.com/favicon.ico' }
+ *     });
+ *   };
+ *
+ *   return (
+ *     <div>
+ *       {icons.map(icon => <IconItem key={icon.id} icon={icon} />)}
+ *       {folders.map(folder => <FolderItem key={folder.id} folder={folder} />)}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link IconState} for state shape
+ * @see {@link IconActions} for available actions
  */
 export const useIconStore = create<IconState & IconActions>((set, get) => ({
-  // Initial state
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Initial State
+  // ═══════════════════════════════════════════════════════════════════════════
   icons: [],
   folders: [],
   currentPage: 0,
@@ -153,15 +530,21 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   isLoading: false,
   error: null,
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Data Loading
+  // ═══════════════════════════════════════════════════════════════════════════
+
   loadIcons: async () => {
     set({ isLoading: true, error: null });
     try {
+      // Fetch icons and folders in parallel for better performance
       const [rawIcons, rawFolders] = await Promise.all([
         db.icons.toArray(),
         db.folders.toArray(),
       ]);
 
-      // P0-1: Defensive normalization (protect against corrupted/migrated data)
+      // Defensive normalization: fix corrupted or migrated data
+      // This handles cases where position or icon structure is invalid
       const icons = rawIcons.map((icon, index) => {
         // Validate and fix position if needed
         if (!isValidPosition(icon.position)) {
@@ -223,10 +606,16 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     }
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Icon CRUD Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
   addIcon: async (iconData) => {
-    const { icons, folders } = get(); // P1-1: Removed viewSettings
+    const { icons, folders } = get();
     const now = Date.now();
-    const position = getNextPosition(icons, folders); // P1-1: No longer needs columns param
+
+    // Auto-calculate position at the next available grid slot
+    const position = getNextPosition(icons, folders);
 
     const newIcon: Icon = {
       ...iconData,
@@ -237,27 +626,33 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       updatedAt: now,
     };
 
+    // Persist to IndexedDB
     await db.icons.add(newIcon);
 
+    // Update local state
     set(state => ({ icons: [...state.icons, newIcon] }));
 
-    // P2-1: Broadcast to other tabs
+    // Broadcast to other tabs for cross-tab synchronization
     syncIcon.added(newIcon);
 
     return newIcon.id;
   },
 
   updateIcon: async (id, updates) => {
+    // Always update the timestamp when modifying
     const updatedData = { ...updates, updatedAt: Date.now() };
+
+    // Persist to IndexedDB
     await db.icons.update(id, updatedData);
 
+    // Update local state
     set(state => ({
       icons: state.icons.map(icon =>
         icon.id === id ? { ...icon, ...updatedData } : icon
       ),
     }));
 
-    // P2-1: Broadcast to other tabs
+    // Broadcast to other tabs
     syncIcon.updated({ id, ...updatedData });
   },
 
@@ -265,7 +660,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const { icons, checkAndDissolveFolder } = get();
     const icon = icons.find(i => i.id === id);
 
-    // System icons are hidden instead of deleted
+    // System icons are hidden instead of deleted to allow restoration
     if (icon?.isSystemIcon && icon.systemIconId) {
       await get().hideSystemIcon(icon.systemIconId);
       return;
@@ -274,27 +669,34 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     // Remember the folder ID before deletion for auto-dissolve check
     const originalFolderId = icon?.folderId;
 
+    // Persist to IndexedDB
     await db.icons.delete(id);
 
+    // Update local state and clear from selection
     set(state => ({
       icons: state.icons.filter(icon => icon.id !== id),
       selectedItems: state.selectedItems.filter(itemId => itemId !== id),
     }));
 
-    // P2-1: Broadcast to other tabs
+    // Broadcast to other tabs
     syncIcon.deleted(id);
 
-    // Auto-dissolve folder if the deleted icon was in a folder
-    // and only 1 icon remains
+    // Auto-dissolve folder if only 1 icon remains after deletion
     if (originalFolderId) {
       await checkAndDissolveFolder(originalFolderId);
     }
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Folder CRUD Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
   addFolder: async (name, position) => {
-    const { icons, folders } = get(); // P1-1: Removed viewSettings
+    const { icons, folders } = get();
     const now = Date.now();
-    const finalPosition = position || getNextPosition(icons, folders); // P1-1: No longer needs columns param
+
+    // Use provided position or auto-calculate next available slot
+    const finalPosition = position || getNextPosition(icons, folders);
 
     const newFolder: Folder = {
       id: generateId(),
@@ -309,23 +711,27 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
 
     set(state => ({ folders: [...state.folders, newFolder] }));
 
-    // P2-1: Broadcast to other tabs
+    // Broadcast to other tabs
     syncFolder.added(newFolder);
 
     return newFolder.id;
   },
 
   updateFolder: async (id, updates) => {
+    // Always update the timestamp when modifying
     const updatedData = { ...updates, updatedAt: Date.now() };
+
+    // Persist to IndexedDB
     await db.folders.update(id, updatedData);
 
+    // Update local state
     set(state => ({
       folders: state.folders.map(folder =>
         folder.id === id ? { ...folder, ...updatedData } : folder
       ),
     }));
 
-    // P2-1: Broadcast to other tabs
+    // Broadcast to other tabs
     syncFolder.updated({ id, ...updatedData });
   },
 
@@ -334,19 +740,20 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const folder = folders.find(f => f.id === id);
 
     if (folder) {
-      // P2 Fix: Use transaction for cross-table updates
+      // Use database transaction for atomic cross-table updates
+      // This ensures data consistency if the operation is interrupted
       await db.transaction('rw', [db.icons, db.folders], async () => {
         // Move all children icons back to root with recalculated positions
         const childIcons = icons.filter(icon => icon.folderId === id);
 
         if (childIcons.length > 0) {
-          // P2 Fix: Calculate new positions for displaced icons
+          // Calculate new positions for displaced icons
           // Get current root items (excluding the folder being deleted and hidden icons)
           const rootIcons = icons.filter(i => !i.folderId && !i.isHidden);
           const otherFolders = folders.filter(f => f.id !== id);
           const existingRootItems = [...rootIcons, ...otherFolders];
 
-          // Read columns from settings
+          // Read columns from settings for proper grid layout
           const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
 
           // Find the next available position after all existing root items
@@ -409,42 +816,45 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         selectedItems: state.selectedItems.filter(itemId => itemId !== id),
       }));
 
-      // P2-1: Broadcast to other tabs
+      // Broadcast to other tabs
       syncFolder.deleted(id);
     }
   },
 
   addToFolder: async (iconId, folderId) => {
-    // NOTE: Not updating folder.children anymore (P0-4 fix)
-    // Using icon.folderId as single source of truth
+    // Using icon.folderId as single source of truth for folder membership
+    // This simplifies data model and avoids synchronization issues
     await db.icons.update(iconId, { folderId, updatedAt: Date.now() });
 
+    // Update local state
     set(state => ({
       icons: state.icons.map(icon =>
         icon.id === iconId ? { ...icon, folderId } : icon
       ),
     }));
 
-    // P1-3: Broadcast to other tabs
+    // Broadcast to other tabs
     syncIcon.updated({ id: iconId, folderId });
   },
 
   removeFromFolder: async (iconId) => {
     const { icons, checkAndDissolveFolder } = get();
 
-    // Get the original folder ID before removing
+    // Get the original folder ID before removing for auto-dissolve check
     const icon = icons.find(i => i.id === iconId);
     const originalFolderId = icon?.folderId;
 
+    // Clear folder reference
     await db.icons.update(iconId, { folderId: undefined, updatedAt: Date.now() });
 
+    // Update local state
     set(state => ({
       icons: state.icons.map(icon =>
         icon.id === iconId ? { ...icon, folderId: undefined } : icon
       ),
     }));
 
-    // P1-3: Broadcast to other tabs
+    // Broadcast to other tabs
     syncIcon.updated({ id: iconId, folderId: undefined });
 
     // Auto-dissolve folder if only 1 icon remains
@@ -452,6 +862,10 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       await checkAndDissolveFolder(originalFolderId);
     }
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Batch Operations
+  // ═══════════════════════════════════════════════════════════════════════════
 
   deleteSelected: async () => {
     const { selectedItems, icons, folders } = get();
@@ -561,9 +975,13 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       selectedItems: [],
     }));
 
-    // P1-3: Broadcast to other tabs
+    // Broadcast to other tabs
     iconsToMove.forEach(icon => syncIcon.updated({ id: icon.id, folderId }));
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Drag and Drop
+  // ═══════════════════════════════════════════════════════════════════════════
 
   setDraggedItem: item => {
     set({ draggedItem: item });
@@ -573,6 +991,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const { icons, folders } = get();
 
     // Find root items only (exclude hidden icons to prevent position jumping)
+    // Sort by position to maintain visual order
     const allItems: GridItem[] = sortByPosition([
       ...icons.filter(i => !i.folderId && !i.isHidden),
       ...folders,
@@ -581,17 +1000,19 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const activeIndex = allItems.findIndex(item => item.id === activeId);
     const overIndex = allItems.findIndex(item => item.id === overId);
 
+    // Validate both items exist
     if (activeIndex === -1 || overIndex === -1) return;
 
-    // Reorder array
+    // Perform the reorder: remove from old position, insert at new position
     const reordered = [...allItems];
     const [moved] = reordered.splice(activeIndex, 1);
     reordered.splice(overIndex, 0, moved);
 
-    // P1-1: Read columns from settingsStore (clamp to min 1 for safety)
+    // Read columns from settingsStore (clamp to min 1 for safety)
     const columns = Math.max(1, useSettingsStore.getState().viewSettings.columns || DEFAULT_GRID_COLUMNS);
 
-    // Recalculate positions based on new order
+    // Recalculate positions based on new visual order
+    // Position is calculated as (index % columns, floor(index / columns))
     const updates = reordered.map((item, index) => ({
       ...item,
       position: {
@@ -600,11 +1021,11 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       },
     }));
 
-    // Persist to database
+    // Separate icons and folders for database updates
     const iconUpdates = updates.filter(item => item.type === 'icon') as Icon[];
     const folderUpdates = updates.filter(item => item.type === 'folder') as Folder[];
 
-    // P2 Fix: Use transaction for cross-table updates
+    // Use transaction for atomic cross-table updates
     await db.transaction('rw', [db.icons, db.folders], async () => {
       const now = Date.now();
       for (const icon of iconUpdates) {
@@ -626,29 +1047,30 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       }),
     }));
 
-    // P1-3: Broadcast reorder to other tabs
+    // Broadcast reorder to other tabs for synchronization
     iconUpdates.forEach(icon => syncIcon.updated({ id: icon.id, position: icon.position }));
     folderUpdates.forEach(folder => syncFolder.updated({ id: folder.id, position: folder.position }));
   },
 
-  // P0-5: New method for reordering icons inside a folder
   reorderFolderIcons: async (folderId, activeId, overId) => {
     const { icons } = get();
 
-    // Get icons in this folder only
+    // Get icons in this folder only, sorted by current position
     const folderIcons = sortByPosition(icons.filter(i => i.folderId === folderId));
 
     const activeIndex = folderIcons.findIndex(i => i.id === activeId);
     const overIndex = folderIcons.findIndex(i => i.id === overId);
 
+    // Validate both items exist
     if (activeIndex === -1 || overIndex === -1) return;
 
-    // Reorder
+    // Perform the reorder within folder
     const reordered = [...folderIcons];
     const [moved] = reordered.splice(activeIndex, 1);
     reordered.splice(overIndex, 0, moved);
 
-    // Recalculate positions within folder (simple linear order)
+    // Recalculate positions within folder using fixed FOLDER_GRID_COLUMNS
+    // Folders always use a 6-column layout regardless of main grid settings
     const updates = reordered.map((icon, index) => ({
       ...icon,
       position: {
@@ -671,22 +1093,22 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       }),
     }));
 
-    // P1-3: Broadcast to other tabs
+    // Broadcast to other tabs
     updates.forEach(icon => syncIcon.updated({ id: icon.id, position: icon.position }));
   },
 
-  // P1-1: Create folder with icons (for 500ms hover merge)
   createFolderWithIcons: async (name, iconIds, position) => {
-    // Create folder
+    // Create folder at specified or auto-calculated position
     const folderId = await get().addFolder(name, position);
 
-    // Move icons to folder
+    // Move all specified icons into the new folder
     await Promise.all(
       iconIds.map(iconId =>
         db.icons.update(iconId, { folderId, updatedAt: Date.now() })
       )
     );
 
+    // Update local state to reflect folder membership
     set(state => ({
       icons: state.icons.map(icon =>
         iconIds.includes(icon.id) ? { ...icon, folderId } : icon
@@ -696,10 +1118,14 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     return folderId;
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Selection
+  // ═══════════════════════════════════════════════════════════════════════════
+
   selectItem: (id, multi = false) => {
     set(state => {
       if (multi) {
-        // Toggle selection
+        // Multi-select mode: toggle the item's selection state
         const isSelected = state.selectedItems.includes(id);
         return {
           selectedItems: isSelected
@@ -707,7 +1133,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
             : [...state.selectedItems, id],
         };
       }
-      // Single selection
+      // Single-select mode: replace selection with just this item
       return { selectedItems: [id] };
     });
   },
@@ -716,13 +1142,16 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     set({ selectedItems: [] });
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Pagination
+  // ═══════════════════════════════════════════════════════════════════════════
+
   setCurrentPage: page => {
+    // Clamp page to valid range [0, totalPages - 1]
     const totalPages = get().getTotalPages();
     set({ currentPage: Math.max(0, Math.min(page, totalPages - 1)) });
   },
 
-  // P0-6: Dynamic total pages calculation
-  // P1-1: Read viewSettings from settingsStore
   getTotalPages: () => {
     const { icons, folders } = get();
     const settingsStore = useSettingsStore.getState();
@@ -737,15 +1166,24 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const visibleRootIcons = icons.filter(icon => !icon.folderId && !icon.isHidden);
     const totalItems = visibleRootIcons.length + folders.length;
 
+    // Ensure at least 1 page even when empty
     return Math.max(1, Math.ceil(totalItems / itemsPerPage));
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Edit Mode
+  // ═══════════════════════════════════════════════════════════════════════════
 
   setEditingItem: item => {
     set({ editingItem: item });
   },
 
-  // iOS-style delete mode actions
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Delete Mode (iOS-style)
+  // ═══════════════════════════════════════════════════════════════════════════
+
   enterDeleteMode: () => {
+    // Clear selection when entering delete mode to prevent accidental deletions
     set({ isDeleteMode: true, selectedItems: [] });
   },
 
@@ -753,11 +1191,15 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     set({ isDeleteMode: false });
   },
 
-  // System icon actions
+  // ═══════════════════════════════════════════════════════════════════════════
+  // System Icons
+  // ═══════════════════════════════════════════════════════════════════════════
+
   hideSystemIcon: async (iconId: SystemIconId) => {
+    // Persist hide state to database
     await hideSystemIconService(iconId);
 
-    // Update local state: mark as hidden
+    // Update local state: mark as hidden and save original position for restoration
     set(state => ({
       icons: state.icons.map(icon =>
         icon.systemIconId === iconId
@@ -790,15 +1232,15 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     // Check if icon exists in DB - if not, reinject it
     const existingIcon = await db.icons.get(iconId);
     if (!existingIcon) {
-      // Icon was deleted from DB - reinject it
+      // Icon was deleted from DB - reinject it from system icon definitions
       await reinjectSystemIcon(iconId);
       // Reload icons to get the new one
       await get().loadIcons();
     } else {
-      // Icon exists, just restore it
+      // Icon exists, just restore it from hidden state
       await restoreSystemIconService(iconId);
 
-      // Update local state: restore from hidden
+      // Update local state: restore from hidden with original position
       set(state => ({
         icons: state.icons.map(i =>
           i.systemIconId === iconId
@@ -833,7 +1275,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       const settingsStore = useSettingsStore.getState();
       const { systemIconSettings } = settingsStore;
 
-      // P0 Fix: Even if initialized=true, verify DB actually has system icons
+      // Verify DB actually has system icons even if settings say initialized
       // This handles cases where user cleared IndexedDB but not LocalStorage
       const hasExisting = await hasSystemIcons();
 
@@ -864,17 +1306,14 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     }
   },
 
-  /**
-   * Sync system icon titles with the current UI language.
-   * Updates both IndexedDB and local store state for real-time reactivity.
-   */
   syncSystemIcons: async (lang: UiLanguage) => {
     try {
+      // Update system icon titles in database based on current language
       const updatedIcons = await syncSystemIconTitlesForLanguage(lang);
 
       if (updatedIcons.length === 0) return;
 
-      // Update local store state with new titles
+      // Update local store state with new titles for immediate UI update
       set((state) => ({
         icons: state.icons.map((icon) => {
           const updated = updatedIcons.find((u) => u.id === icon.id);
@@ -882,7 +1321,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
         }),
       }));
 
-      // Broadcast updates to other tabs
+      // Broadcast updates to other tabs for cross-tab consistency
       updatedIcons.forEach((icon) => {
         syncIcon.updated({ id: icon.id, title: icon.title });
       });
@@ -891,19 +1330,19 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     }
   },
 
-  /**
-   * Generate a unique folder name by checking existing folders
-   * If baseName exists, appends incrementing number: Folder, Folder1, Folder2, etc.
-   */
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Folder Utilities
+  // ═══════════════════════════════════════════════════════════════════════════
+
   generateUniqueFolderName: (baseName?: string) => {
     const { folders } = get();
     const lang = getCurrentUiLanguage();
 
-    // Default base name based on language
+    // Default base name based on current UI language
     const defaultName = tr('文件夹', 'Folder', lang);
     const base = baseName?.trim() || defaultName;
 
-    // Get all existing folder names for duplicate checking
+    // Collect all existing folder names for duplicate checking
     const existingNames = new Set(folders.map(f => f.name));
 
     // If base name doesn't exist, use it directly
@@ -911,7 +1350,7 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
       return base;
     }
 
-    // Find the next available number suffix
+    // Find the next available number suffix: Folder, Folder1, Folder2, etc.
     let counter = 1;
     while (existingNames.has(`${base}${counter}`)) {
       counter++;
@@ -920,23 +1359,19 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     return `${base}${counter}`;
   },
 
-  /**
-   * Check if a folder has only one icon and automatically dissolve it
-   * Moves the single icon back to the folder's original position
-   */
   checkAndDissolveFolder: async (folderId: string) => {
     const { icons, folders } = get();
 
-    // Find the folder
+    // Find the folder to check
     const folder = folders.find(f => f.id === folderId);
     if (!folder) {
       return;
     }
 
-    // Get icons in this folder
+    // Get icons remaining in this folder
     const folderIcons = icons.filter(icon => icon.folderId === folderId);
 
-    // Only dissolve if exactly 1 icon remains
+    // Only dissolve if exactly 1 icon remains (folder with 0 or 2+ icons stays)
     if (folderIcons.length !== 1) {
       return;
     }
@@ -944,16 +1379,16 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     const singleIcon = folderIcons[0];
     const folderPosition = folder.position;
 
-    // Use transaction for atomic update
+    // Use transaction for atomic update to ensure consistency
     await db.transaction('rw', [db.icons, db.folders], async () => {
-      // Move the icon to the folder's position
+      // Move the icon to the folder's position (inherit folder's grid slot)
       await db.icons.update(singleIcon.id, {
         folderId: undefined,
         position: folderPosition,
         updatedAt: Date.now(),
       });
 
-      // Delete the empty folder
+      // Delete the now-empty folder
       await db.folders.delete(folderId);
     });
 
@@ -974,17 +1409,13 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
     console.info(`[iconStore] Auto-dissolved folder "${folder.name}" with single icon`);
   },
 
-  /**
-   * Create a folder with auto-generated unique name
-   * Used for drag-and-drop merge operations
-   */
   createFolderWithAutoName: async (iconIds: string[], position: { x: number; y: number }) => {
     const { generateUniqueFolderName, createFolderWithIcons } = get();
 
-    // Generate a unique folder name
+    // Generate a unique folder name based on current language
     const folderName = generateUniqueFolderName();
 
-    // Create folder with icons using existing method
+    // Delegate to createFolderWithIcons for actual creation
     const folderId = await createFolderWithIcons(folderName, iconIds, position);
 
     console.info(`[iconStore] Created folder "${folderName}" with ${iconIds.length} icons at position (${position.x}, ${position.y})`);
@@ -993,9 +1424,19 @@ export const useIconStore = create<IconState & IconActions>((set, get) => ({
   },
 }));
 
-// P2-1: Setup BroadcastChannel sync listener (singleton guard to prevent duplicate registration)
+// ═══════════════════════════════════════════════════════════════════════════════
+// BroadcastChannel Sync Listener
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Sets up cross-tab synchronization using the BroadcastChannel API.
+// When icons or folders are modified in one tab, changes are broadcast
+// to all other tabs running the same extension.
+
+/** Cleanup function for the sync listener (singleton guard) */
 let syncListenerCleanup: (() => void) | null = null;
+
 if (!syncListenerCleanup) {
+  // Register listener for sync messages from other tabs
   syncListenerCleanup = listenForSync((message: SyncMessage) => {
   const store = useIconStore.getState();
 

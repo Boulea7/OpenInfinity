@@ -15,6 +15,7 @@
   },
   "popup": {
     "title": "添加到 OpenInfinity",
+    "addShortcut": "添加快捷方式",
     "websiteName": "网站名称",
     "websiteUrl": "网站地址",
     "selectIcon": "选择图标",
@@ -28,11 +29,31 @@
     "backgroundColor": "背景颜色",
     "preview": "预览",
     "confirm": "确定",
+    "cancel": "取消",
+    "reset": "重置",
     "adding": "添加中...",
+    "addToHome": "添加到主页",
     "selectFile": "选择图片",
     "fileHint": "支持 PNG、JPG、SVG 格式，最大 2MB",
+    "fileTooLarge": "图片大小不能超过 2MB",
     "fetchingIcon": "获取网站图标中...",
-    "noIconAvailable": "无法获取网站图标，请使用纯色图标或本地上传"
+    "noIconAvailable": "无法获取网站图标，请使用纯色图标或本地上传",
+    "permissionRequired": "需要授权读取当前标签页信息，才能自动获取网址并添加到主页。",
+    "granting": "授权中...",
+    "grantAndRead": "授权并读取当前页面",
+    "customIcon": "自定义图标",
+    "cropHint": "点击上方虚线框可重新上传",
+    "textPlaceholder": "1-2个字符",
+    "sizeLabel": "大小",
+    "customColor": "自定义颜色",
+    "selectType": "请选择图标类型",
+    "unnamed": "未命名",
+    "errors": {
+      "cannotGetUrl": "无法获取当前页面地址",
+      "invalidUrl": "当前页面地址无效",
+      "addFailed": "添加失败，请重试",
+      "cropFailed": "裁切失败，请重试"
+    }
   },
   "settings": {
     "title": "设置",
@@ -202,7 +223,9 @@
       "format24h": "24小时制",
       "showSeconds": "显示秒数",
       "displayOptions": "显示选项",
-      "systemTimezone": "使用系统时区"
+      "systemTimezone": "使用系统时区",
+      "hour": "小时",
+      "ariaLabel": "{{time}}。点击打开时钟设置"
     },
     "icons": {
       "title": "图标设置",
@@ -302,7 +325,7 @@
       "title": "图标",
       "hideName": "隐藏图标名称",
       "shadow": "图标阴影",
-      "animation": "启动动画",
+      "animation": "悬停动画",
       "borderRadius": "图标圆角",
       "opacity": "图标不透明度"
     },
@@ -324,14 +347,6 @@
       "regionChina": "中国城市",
       "regionIntl": "国际城市",
       "noCityFound": "未找到匹配的城市"
-    },
-    "clock": {
-      "title": "时钟",
-      "format": "时间格式",
-      "hour": "小时",
-      "showSeconds": "显示秒数",
-      "autoDetect": "自动检测时区",
-      "ariaLabel": "{{time}}。点击打开时钟设置"
     },
     "reset": {
       "title": "重置设置",
@@ -435,6 +450,7 @@
     "updatedAt": "更新于",
     "forecast": "未来预报",
     "noData": "暂无天气数据",
+    "updateFailed": "更新失败",
     "windSpeed": "风速",
     "windSpeedUnit": "km/h",
     "high": "高",
@@ -522,11 +538,16 @@
     "sortByCreatedAt": "创建时间",
     "sortByUpdatedAt": "修改时间",
     "sortByTitle": "标题",
-    "viewMode": "视图模式",
+    "viewMode": {
+      "title": "视图模式",
+      "edit": "编辑",
+      "preview": "预览"
+    },
     "viewModeGrid": "网格",
     "viewModeList": "列表",
     "gridView": "网格视图",
     "listView": "列表视图",
+    "selectOrCreate": "选择或创建便签",
     "count": "{{count}} 个便签",
     "selectToView": "选择一个便签以查看",
     "unsavedChangesConfirm": "有未保存的更改，确定要关闭吗？",
@@ -548,13 +569,28 @@
     },
     "refresh": "刷新历史",
     "permissionRequired": "需要历史记录权限才能显示",
+    "permissionDescription": "允许访问您的浏览历史，以便在这里浏览和搜索。",
     "grantAccess": "授权访问历史记录",
     "loading": "正在加载历史记录...",
     "retry": "重试",
     "delete": "删除",
     "deleteConfirm": "确定要删除这条历史记录吗？",
     "noHistory": "暂无历史记录",
-    "visits": "访问 {{count}} 次"
+    "visits": "访问 {{count}} 次",
+    "searchPlaceholder": "搜索...",
+    "clearHistory": "清除历史记录",
+    "clearHistoryConfirm": "此操作无法撤销。请确认您要删除的时间范围。",
+    "confirmDelete": "确认删除"
+  },
+  "widgets": {
+    "title": "小组件",
+    "dragToResize": "拖动调整大小",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "收起侧边栏",
+    "expandWidgets": "展开小组件",
+    "collapseWidgets": "收起小组件",
+    "noWidgetsEnabled": "没有启用的小组件",
+    "enableInSettings": "在设置中启用小组件"
   },
   "todo": {
     "title": "待办事项",
@@ -636,6 +672,7 @@
     "delete": "删除",
     "close": "关闭",
     "today": "今天",
+    "loading": "加载中...",
     "loadFailed": "加载失败",
     "favorite": "收藏",
     "unfavorite": "取消收藏",
@@ -659,7 +696,11 @@
     "websiteName": "网站名称",
     "selectIcon": "选择图标",
     "systemIconNotEditable": "系统快捷方式不可编辑",
-    "systemIconDesc": "这是一个内置的系统快捷方式，无法修改其属性。如需隐藏此快捷方式，可在设置 > 系统快捷方式中进行管理。"
+    "systemIconDesc": "这是一个内置的系统快捷方式，无法修改其属性。如需隐藏此快捷方式，可在设置 > 系统快捷方式中进行管理。",
+    "iconPreview": "图标预览",
+    "titlePlaceholder": "如：Google",
+    "urlPlaceholder": "如：https://google.com",
+    "iconUrlPlaceholder": "如：https://example.com/icon.png"
   },
   "folder": {
     "createFolder": "创建文件夹",
@@ -690,7 +731,9 @@
   "navigation": {
     "add": "添加",
     "my": "我的",
-    "settings": "设置"
+    "settings": "设置",
+    "infinity": "Infinity",
+    "openInfinity": "打开 Infinity 导航"
   },
   "addTab": {
     "searchPlaceholder": "搜索网站",

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import TextIconEditor, { TextIconConfig, PRESET_COLORS } from './TextIconEditor';
 import { useFaviconFetch } from '../hooks/useFaviconFetch';
 import { generateTextIcon } from '../utils/iconGenerator';
@@ -25,6 +26,7 @@ export default function IconTypeSelector({
   onIconChange,
   onEditRequest,
 }: Props) {
+  const { t } = useTranslation();
   const { sources } = useFaviconFetch(url);
   const validFavicon = sources.find((s) => s.status === 'success');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,7 +141,7 @@ export default function IconTypeSelector({
             {/* Show fallback text only if no preview URL */}
             {!textIconPreviewUrl && (textConfig.text || (websiteName || '').slice(0, 2) || 'Go')}
           </div>
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">纯色图标</span>
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{t('popup.iconTypes.text')}</span>
           {type === 'text' && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-orange-500 rounded-full flex items-center justify-center shadow-sm border border-white dark:border-zinc-900">
               <Check size={10} className="text-white" />
@@ -161,7 +163,7 @@ export default function IconTypeSelector({
               <div className="w-14 h-14 rounded-[14px] flex items-center justify-center bg-gray-50 dark:bg-zinc-800 shadow-sm p-2 transition-transform active:scale-95">
                 <img src={validFavicon.dataUrl} alt="Favicon" className="w-full h-full object-contain" />
               </div>
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">网站图标</span>
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{t('popup.iconTypes.favicon')}</span>
               {type === 'favicon' && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-orange-500 rounded-full flex items-center justify-center shadow-sm border border-white dark:border-zinc-900">
                   <Check size={10} className="text-white" />
@@ -193,7 +195,7 @@ export default function IconTypeSelector({
               <Plus size={20} />
             )}
           </div>
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">本地图标</span>
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{t('popup.iconTypes.upload')}</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -203,7 +205,7 @@ export default function IconTypeSelector({
               const file = e.target.files?.[0];
               if (file) {
                 if (file.size > 2 * 1024 * 1024) {
-                  alert('图片大小不能超过 2MB');
+                  alert(t('popup.fileTooLarge'));
                   // P2 Fix: Clear input even on size error so same file can be re-selected
                   e.target.value = '';
                   return;
@@ -231,7 +233,7 @@ export default function IconTypeSelector({
 
         {type === 'custom' && (
           <div className="text-center text-xs text-zinc-500 py-2">
-            点击上方虚线框可重新上传
+            {t('popup.cropHint')}
           </div>
         )}
       </div>

@@ -1,15 +1,78 @@
 /**
- * Weather service using Open-Meteo API
- * Provides weather data fetching and WMO weather code mapping
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * Weather Service
+ *
+ * Provides weather data fetching from the Open-Meteo API and WMO weather
+ * code interpretation for displaying weather conditions.
+ *
+ * Features:
+ * - Fetches current weather and 7-day forecast
+ * - Supports both Celsius and Fahrenheit units
+ * - Maps WMO weather codes to human-readable conditions
+ * - Provides appropriate weather icons for each condition
+ * - Privacy-focused: no referrer, no credentials
+ *
+ * API Integration:
+ * - Uses Open-Meteo free API (no API key required)
+ * - 8-second timeout for API requests
+ * - Automatic timezone detection
+ *
+ * WMO Weather Codes:
+ * - 0: Clear sky
+ * - 1-3: Partly cloudy to overcast
+ * - 45-48: Fog conditions
+ * - 51-57: Drizzle variations
+ * - 61-67: Rain variations
+ * - 71-77: Snow variations
+ * - 80-86: Shower variations
+ * - 95-99: Thunderstorm conditions
+ *
+ * @module services/weather
+ * @see {@link https://open-meteo.com/en/docs} Open-Meteo API Documentation
+ * @see {@link https://codes.wmo.int/306/4501} WMO Weather Codes
  */
 
 import type { WeatherCache } from './database';
 import type { LucideIcon } from 'lucide-react';
 import { Sun, Cloud, CloudSun, CloudFog, CloudRain, CloudSnow, CloudLightning, HelpCircle } from 'lucide-react';
 
+// ============================================================================
+// WMO Weather Code Mapping
+// ============================================================================
+
 /**
- * WMO Weather Code mapping
- * Reference: https://open-meteo.com/en/docs
+ * Mapping of WMO weather codes to condition descriptions and icons.
+ *
+ * WMO (World Meteorological Organization) defines standard weather codes
+ * used by meteorological services worldwide. Open-Meteo API returns these
+ * codes which we map to localized condition text and appropriate icons.
+ *
+ * @see {@link https://open-meteo.com/en/docs} for code definitions
+ *
+ * @example
+ * ```ts
+ * const { condition, icon: Icon } = WMO_CODES[0];
+ * // condition: 'Clear sky'
+ * // Icon: Sun component
+ * ```
  */
 export const WMO_CODES: Record<number, { condition: string; icon: LucideIcon }> = {
   // Clear sky
@@ -57,46 +120,114 @@ export const WMO_CODES: Record<number, { condition: string; icon: LucideIcon }> 
   99: { condition: '强雷暴冰雹', icon: CloudLightning },
 };
 
+// ============================================================================
+// Public API - WMO Code Utilities
+// ============================================================================
+
 /**
- * Get weather condition text from WMO code
+ * Retrieves the weather condition text for a WMO weather code.
+ *
+ * Returns a localized (Chinese) condition description based on the
+ * WMO weather interpretation code returned by Open-Meteo API.
+ *
+ * @param code - WMO weather code (0-99)
+ * @returns Localized condition text, or 'Unknown' if code not recognized
+ *
+ * @example
+ * ```ts
+ * getWeatherCondition(0);  // 'Clear sky'
+ * getWeatherCondition(63); // 'Moderate rain'
+ * getWeatherCondition(95); // 'Thunderstorm'
+ * getWeatherCondition(999); // 'Unknown'
+ * ```
  */
 export function getWeatherCondition(code: number): string {
   return WMO_CODES[code]?.condition || '未知';
 }
 
 /**
- * Get weather icon from WMO code
+ * Retrieves the appropriate weather icon for a WMO weather code.
+ *
+ * Returns a Lucide React icon component matching the weather condition.
+ * Falls back to HelpCircle for unrecognized codes.
+ *
+ * @param code - WMO weather code (0-99)
+ * @returns Lucide icon component for the weather condition
+ *
+ * @example
+ * ```ts
+ * const WeatherIcon = getWeatherIcon(0);  // Sun
+ * const RainIcon = getWeatherIcon(63);    // CloudRain
+ * const StormIcon = getWeatherIcon(95);   // CloudLightning
+ *
+ * // Usage in JSX
+ * <WeatherIcon className="w-6 h-6" />
+ * ```
  */
 export function getWeatherIcon(code: number): LucideIcon {
   return WMO_CODES[code]?.icon || HelpCircle;
 }
 
+// ============================================================================
+// API Response Types
+// ============================================================================
+
 /**
- * Open-Meteo API response interfaces
+ * Current weather data from Open-Meteo API.
+ * @internal
  */
 interface OpenMeteoCurrentWeather {
+  /** Temperature at 2 meters above ground */
   temperature_2m: number;
+  /** WMO weather interpretation code */
   weather_code: number;
+  /** Relative humidity at 2 meters */
   relative_humidity_2m: number;
+  /** Wind speed at 10 meters */
   wind_speed_10m: number;
+  /** Apparent (feels-like) temperature */
   apparent_temperature: number;
 }
 
+/**
+ * Daily forecast data from Open-Meteo API.
+ * @internal
+ */
 interface OpenMeteoDailyWeather {
+  /** Array of date strings (YYYY-MM-DD) */
   time: string[];
+  /** Maximum daily temperatures */
   temperature_2m_max: number[];
+  /** Minimum daily temperatures */
   temperature_2m_min: number[];
+  /** Daily weather codes */
   weather_code: number[];
 }
 
+/**
+ * Complete Open-Meteo API response structure.
+ * @internal
+ */
 interface OpenMeteoResponse {
+  /** Current weather conditions */
   current: OpenMeteoCurrentWeather;
+  /** Daily forecast data */
   daily: OpenMeteoDailyWeather;
 }
 
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
 /**
- * Get day of week from date string
- * Uses local midnight to avoid timezone offset issues
+ * Converts a date string to day of week name.
+ *
+ * Uses local midnight to avoid timezone offset issues that can occur
+ * when parsing date-only strings.
+ *
+ * @param dateString - Date in YYYY-MM-DD format
+ * @returns Day name (e.g., 'Monday', 'Tuesday')
+ * @internal
  */
 function getDayOfWeek(dateString: string): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -105,13 +236,48 @@ function getDayOfWeek(dateString: string): string {
   return days[date.getDay()];
 }
 
+// ============================================================================
+// Public API - Weather Data Fetching
+// ============================================================================
+
 /**
- * Fetch weather data from Open-Meteo API
+ * Fetches weather data from the Open-Meteo API.
  *
- * @param latitude - Location latitude
- * @param longitude - Location longitude
- * @param unit - Temperature unit ('celsius' or 'fahrenheit')
- * @returns Weather data conforming to WeatherCache interface
+ * Retrieves current weather conditions and 7-day forecast for a given
+ * location. Uses the free Open-Meteo API which requires no API key.
+ *
+ * @param latitude - Location latitude coordinate (-90 to 90)
+ * @param longitude - Location longitude coordinate (-180 to 180)
+ * @param unit - Temperature unit: 'celsius' (default) or 'fahrenheit'
+ * @returns Promise resolving to weather data (excluding cache metadata)
+ *
+ * @throws {Error} When API request fails (network error, timeout)
+ * @throws {Error} When API returns non-200 status
+ * @throws {Error} When response data format is invalid
+ *
+ * @example
+ * ```ts
+ * // Fetch weather for Beijing in Celsius
+ * const weather = await fetchWeather(39.9042, 116.4074);
+ * console.log(`Current: ${weather.current.temperature}C`);
+ * console.log(`Condition: ${weather.current.condition}`);
+ *
+ * // Fetch weather in Fahrenheit
+ * const weatherF = await fetchWeather(40.7128, -74.0060, 'fahrenheit');
+ * console.log(`New York: ${weatherF.current.temperature}F`);
+ *
+ * // Access 7-day forecast
+ * weather.forecast.forEach(day => {
+ *   console.log(`${day.date}: ${day.low}-${day.high}`);
+ * });
+ * ```
+ *
+ * @remarks
+ * - Request timeout: 8 seconds
+ * - Privacy: No referrer or credentials sent
+ * - Location name is left empty (populated by caller via geocoding)
+ * - All temperatures are rounded to nearest integer
+ * - Timezone is automatically detected by Open-Meteo
  */
 export async function fetchWeather(
   latitude: number,

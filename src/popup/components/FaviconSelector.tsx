@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFaviconFetch } from '../hooks/useFaviconFetch';
 import type { IconDraft } from '../types/iconDraft';
 
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function FaviconSelector({ url, onSelect }: Props) {
+  const { t } = useTranslation();
   const { sources, isLoading } = useFaviconFetch(url);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ export default function FaviconSelector({ url, onSelect }: Props) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-4 text-gray-500">获取网站图标中...</div>;
+    return <div className="text-center py-4 text-gray-500">{t('popup.fetchingIcon')}</div>;
   }
 
   const hasValidSource = sources.some((s) => s.status === 'success' && !!s.dataUrl);
@@ -36,7 +38,7 @@ export default function FaviconSelector({ url, onSelect }: Props) {
   if (!hasValidSource) {
     return (
       <div className="text-center py-4 text-gray-500">
-        无法获取网站图标，请使用纯色图标或本地上传
+        {t('popup.noIconAvailable')}
       </div>
     );
   }

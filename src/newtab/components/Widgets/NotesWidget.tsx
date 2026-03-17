@@ -94,7 +94,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
   // Extract title from content (first line)
   const getTitle = (content: string) => {
     const firstLine = content.split('\n')[0];
-    return firstLine.replace(/^#+\s*/, '').trim() || 'Untitled';
+    return firstLine.replace(/^#+\s*/, '').trim() || t('notes.untitled');
   };
 
   return (
@@ -168,7 +168,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
                     <button
                       onClick={(e) => handleDeleteNote(note.id, e)}
                       className="opacity-0 group-hover:opacity-100 p-1 text-white/40 hover:text-red-400 transition-all"
-                      title="删除"
+                      title={t('common.delete')}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -235,7 +235,7 @@ export function NotesWidget({ isExpanded, onToggleExpand, className }: BaseWidge
               <div className="flex-1 flex items-center justify-center text-white/40">
                 <div className="text-center">
                   <FileText className="w-16 h-16 mx-auto mb-3 opacity-30" />
-                  <p>选择或创建笔记</p>
+                  <p>{t('notes.selectOrCreate')}</p>
                 </div>
               </div>
             )}

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './i18n';  // Initialize i18n
 import App from './App';
 import './styles/globals.css';
+import { installChunkLoadRecovery } from '../shared/chunkRecovery';
 
 // Create React Query client with default options
 const queryClient = new QueryClient({
@@ -23,6 +24,8 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Failed to find root element');
 }
+
+installChunkLoadRecovery();
 
 // Render the application
 createRoot(rootElement).render(

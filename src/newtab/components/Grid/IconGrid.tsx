@@ -1,3 +1,22 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { normalizeUiLanguage } from '../../../shared/locale';
@@ -45,19 +64,63 @@ import { handleSystemIconClick, isSystemIcon } from '../../utils/systemIconHandl
 import { exportAllData } from '../../utils/backup';
 import { createLogger } from '../../utils/logger';
 
-// Logger instance for IconGrid module
+/** Logger instance for IconGrid module debug and info messages */
 const logger = createLogger('IconGrid');
 
+/**
+ * Props for the IconGrid component
+ */
 interface IconGridProps {
+  /** Additional CSS classes to apply to the grid container */
   className?: string;
+  /** Callback fired when user clicks the "Add Icon" button */
   onAddIcon?: () => void;
+  /** Callback fired when user initiates icon editing (via context menu or edit mode click) */
   onEditIcon?: (_icon: Icon) => void;
+  /** Callback fired when user opens a folder; receives the folder and optional DOMRect for animation origin */
   onOpenFolder?: (_folder: Folder, _rect?: DOMRect) => void;
 }
 
 /**
  * IconGrid Component
- * Renders a grid of icons and folders with drag-and-drop support
+ *
+ * A responsive grid layout for displaying desktop icons and folders on the new tab page.
+ * This component serves as the main visual interface for organizing and interacting
+ * with user-created shortcuts and system icons.
+ *
+ * Features:
+ * - Responsive grid layout with configurable rows and columns
+ * - Drag-and-drop reordering powered by @dnd-kit
+ * - Multi-page pagination with horizontal swipe/wheel navigation
+ * - Folder support with iOS-style merge gesture (drag icon onto another)
+ * - Context menus for icons, folders, and background areas
+ * - Delete mode with iOS-style shake animation and X buttons
+ * - Wallpaper actions (random, favorite, download) via background context menu
+ * - Weather icon support with live temperature display
+ *
+ * Architecture:
+ * - Uses Zustand stores for state management (icons, settings, wallpaper)
+ * - Implements useFolderMerge hook for folder creation gesture state machine
+ * - Renders IconItem and FolderItem components within SortableContext
+ * - Supports keyboard navigation and accessibility features
+ *
+ * Performance Optimizations:
+ * - Weather data lifted to parent to avoid N subscriptions in IconItem
+ * - Wallpaper state accessed via refs to prevent useMemo rebuilds
+ * - useShallow selector to minimize re-renders from store changes
+ *
+ * @param props - Component props
+ * @returns The rendered icon grid with drag-and-drop context
+ *
+ * @example
+ * ```tsx
+ * <IconGrid
+ *   className="mt-8"
+ *   onAddIcon={() => setShowAddModal(true)}
+ *   onEditIcon={(icon) => setEditingIcon(icon)}
+ *   onOpenFolder={(folder, rect) => openFolderModal(folder, rect)}
+ * />
+ * ```
  */
 export function IconGrid({
   className,
@@ -112,8 +175,8 @@ export function IconGrid({
     }))
   );
 
-  // Wallpaper store for background context menu actions
-  // Separate stable functions from frequently-changing state
+  // Wallpaper store for background context menu actions.
+  // Extract only stable action functions to prevent re-renders from wallpaper state changes.
   const { fetchRandomWallpaper, addToFavorites } = useWallpaperStore(
     useShallow((state) => ({
       fetchRandomWallpaper: state.fetchRandomWallpaper,
@@ -121,11 +184,14 @@ export function IconGrid({
     }))
   );
 
-  // P0 Fix: Lift weather subscription here to avoid N subscriptions in IconItem
-  // Only the weather system icon needs this data
+  // P0 Performance Fix: Lift weather subscription to parent component.
+  // This prevents N separate subscriptions when N IconItems render, as only
+  // the weather system icon actually needs this data.
   const { weather } = useWeather();
 
-  // Use refs for values only needed at click time to avoid useMemo rebuilds
+  // Performance optimization: Use refs for wallpaper values only needed at click time.
+  // This avoids including frequently-changing wallpaper state in useMemo dependencies,
+  // which would cause unnecessary rebuilds of the background context menu items.
   type WallpaperState = Pick<
     ReturnType<typeof useWallpaperStore.getState>,
     'currentWallpaper' | 'currentUrl' | 'activeSource'
@@ -138,10 +204,11 @@ export function IconGrid({
   // Keep ref in sync with store (without causing re-renders)
   wallpaperStateRef.current = useWallpaperStore.getState();
 
-  // Drag state
+  /** Currently dragged item for DragOverlay rendering */
   const [activeItem, setActiveItem] = useState<GridItem | null>(null);
 
-  // Folder merge state machine (replaces old hover timer refs)
+  // Folder merge state machine - manages the iOS-style folder creation gesture.
+  // When dragging an icon over another icon for 500ms, they merge into a new folder.
   const {
     state: mergeState,
     startDrag,
@@ -153,46 +220,52 @@ export function IconGrid({
     isMergeReady,
   } = useFolderMerge();
 
-  // Merge modal state
+  /** Whether the folder naming modal is visible after successful merge gesture */
   const [showMergeModal, setShowMergeModal] = useState(false);
+  /** Information about the pending folder merge (source icon, target icon, position) */
   const [mergeInfo, setMergeInfo] = useState<{
     sourceId: string;
     targetId: string;
     position: { x: number; y: number };
   } | null>(null);
 
-  // Context menu state
+  /** State for item-specific context menu (right-click on icon/folder) */
   const [contextMenu, setContextMenu] = useState<{
     position: { x: number; y: number };
     item: GridItem;
   } | null>(null);
 
-  // Background context menu state
+  /** State for background context menu (right-click on empty area) */
   const [backgroundContextMenu, setBackgroundContextMenu] = useState<{
     position: { x: number; y: number };
   } | null>(null);
 
-  // Delete animation state: track items currently being deleted (for exit animation)
+  // Delete animation state: track items currently being deleted.
+  // Items in this set show exit animation before actual deletion.
   const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set());
-  const DELETE_ANIMATION_DURATION = 300; // ms, matches CSS transition
+  /** Duration of delete exit animation in milliseconds (matches CSS transition) */
+  const DELETE_ANIMATION_DURATION = 300;
 
-  // Toast notification state for system icon hiding
+  /** Toast message to display (e.g., "Shortcut hidden") */
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  /** Ref for toast auto-hide timeout to enable cleanup */
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * Displays a toast notification message with auto-dismiss after 3 seconds.
+   * Clears any existing toast before showing the new one.
+   */
   const showToast = useCallback((message: string) => {
-    // Clear any existing timeout
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
     setToastMessage(message);
-    // Auto-hide after 3 seconds
     toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null);
     }, 3000);
   }, []);
 
-  // Cleanup toast timeout on unmount
+  // Cleanup effect: Clear toast timeout on component unmount to prevent memory leaks
   useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) {
@@ -201,7 +274,7 @@ export function IconGrid({
     };
   }, []);
 
-  // ESC key to exit delete mode
+  // Keyboard handler: ESC key exits delete mode for better UX
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isDeleteMode) {
@@ -212,14 +285,25 @@ export function IconGrid({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isDeleteMode, exitDeleteMode]);
 
-  // Swipe/wheel page navigation state
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const lastWheelTime = useRef(0);
-  const WHEEL_THROTTLE_MS = 300; // Throttle wheel events to prevent rapid page changes
-  const SWIPE_THRESHOLD = 50; // Minimum swipe distance in pixels
-  const SWIPE_TIME_THRESHOLD = 300; // Maximum swipe duration in ms
+  // ============================================================================
+  // Page Navigation: Swipe/Wheel Gesture Handling
+  // ============================================================================
 
-  // Handle horizontal wheel/trackpad scroll for page switching
+  /** Touch start position for swipe gesture detection */
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  /** Last wheel event timestamp for throttling */
+  const lastWheelTime = useRef(0);
+  /** Throttle interval for wheel events to prevent rapid page changes */
+  const WHEEL_THROTTLE_MS = 300;
+  /** Minimum horizontal distance in pixels to qualify as a swipe */
+  const SWIPE_THRESHOLD = 50;
+  /** Maximum duration in ms for a gesture to count as a swipe */
+  const SWIPE_TIME_THRESHOLD = 300;
+
+  /**
+   * Handles horizontal wheel/trackpad scroll for page navigation.
+   * Normalizes deltaX across different deltaMode values and throttles events.
+   */
   const handleWheel = useCallback((e: WheelEvent) => {
     // Avoid triggering page change when scrolling in input/textarea
     const target = e.target as HTMLElement | null;
@@ -264,9 +348,12 @@ export function IconGrid({
     }
   }, [currentPage, setCurrentPage, getTotalPages]);
 
-  // Handle touch start for swipe detection
+  /**
+   * Records touch start position for swipe gesture detection.
+   * Only tracks single-finger touches to avoid interfering with pinch/zoom.
+   */
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (e.touches.length !== 1) return; // Only single touch
+    if (e.touches.length !== 1) return;
     touchStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
@@ -274,7 +361,10 @@ export function IconGrid({
     };
   }, []);
 
-  // Handle touch end to detect swipe gesture
+  /**
+   * Detects horizontal swipe gestures on touch end and triggers page navigation.
+   * Validates swipe distance, direction (primarily horizontal), and duration.
+   */
   const handleTouchEnd = useCallback((e: TouchEvent) => {
     if (!touchStartRef.current || e.changedTouches.length !== 1) {
       touchStartRef.current = null;
@@ -307,10 +397,11 @@ export function IconGrid({
     }
   }, [currentPage, setCurrentPage, getTotalPages]);
 
-  // Grid container ref for event listeners
+  /** Ref for the main grid container to attach gesture event listeners */
   const gridContainerRef = useRef<HTMLDivElement>(null);
 
-  // Attach wheel and touch event listeners
+  // Effect: Attach wheel and touch event listeners for page navigation gestures.
+  // Uses passive: false for wheel to allow preventDefault (required for navigation).
   useEffect(() => {
     const container = gridContainerRef.current;
     if (!container) return;
@@ -327,7 +418,14 @@ export function IconGrid({
     };
   }, [handleWheel, handleTouchStart, handleTouchEnd]);
 
-  // dnd-kit sensors (P1-3: Added TouchSensor for mobile support)
+  // ============================================================================
+  // Drag-and-Drop Configuration (dnd-kit)
+  // ============================================================================
+
+  // Configure dnd-kit sensors for multi-input support:
+  // - PointerSensor: Desktop mouse/trackpad with 8px activation distance
+  // - TouchSensor: Mobile with 200ms long-press to avoid conflicts with scroll
+  // - KeyboardSensor: Accessibility support with arrow key navigation
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -345,12 +443,20 @@ export function IconGrid({
     })
   );
 
-  // Calculate items per page (with safety clamp)
+  // ============================================================================
+  // Grid Layout Calculations
+  // ============================================================================
+
+  // Calculate items per page with safety clamps to prevent division by zero
   const safeColumns = Math.max(1, viewSettings.columns || 6);
   const safeRows = Math.max(1, viewSettings.rows || 4);
+  /** Total number of items that can fit on one page */
   const itemsPerPage = safeColumns * safeRows;
 
-  // Get root-level items (icons without folderId + folders, excluding hidden icons)
+  /**
+   * Computes root-level items (icons not in folders + all folders).
+   * Filters out hidden icons and sorts by position in row-major order.
+   */
   const rootItems = useMemo(() => {
     const rootIcons = icons.filter((icon) => !icon.folderId && !icon.isHidden);
     const allItems: GridItem[] = [...rootIcons, ...folders];
@@ -363,19 +469,26 @@ export function IconGrid({
     });
   }, [icons, folders]);
 
-  // Get items for current page
+  /** Items to display on the current page, sliced from rootItems */
   const pageItems = useMemo(() => {
     const startIndex = currentPage * itemsPerPage;
     return rootItems.slice(startIndex, startIndex + itemsPerPage);
   }, [rootItems, currentPage, itemsPerPage]);
 
-  // Sortable item IDs
+  /** Array of item IDs for SortableContext (required by dnd-kit) */
   const sortableIds = useMemo(
     () => pageItems.map((item) => item.id),
     [pageItems]
   );
 
-  // Handle drag start
+  // ============================================================================
+  // Drag-and-Drop Event Handlers
+  // ============================================================================
+
+  /**
+   * Handles drag start event: stores the active item and initiates merge tracking.
+   * Only icon drags can trigger folder merge (not folder drags).
+   */
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const item = pageItems.find((i) => i.id === active.id);
@@ -388,7 +501,11 @@ export function IconGrid({
     }
   }, [pageItems, startDrag]);
 
-  // Handle drag over - uses useFolderMerge hook for state machine management
+  /**
+   * Handles drag over event: detects when an icon is hovering over another icon.
+   * Updates the folder merge state machine for the iOS-style merge gesture.
+   * Only icon-to-icon combinations at root level can trigger merge.
+   */
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
 
@@ -413,7 +530,10 @@ export function IconGrid({
     }
   }, [pageItems, enterTarget, leaveTarget]);
 
-  // Handle drag end
+  /**
+   * Handles drag end event: completes folder merge, folder drop, or reorder.
+   * Priority: merge (if 500ms hover completed) > folder drop > position swap.
+   */
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
@@ -448,7 +568,14 @@ export function IconGrid({
     [pageItems, activeItem, addToFolder, reorderItems, isMergeReady, confirmMerge, cancelDrag]
   );
 
-  // Handle context menu
+  // ============================================================================
+  // Context Menu Handlers
+  // ============================================================================
+
+  /**
+   * Opens the context menu for a specific icon or folder.
+   * Positions the menu at the mouse cursor location.
+   */
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, item: GridItem) => {
       e.preventDefault();
@@ -460,13 +587,17 @@ export function IconGrid({
     []
   );
 
-  // Close context menu
+  /** Closes both item and background context menus */
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
     setBackgroundContextMenu(null);
   }, []);
 
-  // Handle animated delete: first trigger exit animation, then remove after animation completes
+  /**
+   * Handles animated icon deletion with exit animation.
+   * Adds item to deletingItems set (triggers CSS animation), then removes after delay.
+   * Shows toast notification for system icons to inform about restoration option.
+   */
   const handleAnimatedDelete = useCallback((id: string) => {
     // Check if this is a system icon to show appropriate toast
     const icon = icons.find(i => i.id === id);
@@ -494,7 +625,11 @@ export function IconGrid({
     }, DELETE_ANIMATION_DURATION);
   }, [deleteIcon, DELETE_ANIMATION_DURATION, icons, showToast]);
 
-  // Context menu items
+  /**
+   * Generates context menu items for a given icon or folder.
+   * Icons get: Open, Edit (non-system only), Edit Mode, Delete
+   * Folders get: Open, Rename, Delete
+   */
   const getContextMenuItems = useCallback(
     (item: GridItem): ContextMenuItem[] => {
       if (item.type === 'icon') {
@@ -575,7 +710,11 @@ export function IconGrid({
     [t, onEditIcon, onOpenFolder, handleAnimatedDelete, deleteFolder, openBehavior, enterDeleteMode, closeContextMenu]
   );
 
-  // Handle background click (P0-3: only deselect when clicking background itself)
+  /**
+   * Handles clicks on the grid background (empty area).
+   * In delete mode: exits delete mode
+   * In normal mode: clears selection if clicking directly on background (not bubbled)
+   */
   const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
     // In delete mode, any click that reaches here (not stopped by icon/folder) exits delete mode
     // This works because IconItem and FolderItem call stopPropagation() on their click handlers
@@ -592,7 +731,10 @@ export function IconGrid({
     }
   }, [isDeleteMode, exitDeleteMode, clearSelection, closeContextMenu]);
 
-  // Handle background context menu
+  /**
+   * Opens the background context menu on right-click.
+   * Only shows for non-interactive areas (not icons, folders, or buttons).
+   */
   const handleBackgroundContextMenu = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
 
@@ -612,9 +754,11 @@ export function IconGrid({
     }
   }, []);
 
-  // Background context menu items
-  // Optimized: use refs for wallpaper state to reduce useMemo rebuilds
-  // Menu items only depend on stable functions (t, enterDeleteMode, fetchRandomWallpaper, etc.)
+  /**
+   * Background context menu items for wallpaper and general actions.
+   * Optimized: wallpaper state is accessed via refs at click time to prevent
+   * useMemo rebuilds when wallpaper changes (menu only shown briefly anyway).
+   */
   const backgroundMenuItems: ContextMenuItem[] = useMemo(() => [
     {
       id: 'backup',
@@ -727,7 +871,10 @@ export function IconGrid({
     },
   ], [t, enterDeleteMode, fetchRandomWallpaper, addToFavorites, closeContextMenu]);
 
-  // Handle folder merge confirmation
+  /**
+   * Confirms folder creation after merge gesture completes.
+   * Creates a new folder with the two merged icons and the user-specified name.
+   */
   const handleMergeConfirm = useCallback(async (folderName: string) => {
     if (!mergeInfo) return;
 
@@ -742,12 +889,15 @@ export function IconGrid({
     }
   }, [mergeInfo, createFolderWithIcons]);
 
-  // Get preview icons for merge modal
+  /** Icons to preview in the folder naming modal after merge gesture */
   const mergePreviewIcons = mergeInfo
     ? icons.filter(icon => [mergeInfo.sourceId, mergeInfo.targetId].includes(icon.id))
     : [];
 
-  // Render drag overlay
+  /**
+   * Renders the drag overlay content (the item following the cursor during drag).
+   * Uses FolderItem or IconItem based on active item type.
+   */
   const renderOverlay = () => {
     if (!activeItem) return null;
 

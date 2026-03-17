@@ -27,6 +27,13 @@ export function useFlipAnimation<T extends HTMLElement>(deps: any[]) {
         // 2. Early return if order hasn't changed
         // This prevents unnecessary animations when only data updates (not reordering)
         if (currentOrderKey === prevOrderKey.current) {
+            // Still update positions to prevent stale data for future animations
+            children.forEach((child) => {
+                const id = child.getAttribute('data-flip-id');
+                if (id) {
+                    positions.current.set(id, child.getBoundingClientRect());
+                }
+            });
             return;
         }
         prevOrderKey.current = currentOrderKey;

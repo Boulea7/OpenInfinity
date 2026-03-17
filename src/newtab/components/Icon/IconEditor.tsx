@@ -176,7 +176,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
               {iconUrl ? (
                 <img
                   src={iconUrl}
-                  alt="Icon preview"
+                  alt={t('iconEditor.iconPreview')}
                   className="w-full h-full object-cover"
                   onError={() => setIconUrl('')}
                 />
@@ -230,7 +230,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g., Google"
+            placeholder={t('iconEditor.titlePlaceholder')}
             className={cn(
               'w-full px-3 py-2 rounded-lg',
               'bg-gray-50 dark:bg-gray-700',
@@ -258,7 +258,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onBlur={handleUrlBlur}
-            placeholder="e.g., https://google.com"
+            placeholder={t('iconEditor.urlPlaceholder')}
             className={cn(
               'w-full px-3 py-2 rounded-lg',
               'bg-gray-50 dark:bg-gray-700',
@@ -284,7 +284,7 @@ export function IconEditor({ isOpen, onClose, editingIcon }: IconEditorProps) {
             type="text"
             value={iconUrl}
             onChange={(e) => setIconUrl(e.target.value)}
-            placeholder="e.g., https://example.com/icon.png"
+            placeholder={t('iconEditor.iconUrlPlaceholder')}
             className={cn(
               'w-full px-3 py-2 rounded-lg',
               'bg-gray-50 dark:bg-gray-700',

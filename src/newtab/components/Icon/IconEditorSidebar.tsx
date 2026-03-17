@@ -195,7 +195,7 @@ export function IconEditorSidebar({ isOpen, onClose, editingIcon }: IconEditorSi
           'fixed inset-y-0 right-0 z-[60] w-[360px]',
           'bg-white dark:bg-zinc-900',
           'shadow-2xl',
-          'transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'transform transition-transform duration-300 ease-in-out',
           'flex flex-col',
           show ? 'translate-x-0' : 'translate-x-full'
         )}

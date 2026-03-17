@@ -161,8 +161,8 @@ export function HistorySidebar() {
   return (
     <PermissionGate
       hasPermission={hasPermission}
-      permissionName="历史记录"
-      description="允许访问您的浏览历史，以便在这里浏览和搜索。"
+      permissionName={t('history.title')}
+      description={t('history.permissionDescription')}
       onRequestPermission={requestPermission}
       icon={<Clock className="w-8 h-8 text-blue-500" />}
     >
@@ -179,7 +179,7 @@ export function HistorySidebar() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="搜索..."
+                  placeholder={t('history.searchPlaceholder')}
                   className={cn(
                     "w-full pl-9 pr-2 py-1.5 rounded-lg text-sm bg-transparent",
                     "text-gray-900 dark:text-gray-100",
@@ -222,7 +222,7 @@ export function HistorySidebar() {
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                    清除历史记录
+                    {t('history.clearHistory')}
                   </button>
                 </div>
               )}
@@ -242,7 +242,7 @@ export function HistorySidebar() {
                 <Archive className="w-8 h-8 opacity-40" />
               </div>
               <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                暂无历史记录
+                {t('history.noHistory')}
               </p>
             </div>
           ) : (

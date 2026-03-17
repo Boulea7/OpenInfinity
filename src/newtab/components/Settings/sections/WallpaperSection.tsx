@@ -68,7 +68,8 @@ export const WallpaperSection: React.FC<WallpaperSectionProps> = ({
             alt="Current wallpaper"
             className="w-full h-full object-cover"
             style={{
-              filter: `blur(${effects.blur}px) brightness(${effects.brightness / 100})`,
+              // Apply same blur cap as WallpaperBackground for consistent preview
+              filter: `blur(${Math.min(effects.blur / 5, 10)}px) brightness(${effects.brightness / 100})`,
             }}
           />
         ) : (

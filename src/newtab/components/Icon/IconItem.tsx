@@ -1,3 +1,46 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * IconItem Component
+ *
+ * Renders a single website shortcut icon in the new tab page grid.
+ * Follows the Infinity Pro design pattern with circular icon areas
+ * and titles displayed below.
+ *
+ * Features:
+ * - Multiple icon types: favicon, custom image, text/emoji, system icons
+ * - Multi-source favicon fallback chain (Google -> Clearbit -> DuckDuckGo -> text)
+ * - Drag-and-drop support via @dnd-kit/sortable
+ * - iOS-style delete mode with shake animation and X button
+ * - Folder merge gesture support with progress ring visualization
+ * - Special weather icon with live temperature display
+ * - Responsive sizing based on grid density and user scale preference
+ *
+ * Performance:
+ * - Wrapped with React.memo to prevent unnecessary re-renders during drag
+ * - Weather data passed from parent to avoid N subscriptions
+ * - Image loading optimized with lazy loading and GPU acceleration
+ *
+ * @module components/Icon/IconItem
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -11,7 +54,15 @@ import { handleSystemIconClick, isSystemIcon } from '../../utils/systemIconHandl
 import { getSystemIconComponent, WeatherIcon } from '../../assets/icons/system';
 
 /**
- * Get weather background color based on condition
+ * Maps weather condition strings to gradient color pairs.
+ * Supports both Chinese and English condition names for i18n compatibility.
+ *
+ * @param condition - Weather condition string (e.g., "晴", "clear", "雨", "rain")
+ * @returns CSS gradient color string in format "color1, color2"
+ *
+ * @example
+ * getWeatherBackgroundColor('晴')  // Returns '#fcd34d, #f59e0b' (sunny yellow)
+ * getWeatherBackgroundColor('rain') // Returns '#60a5fa, #3b82f6' (blue)
  */
 function getWeatherBackgroundColor(condition?: string): string {
   if (!condition) return '#60a5fa, #3b82f6'; // Default blue
@@ -41,7 +92,19 @@ function getWeatherBackgroundColor(condition?: string): string {
 }
 
 /**
- * Render system icon content
+ * Renders the content for system icons (settings, weather, etc.).
+ * Special handling for weather icon which displays live temperature.
+ *
+ * @param icon - The icon data object containing systemIconId
+ * @param weather - Optional weather cache data for temperature display
+ * @returns React node with the appropriate system icon or fallback
+ *
+ * @example
+ * // Renders weather icon with temperature
+ * renderSystemIcon(weatherIcon, { current: { temperature: 22, condition: 'sunny' }})
+ *
+ * // Renders settings gear icon
+ * renderSystemIcon(settingsIcon, null)
  */
 function renderSystemIcon(icon: Icon, weather?: WeatherCache | null): React.ReactNode {
   // Prefer systemIconId for stable mapping (supports legacy DB values like "system-weather").
@@ -72,31 +135,71 @@ function renderSystemIcon(icon: Icon, weather?: WeatherCache | null): React.Reac
   return <IconComponent size={38} />;
 }
 
+/**
+ * Props for the IconItem component
+ */
 interface IconItemProps {
+  /** The icon data object containing URL, title, and icon configuration */
   icon: Icon;
-  weather?: WeatherCache | null; // P0 Fix: Passed from parent to avoid N subscriptions
+  /** Weather cache data for weather system icon display (passed from parent for performance) */
+  weather?: WeatherCache | null;
+  /** Whether this icon is currently being dragged (external control) */
   isDragging?: boolean;
+  /** Whether this icon is selected (shows selection ring) */
   isSelected?: boolean;
+  /** Whether this is the drag overlay preview (not the original item in grid) */
   isOverlay?: boolean;
+  /** Whether the grid is in delete/edit mode (shows shake animation and X button) */
   isDeleteMode?: boolean;
-  isDeleting?: boolean; // Exit animation state
-  isMergeTarget?: boolean; // Whether this icon is a merge target (folder creation)
-  isMergeReady?: boolean; // Merge is ready (500ms hold completed)
-  mergeProgress?: number; // Merge progress 0-1
+  /** Whether this icon is currently animating out for deletion */
+  isDeleting?: boolean;
+  /** Whether another icon is being dragged over this one (folder merge gesture) */
+  isMergeTarget?: boolean;
+  /** Whether the merge gesture hold time (500ms) has completed */
+  isMergeReady?: boolean;
+  /** Progress of the merge gesture from 0 to 1 (for circular progress indicator) */
+  mergeProgress?: number;
+  /** Callback for right-click context menu */
   onContextMenu?: (_e: React.MouseEvent, _icon: Icon) => void;
+  /** Callback when icon is clicked (opens URL or triggers action) */
   onClick?: (_icon: Icon) => void;
+  /** Callback when edit action is triggered in delete mode */
   onEdit?: (_icon: Icon) => void;
+  /** Callback when delete button is clicked in delete mode */
   onDelete?: (_iconId: string) => void;
 }
 
 /**
- * IconItem Component
- * Renders a single website icon with Infinity Pro style:
- * - Circular icon area (transparent bg for favicon, colored bg for text icons)
- * - Title displayed BELOW the circle
- * - Smooth hover and drag animations
+ * Renders a single website shortcut icon with Infinity Pro styling.
  *
- * Wrapped with React.memo for performance optimization during drag operations
+ * Layout Structure:
+ * - Circular icon container (transparent for favicons, colored for text/system icons)
+ * - Title label positioned below the circle
+ * - Delete button (X) positioned at top-right edge in delete mode
+ * - Edit overlay on hover in delete mode (non-system icons only)
+ *
+ * Visual States:
+ * - Normal: subtle hover lift animation
+ * - Selected: scale up with orange ring
+ * - Dragging: original hidden (overlay shows preview)
+ * - Delete mode: shake animation with X button
+ * - Merge target: progress ring and pulsing glow
+ * - Deleting: scale down and fade out exit animation
+ *
+ * @param props - Component props
+ * @returns The rendered icon item
+ *
+ * @example
+ * ```tsx
+ * <IconItem
+ *   icon={icon}
+ *   weather={weather}
+ *   isDeleteMode={isDeleteMode}
+ *   onClick={(icon) => openUrl(icon.url)}
+ *   onEdit={(icon) => setEditingIcon(icon)}
+ *   onDelete={(id) => deleteIcon(id)}
+ * />
+ * ```
  */
 export const IconItem = React.memo(function IconItem({
   icon,
@@ -121,14 +224,15 @@ export const IconItem = React.memo(function IconItem({
       openBehavior: state.openBehavior,
     }))
   );
-  // Multi-source fallback chain for maximum icon clarity:
-  // primary → clearbit → duckduckgo → text
-  // Note: If primary is already Google, we skip directly to clearbit/duckduckgo
+
+  // Multi-source favicon fallback chain for maximum icon clarity.
+  // Progression: primary source -> Clearbit -> DuckDuckGo -> text fallback.
+  // Each step is tried when the previous one fails to load.
   const [imageFallback, setImageFallback] = useState<
     'none' | 'clearbit' | 'duckduckgo' | 'text'
   >('none');
 
-  // dnd-kit sortable hook
+  // dnd-kit sortable hook - provides drag-and-drop functionality
   const {
     attributes,
     listeners,
@@ -144,16 +248,17 @@ export const IconItem = React.memo(function IconItem({
     },
   });
 
+  /** Combined dragging state from both external prop and sortable hook */
   const isDragging = externalDragging || sortableDragging;
 
+  // Reset fallback chain when icon data changes to retry from primary source
   useEffect(() => {
-    // Reset image fallback state when icon changes
     setImageFallback('none');
   }, [icon.id, icon.url, icon.icon.type, icon.icon.value]);
 
-  // Calculate transform style for drag
-  // IMPORTANT: When isOverlay=true, we're in DragOverlay which already handles positioning
-  // Applying useSortable's transform would cause double-transform (flash/jump bug)
+  // Calculate transform style for drag positioning.
+  // IMPORTANT: When isOverlay=true, we're in DragOverlay which handles its own positioning.
+  // Applying useSortable's transform here would cause double-transform (flash/jump bug).
   const style = useMemo(
     () => ({
       transform: isOverlay ? undefined : CSS.Transform.toString(transform),
@@ -162,8 +267,12 @@ export const IconItem = React.memo(function IconItem({
     [transform, transition, isOverlay]
   );
 
-  // P0 Fix: weather is now passed from parent (IconGrid) to avoid N subscriptions
-  // Get icon source URL (adapt to new icon structure)
+  /**
+   * Computes the primary icon source URL based on icon type.
+   * - custom/favicon: use the stored value directly
+   * - text/system: return null (rendered separately)
+   * - default: fetch high-res favicon from Google's service
+   */
   const iconSrc = useMemo(() => {
     if (icon.icon.type === 'custom' || icon.icon.type === 'favicon') {
       // Use provided icon value (base64, svg, or URL); empty string is invalid
@@ -178,7 +287,10 @@ export const IconItem = React.memo(function IconItem({
     return getGoogleFaviconUrl(icon.url, 256);
   }, [icon.icon, icon.url]);
 
-  // Resolve icon source based on fallback chain
+  /**
+   * Resolves the actual image URL to use based on the current fallback state.
+   * Follows the chain: primary -> Clearbit -> DuckDuckGo -> null (triggers text fallback).
+   */
   const resolvedIconSrc = useMemo(() => {
     if (!iconSrc) return null;
     switch (imageFallback) {
@@ -191,7 +303,13 @@ export const IconItem = React.memo(function IconItem({
     }
   }, [iconSrc, imageFallback, icon.url]);
 
-  // Handle click (P0-3: stop propagation to prevent background click)
+  /**
+   * Handles icon click events.
+   * - Stops propagation to prevent triggering background click handlers
+   * - In delete mode or during drag: no action
+   * - System icons: uses special handler (settings, weather, etc.)
+   * - Regular icons: opens URL or calls onClick callback
+   */
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -216,12 +334,18 @@ export const IconItem = React.memo(function IconItem({
     }
   };
 
-  // Handle context menu
+  /** Handles right-click context menu */
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     onContextMenu?.(e, icon);
   };
 
+  /**
+   * Handles keyboard navigation for accessibility.
+   * - Preserves dnd-kit keyboard drag behavior
+   * - Enter key activates the icon (opens URL or system action)
+   * - Space is reserved for dnd-kit drag operations
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Preserve dnd-kit keyboard behavior first
     (listeners as any)?.onKeyDown?.(e);
@@ -249,11 +373,21 @@ export const IconItem = React.memo(function IconItem({
     }
   };
 
-  // Sortable attributes
+  /** Combined dnd-kit attributes and listeners for the sortable container */
   const sortableAttrs = { ...attributes, ...listeners };
 
-  // Dynamic icon size calculation
-  // Formula: Base - (Cols adjustment) - (Rows adjustment) => scale factor
+  /**
+   * Calculates the dynamic icon size based on grid density and user scale preference.
+   *
+   * Formula: (Base - Column Adjustment - Row Adjustment) * Scale Multiplier
+   * - Base size: 100px
+   * - Column adjustment: 5px per column beyond 4
+   * - Row adjustment: 5px per row beyond 3
+   * - Scale multiplier: maps 0-100 user preference to 0.4-1.2x
+   * - Final size clamped to 48-96px range
+   *
+   * @returns Icon size in pixels
+   */
   const calculateIconSize = () => {
     const { columns, rows, iconScale } = viewSettings;
 
@@ -279,14 +413,15 @@ export const IconItem = React.memo(function IconItem({
     return Math.min(96, Math.max(48, finalSize));
   };
 
+  /** Calculated icon size in pixels */
   const iconSizePx = calculateIconSize();
+  /** CSS style object for icon dimensions */
   const iconSizeStyle = { width: `${iconSizePx}px`, height: `${iconSizePx}px` };
 
-  // Container width (slightly larger than icon to hold text)
-  // We make it proportional to icon size to prevent text from looking disconnected
+  // Container width is proportional to icon size to prevent text from looking disconnected
   const containerWidthPx = iconSizePx * 1.3;
 
-  // Border radius percentage for circle
+  /** Border radius value from settings (percentage for circular icons) */
   const borderRadiusValue = `${iconStyle.borderRadius}%`;
 
   return (

@@ -38,12 +38,12 @@ export const WeatherSection: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
             {t('settings.weather.unit', '温度单位')}
           </span>
-          <div className="flex justify-between">
+          <div className="flex w-full gap-1">
             <button
               type="button"
               onClick={() => setWeatherSettings({ unit: 'celsius' })}
               className={`
-                px-4 py-2 rounded text-sm
+                flex-1 px-4 py-2 rounded text-sm text-center
                 ${weatherSettings.unit === 'celsius'
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -56,7 +56,7 @@ export const WeatherSection: React.FC = () => {
               type="button"
               onClick={() => setWeatherSettings({ unit: 'fahrenheit' })}
               className={`
-                px-4 py-2 rounded text-sm
+                flex-1 px-4 py-2 rounded text-sm text-center
                 ${weatherSettings.unit === 'fahrenheit'
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -79,12 +79,12 @@ export const WeatherSection: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
             {t('settings.weather.location', '位置')}
           </span>
-          <div className="flex justify-between">
+          <div className="flex w-full gap-1">
             <button
               type="button"
               onClick={() => setWeatherSettings({ location: { ...weatherSettings.location, type: 'auto' } })}
               className={`
-                px-4 py-2 rounded text-sm
+                flex-1 px-4 py-2 rounded text-sm text-center
                 ${weatherSettings.location.type === 'auto'
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -97,7 +97,7 @@ export const WeatherSection: React.FC = () => {
               type="button"
               onClick={() => setWeatherSettings({ location: { ...weatherSettings.location, type: 'manual' } })}
               className={`
-                px-4 py-2 rounded text-sm
+                flex-1 px-4 py-2 rounded text-sm text-center
                 ${weatherSettings.location.type === 'manual'
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'

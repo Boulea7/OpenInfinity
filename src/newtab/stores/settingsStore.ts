@@ -1,277 +1,655 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  Author: OpenInfinity Contributors                                        ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * Settings Store Module
+ *
+ * Central state management for all user preferences and application settings.
+ * This store uses Zustand with persist middleware for automatic localStorage
+ * persistence and IndexedDB synchronization for cross-context access.
+ *
+ * Key Features:
+ * - Theme management (light/dark/system)
+ * - Grid layout configuration (columns, rows, gaps, scale)
+ * - Search engine preferences with region-aware defaults
+ * - Icon display customization
+ * - Clock, weather, and widget settings
+ * - Minimal mode for distraction-free experience
+ * - System icon visibility control
+ * - Settings panel section collapse state
+ *
+ * Persistence Strategy:
+ * - Primary: localStorage via Zustand persist middleware
+ * - Secondary: IndexedDB for settings needed by background scripts
+ * - Migration: Automatic schema migration for version upgrades
+ *
+ * @module stores/settingsStore
+ * @see {@link useIconStore} for grid item management that depends on view settings
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db, type SystemIconId } from '../services/database';
 import { isUserLocaleChina } from '../utils/regionUtils';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Type Definitions
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Theme type - light, dark, or follow system
+ * Theme type for application appearance.
+ * - 'light': Force light theme
+ * - 'dark': Force dark theme
+ * - 'system': Follow operating system preference
  */
 export type Theme = 'light' | 'dark' | 'system';
 
 /**
- * Search engine configuration
+ * Search Engine Configuration
+ *
+ * Defines a search engine that can be used in the search bar.
+ * Users can add custom engines or modify the default ones.
+ *
+ * @interface SearchEngine
  */
 export interface SearchEngine {
+  /** Unique identifier for the engine */
   id: string;
+  /** Display name shown in the UI */
   name: string;
+  /** Search URL template (query is appended to this) */
   url: string;
+  /** Optional favicon URL for the engine */
   icon?: string;
+  /** Whether this is the default search engine */
   isDefault?: boolean;
 }
 
 /**
- * Open behavior settings - where to open various items
+ * Open Behavior Settings
+ *
+ * Controls where different types of content are opened.
+ * Each setting can be either 'new_tab' or 'current_tab'.
+ *
+ * @interface OpenBehavior
  */
 export interface OpenBehavior {
+  /** Where to open website shortcuts */
   websites: 'new_tab' | 'current_tab';
+  /** Where to open search results */
   searchResults: 'new_tab' | 'current_tab';
+  /** Where to open bookmarks */
   bookmarks: 'new_tab' | 'current_tab';
+  /** Where to open history items */
   history: 'new_tab' | 'current_tab';
 }
 
 /**
- * Icon display style settings
+ * Icon Display Style Settings
+ *
+ * Controls the visual appearance of desktop icons.
+ *
+ * @interface IconStyle
  */
 export interface IconStyle {
+  /** Whether to show icon labels */
   showName: boolean;
+  /** Whether to show drop shadow on icons */
   shadow: boolean;
+  /** Hover animation style */
   animation: 'none' | 'scale' | 'bounce' | 'shake';
-  borderRadius: number; // 0-50%
-  opacity: number; // 0-100%
+  /** Border radius as percentage (0-50) */
+  borderRadius: number;
+  /** Icon opacity as percentage (0-100) */
+  opacity: number;
+  /** Icon size preset */
   size: 'small' | 'medium' | 'large';
 }
 
 /**
- * Search bar settings
+ * Search Bar Settings
+ *
+ * Configuration for the search bar component.
+ *
+ * @interface SearchSettings
  */
 export interface SearchSettings {
+  /** Whether search bar is hidden */
   hidden: boolean;
+  /** Whether to show search suggestions */
   showSuggestions: boolean;
+  /** Placeholder text for the search input */
   placeholder: string;
+  /** Array of available search engines */
   engines: SearchEngine[];
+  /** ID of the default search engine */
   defaultEngine: string;
+  /** Whether to show the search button */
   showButton: boolean;
+  /** Search bar size preset */
   size: 'small' | 'medium' | 'large';
+  /** Border radius for the search bar */
   borderRadius: number;
+  /** Background opacity as percentage */
   opacity: number;
-  searchType: 'web' | 'images' | 'videos' | 'maps';  // New: search type
-  clearAfterSearch: boolean;  // Clear search box after search (default: false)
-  openInNewTab: boolean;      // Open search results in new tab (default: true)
+  /** Type of search to perform */
+  searchType: 'web' | 'images' | 'videos' | 'maps';
+  /** Whether to clear input after search */
+  clearAfterSearch: boolean;
+  /** Whether to open results in new tab */
+  openInNewTab: boolean;
 }
 
 /**
- * View and layout settings
+ * View and Layout Settings
+ *
+ * Controls the overall layout and visibility of UI elements.
+ *
+ * @interface ViewSettings
  */
 export interface ViewSettings {
-  zoom: number; // 50-150%
-  columns: number; // 1-8
-  rows: number; // 1-8
-  columnGap: number; // 0-100%
-  rowGap: number; // 0-100%
-  iconScale: number; // 10-100%
+  /** Page zoom level (50-150%) */
+  zoom: number;
+  /** Number of icon columns (1-8) */
+  columns: number;
+  /** Number of icon rows (1-8) */
+  rows: number;
+  /** Column gap as percentage (0-100) */
+  columnGap: number;
+  /** Row gap as percentage (0-100) */
+  rowGap: number;
+  /** Icon scale as percentage (10-100) */
+  iconScale: number;
+  /** Whether to randomize wallpaper on load */
   randomWallpaper: boolean;
+  /** Whether to show top sites section */
   showTopSites: boolean;
+  /** Whether to show bookmarks section */
   showBookmarks: boolean;
+  /** Whether to show pagination controls */
   showPagination: boolean;
+  /** Whether to show the clock widget */
   showClock: boolean;
+  /** Whether to show the weather widget */
   showWeather: boolean;
+  /** Whether to show the widget sidebar */
   showWidgetSidebar: boolean;
+  /** Position of the widget sidebar */
   widgetSidebarPosition: 'left' | 'right';
+  /** Whether the sidebar is collapsed */
   widgetSidebarCollapsed: boolean;
+  /** Whether to show todo widget in sidebar */
   showTodoWidget: boolean;
+  /** Whether to show notes widget in sidebar */
   showNotesWidget: boolean;
+  /** Whether to show bookmarks widget in sidebar */
   showBookmarksWidget: boolean;
+  /** Whether to show history widget in sidebar */
   showHistoryWidget: boolean;
-  showHomeTodoList: boolean;        // Show todo list on right side of grid (default: false)
-  animationIntensity: 'none' | 'light' | 'normal' | 'heavy';  // Animation intensity (default: 'normal')
-  currentView: 'search' | 'notes';  // Current view mode (default: 'search')
-  showPinnedNotes: boolean;         // Show pinned notes in search view (default: false)
-  autoFillGrid: boolean;            // Auto-fill grid gaps (default: true)
+  /** Whether to show todo list on home page */
+  showHomeTodoList: boolean;
+  /** Animation intensity level */
+  animationIntensity: 'none' | 'light' | 'normal' | 'heavy';
+  /** Current view mode */
+  currentView: 'search' | 'notes';
+  /** Whether to show pinned notes in search view */
+  showPinnedNotes: boolean;
+  /** Whether to auto-fill grid gaps */
+  autoFillGrid: boolean;
 }
 
 /**
- * Weather settings
+ * Weather Settings
+ *
+ * Configuration for the weather widget.
+ *
+ * @interface WeatherSettings
  */
 export interface WeatherSettings {
+  /** Location configuration */
   location: {
+    /** Whether to auto-detect or use manual location */
     type: 'auto' | 'manual';
+    /** Display name of the location */
     name: string;
+    /** Latitude for manual location */
     latitude?: number;
+    /** Longitude for manual location */
     longitude?: number;
   };
+  /** Temperature unit */
   unit: 'celsius' | 'fahrenheit';
+  /** Whether to show forecast */
   showForecast: boolean;
+  /** Number of forecast days */
   forecastDays: 3 | 5 | 7;
-  updateInterval: number; // minutes
+  /** Update interval in minutes */
+  updateInterval: number;
 }
 
 /**
- * Widget settings
+ * Widget Settings
+ *
+ * Configuration for sidebar widgets.
+ *
+ * @interface WidgetSettings
  */
 export interface WidgetSettings {
+  /** Todo widget configuration */
   todoWidget: {
+    /** Whether to show completed items */
     showCompleted: boolean;
+    /** Maximum number of items to display */
     maxItems: number;
   };
+  /** Notes widget configuration */
   notesWidget: {
+    /** Maximum number of notes to display */
     maxItems: number;
+    /** Whether to show timestamps */
     showTimestamp: boolean;
   };
+  /** Bookmarks widget configuration */
   bookmarksWidget: {
+    /** Maximum number of bookmarks to display */
     maxItems: number;
   };
+  /** History widget configuration */
   historyWidget: {
+    /** Maximum number of history items */
     maxItems: number;
+    /** Time range filter */
     timeRange: 'today' | 'week' | 'month';
   };
 }
 
 /**
- * Font settings
+ * Font Settings
+ *
+ * Typography configuration for icon labels and text.
+ *
+ * @interface FontSettings
  */
 export interface FontSettings {
+  /** Font family name */
   family: string;
+  /** Font size in pixels */
   size: number;
+  /** Text color (hex or CSS color) */
   color: string;
+  /** Whether to show text shadow */
   shadow: boolean;
+  /** Shadow color (CSS color with alpha) */
   shadowColor: string;
+  /** Font weight */
   weight: 'normal' | 'medium' | 'bold';
 }
 
 /**
- * Clock and timezone settings
+ * Clock Settings
+ *
+ * Configuration for the clock widget.
+ *
+ * @interface ClockSettings
  */
 export interface ClockSettings {
-  timezone: string; // IANA timezone or 'auto'
-  autoDetect: boolean; // Auto-detect timezone
-  format: '12h' | '24h'; // Time format
-  showSeconds: boolean; // Show seconds
+  /** IANA timezone string or 'auto' for system timezone */
+  timezone: string;
+  /** Whether to auto-detect timezone */
+  autoDetect: boolean;
+  /** Time format (12-hour or 24-hour) */
+  format: '12h' | '24h';
+  /** Whether to show seconds */
+  showSeconds: boolean;
 }
 
 /**
- * Changelog settings
+ * Changelog Settings
+ *
+ * Tracks changelog viewing state for update notifications.
+ *
+ * @interface ChangelogSettings
  */
 export interface ChangelogSettings {
-  lastViewedVersion: string;  // Last viewed version
-  showOnUpdate: boolean;       // Show changelog on update (default: true)
+  /** Last version the user viewed the changelog for */
+  lastViewedVersion: string;
+  /** Whether to show changelog on version update */
+  showOnUpdate: boolean;
 }
 
 /**
- * Notification settings (Gmail, Todo badges, etc.)
+ * Notification Settings
+ *
+ * Configuration for Gmail and todo badge notifications.
+ *
+ * @interface NotificationSettings
  */
 export interface NotificationSettings {
-  // Gmail notifications
-  gmailEnabled: boolean;           // Enable Gmail notifications
-  gmailSound: boolean;             // Play sound on new email
-  showUnreadCount: boolean;        // Show unread count on icon badge
-  // Todo notifications
-  showTodoCount: boolean;          // Show todo count on icon badge
-  // Authorization state (read-only, managed by gmail service)
-  gmailAuthorized: boolean;        // Whether Gmail is authorized
-  gmailEmail: string | null;       // Authorized Gmail email address
+  /** Whether Gmail notifications are enabled */
+  gmailEnabled: boolean;
+  /** Whether to play sound on new email */
+  gmailSound: boolean;
+  /** Whether to show unread count badge */
+  showUnreadCount: boolean;
+  /** Whether to show todo count badge */
+  showTodoCount: boolean;
+  /** Whether Gmail is authorized (read-only) */
+  gmailAuthorized: boolean;
+  /** Authorized Gmail email address (read-only) */
+  gmailEmail: string | null;
 }
 
 /**
- * Minimal mode settings
+ * Minimal Mode Settings
+ *
+ * Configuration for the minimal/distraction-free mode.
+ *
+ * @interface MinimalModeSettings
  */
 export interface MinimalModeSettings {
-  showViewSwitcher: boolean;       // Show ViewSwitcher (search/notes toggle) in minimal mode
+  /** Whether to show view switcher in minimal mode */
+  showViewSwitcher: boolean;
 }
 
 /**
- * System icon settings - controls visibility and state of default system shortcuts
+ * System Icon Settings
+ *
+ * Controls visibility and state of default system shortcuts
+ * (Settings, Weather, Todo, Notes, etc.)
+ *
+ * @interface SystemIconSettings
  */
 export interface SystemIconSettings {
-  // Visibility state for each system icon (true = visible, false = hidden)
+  /** Visibility state for each system icon (true = visible) */
   visibility: Record<SystemIconId, boolean>;
-  // Whether system icons have been initialized (injected on first load)
+  /** Whether system icons have been initialized on first load */
   initialized: boolean;
-  // Whether location denied prompt has been shown for weather icon
+  /** Whether location denied prompt has been shown for weather */
   locationDeniedPromptShown: boolean;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Store State Interface
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Settings store state
+ * Settings Store State Interface
+ *
+ * Complete state shape for all application settings.
+ * Settings are organized into logical groups for better maintainability.
+ *
+ * @interface SettingsState
  */
 interface SettingsState {
-  // General
+  // ─────────────────────────────────────────────────────────────────────────────
+  // General Settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Current theme setting */
   theme: Theme;
+  /** Current UI language code */
   language: string;
 
-  // Behavior
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Behavior Settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Controls where different content types are opened */
   openBehavior: OpenBehavior;
 
-  // Display
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Display Settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Icon visual style configuration */
   iconStyle: IconStyle;
+  /** Search bar configuration */
   searchSettings: SearchSettings;
+  /** Grid layout and visibility configuration */
   viewSettings: ViewSettings;
+  /** Typography configuration */
   fontSettings: FontSettings;
+  /** Clock widget configuration */
   clockSettings: ClockSettings;
+  /** Weather widget configuration */
   weatherSettings: WeatherSettings;
+  /** Sidebar widgets configuration */
   widgetSettings: WidgetSettings;
+  /** Changelog notification settings */
   changelogSettings: ChangelogSettings;
+  /** Email and badge notifications */
   notificationSettings: NotificationSettings;
 
-  // Minimal mode (shows only search bar on homepage)
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Mode Settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Whether minimal mode is enabled */
   minimalMode: boolean;
+  /** Minimal mode specific settings */
   minimalModeSettings: MinimalModeSettings;
 
-  // System icons (default shortcuts)
+  // ─────────────────────────────────────────────────────────────────────────────
+  // System Settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** System icon visibility and state */
   systemIconSettings: SystemIconSettings;
-
-  // Settings panel section collapse state
+  /** Settings panel section collapse states */
   collapsedSections: Record<string, boolean>;
-
-  // State flags
+  /** Whether initial settings load is complete */
   isInitialized: boolean;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Store Actions Interface
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Settings store actions
+ * Settings Store Actions Interface
+ *
+ * All available actions for modifying settings state.
+ * Actions are organized by the settings group they modify.
+ *
+ * @interface SettingsActions
  */
 interface SettingsActions {
+  // ─────────────────────────────────────────────────────────────────────────────
   // Initialization
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Initializes settings from IndexedDB.
+   * Should be called once on application startup.
+   * @returns Promise that resolves when initialization is complete
+   */
   initializeSettings: () => Promise<void>;
 
+  // ─────────────────────────────────────────────────────────────────────────────
   // Theme
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Sets the application theme.
+   * Persists to both localStorage and IndexedDB.
+   * @param theme - The theme to apply
+   */
   setTheme: (theme: Theme) => void;
 
+  // ─────────────────────────────────────────────────────────────────────────────
   // Language
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Sets the UI language.
+   * Persists to both localStorage and IndexedDB.
+   * @param language - Language code (e.g., 'en', 'zh')
+   */
   setLanguage: (language: string) => void;
 
+  // ─────────────────────────────────────────────────────────────────────────────
   // Behavior
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Updates open behavior settings.
+   * @param behavior - Partial settings to merge
+   */
   setOpenBehavior: (behavior: Partial<OpenBehavior>) => void;
 
-  // Display
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Display Settings
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Updates icon style settings.
+   * @param style - Partial settings to merge
+   */
   setIconStyle: (style: Partial<IconStyle>) => void;
+
+  /**
+   * Updates search bar settings.
+   * @param settings - Partial settings to merge
+   */
   setSearchSettings: (settings: Partial<SearchSettings>) => void;
+
+  /**
+   * Updates view and layout settings.
+   * Also syncs to IndexedDB for background script access.
+   * @param settings - Partial settings to merge
+   */
   setViewSettings: (settings: Partial<ViewSettings>) => void;
+
+  /**
+   * Updates font settings.
+   * @param settings - Partial settings to merge
+   */
   setFontSettings: (settings: Partial<FontSettings>) => void;
+
+  /**
+   * Updates clock settings.
+   * @param settings - Partial settings to merge
+   */
   setClockSettings: (settings: Partial<ClockSettings>) => void;
+
+  /**
+   * Updates weather settings.
+   * @param settings - Partial settings to merge
+   */
   setWeatherSettings: (settings: Partial<WeatherSettings>) => void;
+
+  /**
+   * Updates widget settings.
+   * @param settings - Partial settings to merge
+   */
   setWidgetSettings: (settings: Partial<WidgetSettings>) => void;
+
+  /**
+   * Updates changelog settings.
+   * @param settings - Partial settings to merge
+   */
   setChangelogSettings: (settings: Partial<ChangelogSettings>) => void;
+
+  /**
+   * Updates notification settings.
+   * @param settings - Partial settings to merge
+   */
   setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
 
-  // Minimal mode
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Minimal Mode
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Enables or disables minimal mode.
+   * @param enabled - Whether minimal mode should be active
+   */
   setMinimalMode: (enabled: boolean) => void;
+
+  /**
+   * Updates minimal mode specific settings.
+   * @param settings - Partial settings to merge
+   */
   setMinimalModeSettings: (settings: Partial<MinimalModeSettings>) => void;
 
-  // System icons
+  // ─────────────────────────────────────────────────────────────────────────────
+  // System Icons
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Updates system icon settings.
+   * @param settings - Partial settings to merge
+   */
   setSystemIconSettings: (settings: Partial<SystemIconSettings>) => void;
+
+  /**
+   * Sets visibility for a specific system icon.
+   * @param iconId - System icon identifier
+   * @param visible - Whether the icon should be visible
+   */
   setSystemIconVisibility: (iconId: SystemIconId, visible: boolean) => void;
 
-  // Settings panel section collapse
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Settings Panel
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Toggles collapse state of a settings section.
+   * @param sectionId - Section identifier
+   */
   toggleSectionCollapse: (sectionId: string) => void;
+
+  /**
+   * Sets collapse state of a settings section.
+   * @param sectionId - Section identifier
+   * @param collapsed - Whether section should be collapsed
+   */
   setSectionCollapsed: (sectionId: string, collapsed: boolean) => void;
+
+  /**
+   * Collapses or expands all settings sections.
+   * @param collapsed - Whether all sections should be collapsed
+   */
   setAllSectionsCollapsed: (collapsed: boolean) => void;
 
+  // ─────────────────────────────────────────────────────────────────────────────
   // Reset
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Resets all settings to default values.
+   * Clears both localStorage and IndexedDB settings.
+   */
   resetToDefaults: () => void;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Default Values
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Default search engines
+ * Default Search Engines
+ *
+ * Pre-configured search engines available out of the box.
+ * Includes major global and regional search providers.
+ * Users can add custom engines or modify these defaults.
  */
 const defaultSearchEngines: SearchEngine[] = [
   {
@@ -340,14 +718,22 @@ const defaultSearchEngines: SearchEngine[] = [
 ];
 
 /**
- * Get smart default search engine based on region
+ * Determines the default search engine based on user's region.
+ *
+ * Uses browser locale and timezone to detect if user is likely in China,
+ * where Google may be inaccessible, and defaults to Bing instead.
+ *
+ * @returns Search engine ID ('bing' for China, 'google' elsewhere)
  */
 function getSmartDefaultEngine(): string {
   return isUserLocaleChina() ? 'bing' : 'google';
 }
 
 /**
- * Default settings values
+ * Default Settings Values
+ *
+ * Complete default configuration for all settings.
+ * These values are used on first install and when resetting to defaults.
  */
 const defaultSettings: SettingsState = {
   theme: 'system',
@@ -482,8 +868,36 @@ const defaultSettings: SettingsState = {
   isInitialized: false,
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Store Implementation
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Settings store with persistence
+ * Settings Store with Persistence
+ *
+ * Zustand store with persist middleware for automatic localStorage persistence.
+ * Includes schema migration for handling version upgrades gracefully.
+ *
+ * @example
+ * ```tsx
+ * import { useSettingsStore } from '@/stores/settingsStore';
+ *
+ * function ThemeToggle() {
+ *   const { theme, setTheme } = useSettingsStore();
+ *
+ *   return (
+ *     <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+ *       Toggle Theme
+ *     </button>
+ *   );
+ * }
+ *
+ * // Access settings outside React components
+ * const columns = useSettingsStore.getState().viewSettings.columns;
+ * ```
+ *
+ * @see {@link SettingsState} for state shape
+ * @see {@link SettingsActions} for available actions
  */
 export const useSettingsStore = create<SettingsState & SettingsActions>()(
   persist(
@@ -550,9 +964,12 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
       },
 
       setViewSettings: (settings) => {
-        set((state) => ({
-          viewSettings: { ...state.viewSettings, ...settings },
-        }));
+        set((state) => {
+          const newViewSettings = { ...state.viewSettings, ...settings };
+          // Sync to IndexedDB for background script access
+          db.settings.put({ key: 'viewSettings', value: newViewSettings }).catch(console.error);
+          return { viewSettings: newViewSettings };
+        });
       },
 
       setFontSettings: (settings) => {

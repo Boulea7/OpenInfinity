@@ -24,12 +24,12 @@ export const ClockSection: React.FC = () => {
           <span className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
             {t('settings.clock.format', '时间格式')}
           </span>
-          <div className="flex justify-between">
+          <div className="flex w-full gap-1">
             <button
               type="button"
               onClick={() => setClockSettings({ format: '12h' })}
               className={`
-                px-4 py-2 rounded text-sm
+                flex-1 px-4 py-2 rounded text-sm text-center
                 ${clockSettings.format === '12h'
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -42,7 +42,7 @@ export const ClockSection: React.FC = () => {
               type="button"
               onClick={() => setClockSettings({ format: '24h' })}
               className={`
-                px-4 py-2 rounded text-sm
+                flex-1 px-4 py-2 rounded text-sm text-center
                 ${clockSettings.format === '24h'
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'

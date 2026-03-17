@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Plus, Check } from 'lucide-react';
 import { useIconStore } from '../../../stores/iconStore';
 import type { PresetWebsite } from '../../../services/database';
-import { cn, getGoogleFaviconUrl } from '../../../utils';
+import { cn } from '../../../utils';
+import { useIconLoader } from '../../../hooks/useIconLoader';
 
 interface WebsiteCardProps {
     website: PresetWebsite;
@@ -15,14 +16,16 @@ interface WebsiteCardProps {
 export function WebsiteCard({ website }: WebsiteCardProps) {
     const addIcon = useIconStore((state) => state.addIcon);
     const [isAdded, setIsAdded] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [imageFailed, setImageFailed] = useState(false);
+    const [isAddLoading, setIsAddLoading] = useState(false);
     const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Generate high-resolution favicon URL (128px for retina displays)
-    const hdIconUrl = useMemo(() => {
-        return getGoogleFaviconUrl(website.url, 128);
-    }, [website.url]);
+    // Use unified icon loader with caching and fallback
+    // Priority: website.icon (predefined) → favicon.ico → DuckDuckGo → text
+    const { iconSrc, useFallbackText } = useIconLoader(website.url, {
+        customIcon: website.icon,
+        size: 128,
+        enableCache: true,
+    });
 
     useEffect(() => {
         return () => {
@@ -34,16 +37,16 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
     }, []);
 
     const handleAdd = async () => {
-        if (isAdded || isLoading) return;
+        if (isAdded || isAddLoading) return;
 
-        setIsLoading(true);
+        setIsAddLoading(true);
         try {
             await addIcon({
                 title: website.name,
                 url: website.url,
                 icon: {
                     type: 'favicon',
-                    value: hdIconUrl, // Use high-resolution icon
+                    value: iconSrc || website.icon || '', // Use resolved icon or predefined
                 },
             });
             setIsAdded(true);
@@ -52,7 +55,7 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
         } catch (error) {
             console.error('Failed to add icon:', error);
         } finally {
-            setIsLoading(false);
+            setIsAddLoading(false);
         }
     };
 
@@ -67,17 +70,17 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
         >
             {/* Icon */}
             <div className="relative w-8 h-8 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                {imageFailed ? (
+                {useFallbackText || !iconSrc ? (
                     <div className="w-full h-full flex items-center justify-center text-xs text-gray-500 font-bold bg-gray-50 dark:bg-gray-800">
                         {website.name.charAt(0).toUpperCase()}
                     </div>
                 ) : (
                     <img
-                        src={hdIconUrl}
+                        src={iconSrc}
                         alt={website.name}
                         className="w-full h-full object-contain p-1"
                         loading="lazy"
-                        onError={() => setImageFailed(true)}
+                        referrerPolicy="no-referrer"
                     />
                 )}
             </div>
@@ -96,19 +99,19 @@ export function WebsiteCard({ website }: WebsiteCardProps) {
             <button
                 type="button"
                 onClick={handleAdd}
-                disabled={isAdded || isLoading}
+                disabled={isAdded || isAddLoading}
                 className={cn(
                     "w-7 h-7 rounded-md flex items-center justify-center transition-all duration-200",
                     isAdded
                         ? "text-green-500 bg-green-50 dark:bg-green-900/20"
                         : "opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 dark:hover:bg-gray-700",
-                    isLoading && "opacity-100"
+                    isAddLoading && "opacity-100"
                 )}
                 aria-label={`Add ${website.name}`}
             >
                 {isAdded ? (
                     <Check className="w-4 h-4" />
-                ) : isLoading ? (
+                ) : isAddLoading ? (
                     <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
                     <Plus className="w-4 h-4" />

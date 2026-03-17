@@ -15,6 +15,7 @@
   },
   "popup": {
     "title": "Add to OpenInfinity",
+    "addShortcut": "Add Shortcut",
     "websiteName": "Website Name",
     "websiteUrl": "Website URL",
     "selectIcon": "Select Icon",
@@ -28,11 +29,31 @@
     "backgroundColor": "Background Color",
     "preview": "Preview",
     "confirm": "Confirm",
+    "cancel": "Cancel",
+    "reset": "Reset",
     "adding": "Adding...",
+    "addToHome": "Add to Home",
     "selectFile": "Select Image",
     "fileHint": "Supports PNG, JPG, SVG formats, max 2MB",
+    "fileTooLarge": "Image size cannot exceed 2MB",
     "fetchingIcon": "Fetching favicon...",
-    "noIconAvailable": "Unable to fetch favicon, please use text icon or upload"
+    "noIconAvailable": "Unable to fetch favicon, please use text icon or upload",
+    "permissionRequired": "Permission required to read current tab info for auto-filling URL and adding to home page.",
+    "granting": "Granting...",
+    "grantAndRead": "Grant & Read Current Page",
+    "customIcon": "Custom Icon",
+    "cropHint": "Click the dashed box above to re-upload",
+    "textPlaceholder": "1-2 characters",
+    "sizeLabel": "Size",
+    "customColor": "Custom color",
+    "selectType": "Please select icon type",
+    "unnamed": "Unnamed",
+    "errors": {
+      "cannotGetUrl": "Unable to get current page URL",
+      "invalidUrl": "Current page URL is invalid",
+      "addFailed": "Failed to add, please try again",
+      "cropFailed": "Crop failed, please try again"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -203,6 +224,7 @@
       "showSeconds": "Show Seconds",
       "displayOptions": "Display Options",
       "systemTimezone": "Using system timezone",
+      "hour": "Hour",
       "ariaLabel": "{{time}}. Click to open clock settings"
     },
     "icons": {
@@ -428,6 +450,7 @@
     "updatedAt": "Updated at",
     "forecast": "Forecast",
     "noData": "No weather data",
+    "updateFailed": "Update failed",
     "windSpeed": "Wind",
     "windSpeedUnit": "km/h",
     "high": "H",
@@ -515,11 +538,16 @@
     "sortByCreatedAt": "Created Time",
     "sortByUpdatedAt": "Modified Time",
     "sortByTitle": "Title",
-    "viewMode": "View Mode",
+    "viewMode": {
+      "title": "View Mode",
+      "edit": "Edit",
+      "preview": "Preview"
+    },
     "viewModeGrid": "Grid",
     "viewModeList": "List",
     "gridView": "Grid View",
     "listView": "List View",
+    "selectOrCreate": "Select or create a note",
     "count": "{{count}} Notes",
     "selectToView": "Select a note to view",
     "unsavedChangesConfirm": "You have unsaved changes. Are you sure you want to close?",
@@ -541,13 +569,28 @@
     },
     "refresh": "Refresh",
     "permissionRequired": "History permission is required",
+    "permissionDescription": "Allow access to your browsing history to browse and search here.",
     "grantAccess": "Grant access",
     "loading": "Loading history...",
     "retry": "Retry",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this history item?",
     "noHistory": "No history yet",
-    "visits": "{{count}} visits"
+    "visits": "{{count}} visits",
+    "searchPlaceholder": "Search...",
+    "clearHistory": "Clear History",
+    "clearHistoryConfirm": "This action cannot be undone. Please confirm the time range you want to delete.",
+    "confirmDelete": "Confirm Delete"
+  },
+  "widgets": {
+    "title": "Widgets",
+    "dragToResize": "Drag to resize",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "expandWidgets": "Expand Widgets",
+    "collapseWidgets": "Collapse Widgets",
+    "noWidgetsEnabled": "No widgets enabled",
+    "enableInSettings": "Enable widgets in settings"
   },
   "todo": {
     "title": "Todo",
@@ -629,6 +672,7 @@
     "delete": "Delete",
     "close": "Close",
     "today": "Today",
+    "loading": "Loading...",
     "loadFailed": "Load failed",
     "favorite": "Favorite",
     "unfavorite": "Unfavorite",
@@ -652,7 +696,11 @@
     "websiteName": "Website Name",
     "selectIcon": "Select Icon",
     "systemIconNotEditable": "System shortcuts cannot be edited",
-    "systemIconDesc": "This is a built-in system shortcut and cannot be modified. To hide this shortcut, go to Settings > System Shortcuts."
+    "systemIconDesc": "This is a built-in system shortcut and cannot be modified. To hide this shortcut, go to Settings > System Shortcuts.",
+    "iconPreview": "Icon preview",
+    "titlePlaceholder": "e.g., Google",
+    "urlPlaceholder": "e.g., https://google.com",
+    "iconUrlPlaceholder": "e.g., https://example.com/icon.png"
   },
   "folder": {
     "createFolder": "Create Folder",
@@ -683,7 +731,9 @@
   "navigation": {
     "add": "Add",
     "my": "My",
-    "settings": "Settings"
+    "settings": "Settings",
+    "infinity": "Infinity",
+    "openInfinity": "Open Infinity navigation"
   },
   "addTab": {
     "searchPlaceholder": "Search websites",

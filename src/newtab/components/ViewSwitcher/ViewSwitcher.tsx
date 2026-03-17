@@ -139,7 +139,7 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
               buttonRefs.current[index] = el;
             }}
             className={cn(
-              'relative z-10 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300',
+              'relative z-10 flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange-500/30',
               isActive
                 ? 'text-white dark:text-black'

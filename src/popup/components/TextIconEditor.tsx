@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { GlassInput } from './UI/GlassComponents';
 
 export const PRESET_COLORS = [
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function TextIconEditor({ config, onChange }: Props) {
+  const { t } = useTranslation();
   const { text, fontSize, color } = config;
 
   const updateConfig = (updates: Partial<TextIconConfig>) => {
@@ -35,11 +37,11 @@ export default function TextIconEditor({ config, onChange }: Props) {
   return (
     <div className="space-y-3">
       <GlassInput
-        label="显示文字"
+        label={t('popup.displayText')}
         type="text"
         value={text}
         onChange={handleTextChange}
-        placeholder="1-2个字符"
+        placeholder={t('popup.textPlaceholder')}
         maxLength={2}
         fullWidth
         // Removed uppercase class to support mixed case inputs as requested
@@ -48,7 +50,7 @@ export default function TextIconEditor({ config, onChange }: Props) {
 
       <div className="flex items-center gap-3">
         <label className="text-xs font-medium text-zinc-500 whitespace-nowrap">
-          大小: {fontSize}px
+          {t('popup.sizeLabel')}: {fontSize}px
         </label>
         <input
           type="range"
@@ -61,7 +63,7 @@ export default function TextIconEditor({ config, onChange }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-zinc-500 mb-1.5">背景颜色</label>
+        <label className="block text-xs font-medium text-zinc-500 mb-1.5">{t('popup.backgroundColor')}</label>
         <div className="flex flex-wrap gap-2 justify-between">
           {PRESET_COLORS.map((c) => (
             <button
@@ -87,7 +89,7 @@ export default function TextIconEditor({ config, onChange }: Props) {
             style={{
               background: 'linear-gradient(135deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)',
             }}
-            title="自定义颜色"
+            title={t('popup.customColor')}
           >
             <input
               type="color"

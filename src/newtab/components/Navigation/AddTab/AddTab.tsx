@@ -1,5 +1,24 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
 import { useMemo, useState, useRef, useLayoutEffect, useCallback } from 'react';
-import { Search, Plus, TrendingUp, Share2, AppWindow, Newspaper, Clapperboard, Image, ShoppingBag, MessageCircle, Plane, Coffee, Gamepad2, GraduationCap, Cpu, TrendingDown, BookOpen, MoreHorizontal, Flame, DollarSign, Video, ShoppingCart, Users, Sparkles } from 'lucide-react';
+import { Search, Plus, TrendingUp, Share2, AppWindow, Newspaper, Clapperboard, Image, ShoppingBag, MessageCircle, Plane, Coffee, Gamepad2, GraduationCap, Cpu, TrendingDown, BookOpen, MoreHorizontal, Flame, DollarSign, Video, ShoppingCart, Users, Sparkles, Globe } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { useNavigationStore } from '../../../stores/navigationStore';
@@ -32,12 +51,13 @@ const getCategoryIcon = (iconName: string) => {
         case 'BookOpen': return BookOpen;
         case 'MoreHorizontal': return MoreHorizontal;
         case 'Sparkles': return Sparkles;
+        case 'Globe': return Globe;
         default: return MoreHorizontal;
     }
 };
 
 export function AddTab() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const {
         selectedCategory,
         searchQuery,
@@ -77,16 +97,17 @@ export function AddTab() {
         updateIndicator();
     }, [updateIndicator]);
 
-    // Filter websites based on category and search query
-    const filteredWebsites = useMemo(() => {
-        let result = PRESET_WEBSITES;
+    const currentLang = i18n.language;
 
-        // Apply category filter (only if no search query is active, or we can keep it strict)
-        // User usually wants to search globally, but let's stick to category if selected? 
-        // Actually, usually search overrides category, but let's keep category filter + search within category or global?
-        // Let's do: if search is empty, filter by category. If search has text, search globally (or user preference).
-        // For now: Category + Search (AND logic)
-        if (selectedCategory) {
+    // Filter and sort websites based on category, search query, and language
+    const filteredWebsites = useMemo(() => {
+        let result = [...PRESET_WEBSITES];
+
+        // Special handling for 'global' category - show only international sites
+        if (selectedCategory === 'global') {
+            result = result.filter(site => site.region === 'intl');
+        } else if (selectedCategory) {
+            // Apply normal category filter
             result = result.filter(site => site.category === selectedCategory);
         }
 
@@ -95,13 +116,30 @@ export function AddTab() {
             const query = searchQuery.toLowerCase();
             result = result.filter(site =>
                 site.name.toLowerCase().includes(query) ||
+                site.nameEn?.toLowerCase().includes(query) ||
                 site.description.toLowerCase().includes(query) ||
+                site.descriptionEn?.toLowerCase().includes(query) ||
                 site.tags?.some(tag => tag.toLowerCase().includes(query))
             );
         }
 
+        // Sort by language environment and popularity
+        // Chinese environment: cn > both > intl
+        // English environment: intl > both > cn
+        const regionOrder = currentLang === 'zh'
+            ? { cn: 0, both: 1, intl: 2 }
+            : { intl: 0, both: 1, cn: 2 };
+
+        result.sort((a, b) => {
+            const orderA = regionOrder[a.region] ?? 1;
+            const orderB = regionOrder[b.region] ?? 1;
+            if (orderA !== orderB) return orderA - orderB;
+            // Same region: sort by popularity descending
+            return (b.popularity || 0) - (a.popularity || 0);
+        });
+
         return result;
-    }, [selectedCategory, searchQuery]);
+    }, [selectedCategory, searchQuery, currentLang]);
 
     return (
         <div className="flex flex-col h-full bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -172,7 +210,7 @@ export function AddTab() {
                                     )}
                                 >
                                     <Icon className="w-5 h-5 flex-shrink-0" />
-                                    <span className="text-sm font-medium truncate">{category.name}</span>
+                                    <span className="text-sm font-medium truncate">{currentLang === 'zh' ? category.name : category.nameEn}</span>
                                 </button>
                             );
                         })}

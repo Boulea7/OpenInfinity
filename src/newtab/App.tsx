@@ -6,6 +6,7 @@ import { useNavigationStore } from './stores/navigationStore';
 import { useWeatherUiStore } from './stores/weatherUiStore';
 import type { Icon, Folder } from './services/database';
 import { clearExpiredIconCache } from './utils/iconCache';
+import { preloadPopularIcons } from './services/iconPreloader';
 import { hasOrigins, PERMISSION_GROUPS } from '../shared/permissions';
 import { applyDocumentLanguage, normalizeUiLanguage } from '../shared/locale';
 import {
@@ -92,6 +93,8 @@ function App() {
     clearExpiredIconCache();
     initializeSettings();
     loadIcons();
+    // Preload popular website icons in background for AddTab
+    preloadPopularIcons();
   }, [initializeSettings, loadIcons]);
 
   // Initialize system icons after icons are loaded (first-time setup)

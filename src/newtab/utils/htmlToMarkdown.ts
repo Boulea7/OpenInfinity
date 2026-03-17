@@ -25,10 +25,10 @@ export function htmlToMarkdown(html: string): string {
     return turndownService.turndown(html);
   } catch (error) {
     console.error('Failed to convert HTML to Markdown:', error);
-    // Fallback: strip HTML tags
+    // Fallback: strip HTML tags by parsing as HTML and extracting text
     const tmp = document.createElement('div');
-    tmp.textContent = html;
-    return tmp.textContent || '';
+    tmp.innerHTML = html; // Parse HTML
+    return tmp.textContent || ''; // Extract text content (strips tags)
   }
 }
 

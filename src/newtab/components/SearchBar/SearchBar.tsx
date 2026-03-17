@@ -1,3 +1,47 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                           ║
+ * ║   ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗███╗   ██╗███████╗██╗███╗   ██║
+ * ║  ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║████╗  ██║██╔════╝██║████╗  ██║
+ * ║  ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║
+ * ║  ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║
+ * ║  ╚██████╔╝██║     ███████╗██║ ╚████║    ██║██║ ╚████║██║     ██║██║ ╚████║
+ * ║   ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══║
+ * ║                                                                           ║
+ * ║  OpenInfinity - Your Infinite New Tab Experience                          ║
+ * ║                                                                           ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  Copyright (c) 2024-2026 OpenInfinity Team. All rights reserved.          ║
+ * ║  Licensed under the MIT License                                           ║
+ * ║  GitHub: https://github.com/OpenInfinity/OpenInfinity                     ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * SearchBar Component
+ *
+ * A modern search bar with glassmorphism design following Windows 11 Fluent style.
+ * Serves as the primary search interface on the new tab page with support for
+ * multiple search engines and search types.
+ *
+ * Features:
+ * - Multiple search engines (Google, Bing, DuckDuckGo, Baidu, etc.)
+ * - Search type tabs (Web, Images, Videos, Maps)
+ * - Auto-suggestions dropdown (placeholder for future implementation)
+ * - View switcher integration (icons/notes toggle)
+ * - Notes mode with in-page search functionality
+ * - Engine icon caching with permission-aware favicon loading
+ * - Keyboard navigation (arrows, enter, escape)
+ * - Responsive sizing (small/medium/large)
+ * - Dark mode support
+ *
+ * Security:
+ * - URL validation before navigation to prevent XSS
+ * - Favicon loading requires explicit user permission
+ *
+ * @module components/SearchBar/SearchBar
+ */
+
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { Search, ChevronDown, Monitor, Image, Video, Map, StickyNote } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
@@ -11,19 +55,38 @@ import { isSafeUrl } from '../../utils/navigation';
 import { ViewSwitcher } from '../ViewSwitcher/ViewSwitcher';
 import { ensureFeaturePermissions, hasOrigins, PERMISSION_GROUPS } from '../../../shared/permissions';
 
+/**
+ * Props for the SearchBar component
+ */
 interface SearchBarProps {
+  /** Additional CSS classes to apply */
   className?: string;
+  /** Callback fired when search query changes (debounced) */
   onQueryChange?: (query: string) => void;
+  /** External query value for controlled input (e.g., clearing from parent) */
   externalQuery?: string;
-  showViewSwitcher?: boolean;  // Control ViewSwitcher visibility (for minimal mode)
+  /** Whether to show the view switcher (icons/notes toggle). Default: true */
+  showViewSwitcher?: boolean;
 }
 
+/**
+ * Represents a search suggestion item
+ */
 interface SearchSuggestion {
+  /** The suggestion text to display and search for */
   text: string;
+  /** Type of suggestion: from API or from user's search history */
   type: 'suggestion' | 'history';
 }
 
-// Engine type support map - defines which search types each engine supports
+// ============================================================================
+// Search Engine Configuration
+// ============================================================================
+
+/**
+ * Maps search engine IDs to their supported search types.
+ * Used to determine which search type tabs are available for each engine.
+ */
 const ENGINE_TYPE_SUPPORT: Record<string, string[]> = {
   google: ['web', 'images', 'videos', 'maps'],
   bing: ['web', 'images', 'videos', 'maps'],
@@ -36,10 +99,13 @@ const ENGINE_TYPE_SUPPORT: Record<string, string[]> = {
   '360': ['web', 'images', 'videos', 'maps'],
 };
 
-// Default supported types for unknown engines
+/** Default supported search types for unknown/custom engines */
 const DEFAULT_SUPPORTED_TYPES = ['web'];
 
-// Search type URLs for different engines
+/**
+ * Maps search engine IDs to their search URLs for each search type.
+ * Each engine can have different URL patterns for web, images, videos, and maps.
+ */
 const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
   google: {
     web: 'https://www.google.com/search?q=',
@@ -98,9 +164,28 @@ const SEARCH_TYPE_URLS: Record<string, Record<string, string>> = {
 };
 
 /**
- * SearchBar Component
- * Redesigned with Modern Glassmorphism + Windows 11 Fluent Style
- * Now integrates ViewSwitcher and Global Search capabilities
+ * Renders a modern search bar with multiple engine and search type support.
+ *
+ * The search bar operates in two modes:
+ * - Normal mode: External web search via selected engine
+ * - Notes mode: In-page search for notes (when view is 'notes')
+ *
+ * Layout Structure:
+ * - Top bar: Search type tabs (Web/Images/Videos/Maps) + ViewSwitcher
+ * - Main input: Engine selector + search input + submit button
+ * - Dropdown: Engine selection menu and/or suggestions
+ *
+ * @param props - Component props
+ * @returns The rendered search bar with all controls
+ *
+ * @example
+ * ```tsx
+ * <SearchBar
+ *   className="mt-4"
+ *   onQueryChange={(q) => setSearchQuery(q)}
+ *   showViewSwitcher={true}
+ * />
+ * ```
  */
 export function SearchBar({ className, onQueryChange, externalQuery, showViewSwitcher = true }: SearchBarProps) {
   const { t, i18n } = useTranslation();
@@ -112,38 +197,59 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     }))
   );
 
-  // Use local state for input, sync with prop if needed
+  // ============================================================================
+  // Component State
+  // ============================================================================
+
+  /** Local input value, synced with externalQuery prop when provided */
   const [query, setQuery] = useState(externalQuery || '');
 
-  // Update query when externalQuery changes (e.g. cleared from parent)
-  // Use functional setState to avoid stale closure and unnecessary re-renders
+  // Sync local query with external prop when it changes (e.g., cleared from parent)
   useEffect(() => {
     if (externalQuery !== undefined) {
       setQuery((prev) => (prev !== externalQuery ? externalQuery : prev));
     }
   }, [externalQuery]);
 
+  /** Search suggestion items to display in dropdown */
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  /** Whether the suggestions dropdown is visible */
   const [showSuggestions, setShowSuggestions] = useState(false);
+  /** Currently selected suggestion index (-1 = none) */
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  /** Whether the engine selector dropdown is open */
   const [showEngineSelector, setShowEngineSelector] = useState(false);
+  /** Whether the current engine's icon failed to load */
   const [iconLoadFailed, setIconLoadFailed] = useState(false);
+  /** Cache of preloaded engine icons (base64 data URLs) */
   const [iconCache, setIconCache] = useState<Record<string, string>>({});
+  /** Whether user has granted favicon host permissions */
   const [hasFaviconOrigins, setHasFaviconOrigins] = useState(false);
 
+  /** Ref for the search input element */
   const inputRef = useRef<HTMLInputElement>(null);
+  /** Ref for click-outside detection container */
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  /** Ref for the search type tabs container (for indicator positioning) */
   const tabsContainerRef = useRef<HTMLDivElement>(null);
+  /** Refs for individual tab buttons (for indicator positioning) */
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  /** Style for the sliding tab indicator */
   const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
+  /** Base width for the tab indicator animation */
   const indicatorBaseWidth = 100;
 
+  /** Whether the current view is notes mode (changes search behavior) */
   const isNotesMode = viewSettings.currentView === 'notes';
 
-  // Preload and cache engine icons
+  // ============================================================================
+  // Effects
+  // ============================================================================
+
+  // Preload and cache search engine icons on mount or when engines change.
+  // Only loads icons if user has granted favicon host permissions.
   useEffect(() => {
     const loadIcons = async () => {
-      // Only do background fetch + base64 caching if user granted host permissions.
       const permitted = await hasOrigins(PERMISSION_GROUPS.favicon);
       setHasFaviconOrigins(permitted);
       if (!permitted) {
@@ -157,7 +263,7 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     loadIcons();
   }, [searchSettings.engines]);
 
-  // Handle click outside to close suggestions
+  // Close dropdowns when clicking outside the search bar container
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
@@ -170,43 +276,51 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  /** Debounced query value for performance (200ms delay) */
   const debouncedQuery = useDebounce(query, 200);
+  /** Store action to update global search query */
   const setSearchQuery = useSearchStore((s) => s.setQuery);
 
-  // Update search store with debounced query (for Notes search)
-  // This decouples SearchBar from App and prevents App re-renders
+  // Update global search store with debounced query.
+  // This enables Notes search without prop drilling through App component.
   useEffect(() => {
     setSearchQuery(debouncedQuery);
-    // Also call legacy callback if provided
     if (onQueryChange) {
       onQueryChange(debouncedQuery);
     }
   }, [debouncedQuery, setSearchQuery, onQueryChange]);
 
-  // Get current search engine
+  // ============================================================================
+  // Computed Values
+  // ============================================================================
+
+  /** List of available search engines from settings */
   const engines = searchSettings.engines ?? [];
+  /** Currently selected search engine */
   const currentEngine =
     engines.find((e) => e.id === searchSettings.defaultEngine) || engines[0];
 
-  // Get supported search types for current engine
+  /** Search types supported by the current engine */
   const supportedTypes = currentEngine
     ? ENGINE_TYPE_SUPPORT[currentEngine.id] || DEFAULT_SUPPORTED_TYPES
     : DEFAULT_SUPPORTED_TYPES;
 
-  // Reset to 'web' if current type is not supported by the new engine
+  // Reset search type to 'web' if current type is not supported by the new engine
   useEffect(() => {
     if (currentEngine && !supportedTypes.includes(searchSettings.searchType)) {
       setSearchSettings({ searchType: 'web' });
     }
   }, [currentEngine?.id, supportedTypes, searchSettings.searchType, setSearchSettings]);
 
-  // Fetch suggestions
+  /**
+   * Fetches search suggestions from API (placeholder implementation).
+   * TODO: Implement actual suggestion fetching from search engine APIs.
+   */
   const fetchSuggestions = useCallback(async () => {
-    // Placeholder for when we enable suggestions
     setSuggestions([]);
   }, []);
 
-  // Fetch suggestions when debounced query changes
+  // Show/hide suggestions based on query and settings
   useEffect(() => {
     if (isNotesMode) {
       setSuggestions([]);
@@ -225,7 +339,16 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     }
   }, [debouncedQuery, fetchSuggestions, searchSettings.showSuggestions, isNotesMode]);
 
-  // Perform search
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  /**
+   * Performs the search action with the given query.
+   * - In notes mode: just blurs the input (search happens via query change)
+   * - In web mode: constructs URL and navigates (same tab or new tab based on settings)
+   * - Validates URL for security before navigation
+   */
   const performSearch = useCallback(
     (searchQuery: string) => {
       if (!searchQuery.trim()) return;
@@ -271,7 +394,12 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     [currentEngine, searchSettings.searchType, searchSettings.openInNewTab, searchSettings.clearAfterSearch, isNotesMode]
   );
 
-  // Handle keyboard navigation
+  /**
+   * Handles keyboard navigation in the search bar.
+   * - ArrowUp/Down: Navigate suggestions
+   * - Enter: Execute search (selected suggestion or current query)
+   * - Escape: Close dropdowns
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowDown':
@@ -302,10 +430,15 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     }
   };
 
+  /** Handles clicking a suggestion item - performs search with suggestion text */
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
     performSearch(suggestion.text);
   };
 
+  /**
+   * Changes the active search engine.
+   * Resets icon load state and refocuses the input.
+   */
   const handleEngineChange = (engineId: string) => {
     setSearchSettings({ defaultEngine: engineId });
     setShowEngineSelector(false);
@@ -313,15 +446,21 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     inputRef.current?.focus();
   };
 
-  // Max-width classes for alignment based on settings
+  // ============================================================================
+  // Styling Helpers
+  // ============================================================================
+
+  /** CSS class mappings for search bar width based on size setting */
   const maxWidthClasses: Record<'small' | 'medium' | 'large', string> = {
     small: 'max-w-md',
     medium: 'max-w-xl',
     large: 'max-w-2xl',
   };
 
+  /** Current max-width class based on search bar size setting */
   const currentMaxWidth = maxWidthClasses[searchSettings.size as keyof typeof maxWidthClasses] || maxWidthClasses.medium;
 
+  /** Search type tab configuration with icons and labels */
   const SEARCH_TYPES = [
     { id: 'web', label: t('searchBar.types.web'), icon: Monitor },
     { id: 'images', label: t('searchBar.types.images'), icon: Image },
@@ -329,6 +468,7 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     { id: 'maps', label: t('searchBar.types.maps'), icon: Map },
   ] as const;
 
+  /** Maps search type ID to tab index for indicator positioning */
   const searchTypeToIndex: Record<string, number> = {
     web: 0,
     images: 1,
@@ -336,14 +476,20 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     maps: 3,
   };
 
+  /** Currently active tab index for the indicator animation */
   const [activeTabIndex, setActiveTabIndex] = useState(
     searchTypeToIndex[searchSettings.searchType] ?? 0
   );
 
+  // Sync tab index with settings when search type changes
   useEffect(() => {
     setActiveTabIndex(searchTypeToIndex[searchSettings.searchType] ?? 0);
   }, [searchSettings.searchType]);
 
+  /**
+   * Updates the sliding indicator position and width based on active tab.
+   * Called on tab change, resize, and language change.
+   */
   const updateIndicator = useCallback(() => {
     const container = tabsContainerRef.current;
 
@@ -365,10 +511,12 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     });
   }, [activeTabIndex]);
 
+  // Update indicator immediately on mount and when dependencies change
   useLayoutEffect(() => {
     updateIndicator();
-  }, [updateIndicator, i18n.language, isNotesMode]); // Update on mode change too
+  }, [updateIndicator, i18n.language, isNotesMode]);
 
+  // Update indicator on window resize and container size changes
   useEffect(() => {
     const container = tabsContainerRef.current;
     if (!container) return;
@@ -381,6 +529,7 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
 
     window.addEventListener('resize', schedule);
 
+    // Use ResizeObserver for more accurate container size tracking
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
     ro?.observe(container);
 
@@ -391,7 +540,13 @@ export function SearchBar({ className, onQueryChange, externalQuery, showViewSwi
     };
   }, [updateIndicator]);
 
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  // Don't render if search bar is hidden in settings
   if (searchSettings.hidden) return null;
+  // Don't render if no search engine is configured
   if (!currentEngine) return null;
 
   return (

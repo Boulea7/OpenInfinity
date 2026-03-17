@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronDown, Home, Cloud, CheckSquare, FileText, Bookmark, Clock } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
 import { cn } from '../../utils';
@@ -35,6 +36,7 @@ export function WidgetContainer({
   initialWidth = SIDEBAR_CONFIG.defaultWidth,
   onWidthChange,
 }: WidgetContainerProps = {}) {
+  const { t } = useTranslation();
   const viewSettings = useSettingsStore(
     useShallow((state) => ({
       widgetSidebarPosition: state.viewSettings.widgetSidebarPosition,
@@ -123,31 +125,31 @@ export function WidgetContainer({
   const widgets = [
     {
       id: 'weather',
-      title: 'Weather',
+      title: t('layout.widgetSidebar.widgets.weather'),
       icon: <Cloud className="w-5 h-5" />,
       enabled: true, // Will use viewSettings.showWeather when available
     },
     {
       id: 'todo',
-      title: 'Todos',
+      title: t('layout.widgetSidebar.widgets.todo'),
       icon: <CheckSquare className="w-5 h-5" />,
       enabled: viewSettings.showTodoWidget,
     },
     {
       id: 'notes',
-      title: 'Notes',
+      title: t('layout.widgetSidebar.widgets.notes'),
       icon: <FileText className="w-5 h-5" />,
       enabled: viewSettings.showNotesWidget,
     },
     {
       id: 'bookmarks',
-      title: 'Bookmarks',
+      title: t('layout.widgetSidebar.widgets.bookmarks'),
       icon: <Bookmark className="w-5 h-5" />,
       enabled: viewSettings.showBookmarksWidget,
     },
     {
       id: 'history',
-      title: 'History',
+      title: t('layout.widgetSidebar.widgets.history'),
       icon: <Clock className="w-5 h-5" />,
       enabled: viewSettings.showHistoryWidget,
     },
@@ -175,7 +177,7 @@ export function WidgetContainer({
             isLeft ? 'right-0' : 'left-0'
           )}
           onMouseDown={handleMouseDown}
-          title="Drag to resize"
+          title={t('widgets.dragToResize')}
         />
       )}
 
@@ -186,8 +188,8 @@ export function WidgetContainer({
           <button
             onClick={handleToggleCollapsed}
             className="btn-ghost text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
-            aria-label="Expand sidebar"
-            title="Expand Widgets"
+            aria-label={t('widgets.expandSidebar')}
+            title={t('widgets.expandWidgets')}
           >
             {isLeft ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </button>
@@ -215,13 +217,13 @@ export function WidgetContainer({
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <div className="flex items-center gap-2">
               <Home className="w-5 h-5 text-white/80" />
-              <h2 className="text-lg font-semibold text-white">Widgets</h2>
+              <h2 className="text-lg font-semibold text-white">{t('widgets.title')}</h2>
             </div>
             <button
               onClick={handleToggleCollapsed}
               className="btn-ghost text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
-              aria-label="Collapse sidebar"
-              title="Collapse Widgets"
+              aria-label={t('widgets.collapseSidebar')}
+              title={t('widgets.collapseWidgets')}
             >
               {isLeft ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             </button>
@@ -295,8 +297,8 @@ export function WidgetContainer({
             {widgets.length === 0 && (
               <div className="text-center py-8 text-white/40">
                 <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No widgets enabled</p>
-                <p className="text-sm mt-1">Enable widgets in settings</p>
+                <p>{t('widgets.noWidgetsEnabled')}</p>
+                <p className="text-sm mt-1">{t('widgets.enableInSettings')}</p>
               </div>
             )}
           </div>

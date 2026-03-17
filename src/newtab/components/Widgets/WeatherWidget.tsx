@@ -249,19 +249,19 @@ export function WeatherWidget({ isExpanded, onToggleExpand, className, hideHeade
           {isLoading && !weather && (
             <div className="flex flex-col items-center justify-center py-6">
               <RefreshCw className="w-8 h-8 text-white/40 animate-spin mb-2" />
-              <p className="text-sm text-white/60">Loading...</p>
+              <p className="text-sm text-white/60">{t('common.loading')}</p>
             </div>
           )}
 
           {error && weather && (
-            <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg"> <p className="text-xs text-red-400 text-center">Update failed</p> </div>
+            <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg"> <p className="text-xs text-red-400 text-center">{t('weather.updateFailed')}</p> </div>
           )}
 
           {error && !weather && (
             <div className="flex flex-col items-center justify-center py-6 text-red-400">
               <AlertCircle className="w-8 h-8 mb-2" />
               <p className="text-sm text-white/60 text-center mb-3">{error}</p>
-              <button onClick={(e) => { e.stopPropagation(); forceRefresh(); }} className="px-4 py-2 bg-blue-600 rounded-lg text-sm text-white">Retry</button>
+              <button onClick={(e) => { e.stopPropagation(); forceRefresh(); }} className="px-4 py-2 bg-blue-600 rounded-lg text-sm text-white">{t('common.retry')}</button>
             </div>
           )}
 

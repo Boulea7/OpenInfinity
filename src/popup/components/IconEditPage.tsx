@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactCrop, { type PercentCrop } from 'react-image-crop';
 import { X, RotateCw, RotateCcw, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm, onCancel }: Props) {
+  const { t } = useTranslation();
   const isFavicon = iconType === 'favicon';
   const outputSize = isFavicon ? 64 : 128;
 
@@ -74,7 +76,7 @@ export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm,
       onConfirm(croppedImageData, backgroundColor);
     } catch (error) {
       console.error('Failed to crop image:', error);
-      alert('裁切失败，请重试');
+      alert(t('popup.errors.cropFailed'));
     }
   };
 
@@ -103,7 +105,7 @@ export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm,
 
       {/* Header */}
       <div className="mt-8 mb-2 flex items-center justify-center">
-        <h2 className="text-xl font-bold text-zinc-800">自定义图标</h2>
+        <h2 className="text-xl font-bold text-zinc-800">{t('popup.customIcon')}</h2>
       </div>
 
       {/* Content */}
@@ -143,7 +145,7 @@ export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm,
         <div className="w-[240px] flex flex-col gap-8 pt-4">
           {/* Preview */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-zinc-900">预览</h3>
+            <h3 className="text-sm font-medium text-zinc-900">{t('popup.preview')}</h3>
             <div
               className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center border border-zinc-100 relative"
               style={{ backgroundColor: backgroundColor === 'transparent' ? undefined : backgroundColor }}
@@ -161,7 +163,7 @@ export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm,
           {/* Background Colors */}
           {!isFavicon && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-zinc-900">背景颜色</h3>
+              <h3 className="text-sm font-medium text-zinc-900">{t('popup.backgroundColor')}</h3>
               <div className="flex flex-wrap gap-3">
                 {['#ef4444', '#f97316', '#facc15', '#4ade80', '#22d3ee', '#3b82f6', '#a855f7'].map(c => (
                   <button
@@ -194,19 +196,19 @@ export default function IconEditPage({ imageUrl, iconType = 'custom', onConfirm,
           onClick={onCancel}
           className="w-32 py-2.5 bg-zinc-100 text-zinc-600 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors"
         >
-          取消
+          {t('popup.cancel')}
         </button>
         <button
           onClick={handleReset}
           className="w-32 py-2.5 bg-zinc-100 text-zinc-600 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors"
         >
-          重置
+          {t('popup.reset')}
         </button>
         <button
           onClick={handleConfirm}
           className="w-32 py-2.5 bg-zinc-700 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
         >
-          确定
+          {t('popup.confirm')}
         </button>
       </div>
     </div>

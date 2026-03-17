@@ -1,4 +1,5 @@
 import { Infinity as InfinityIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { cn } from '../../utils';
 
@@ -8,6 +9,7 @@ import { cn } from '../../utils';
  * Modern glassmorphism design with brand orange accent
  */
 export function InfinityLogo() {
+    const { t } = useTranslation();
     const openPanel = useNavigationStore((state) => state.openPanel);
 
     return (
@@ -50,8 +52,8 @@ export function InfinityLogo() {
                 // Group for icon hover effect
                 'group'
             )}
-            aria-label="Open Infinity navigation"
-            title="Infinity"
+            aria-label={t('navigation.openInfinity')}
+            title={t('navigation.infinity')}
         >
             <InfinityIcon
                 className={cn(

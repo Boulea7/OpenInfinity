@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCurrentTab } from '../hooks/useCurrentTab';
 import { useAddIcon } from '../hooks/useAddIcon';
 import IconTypeSelectorContainer from './IconTypeSelectorContainer';
@@ -11,6 +12,7 @@ import { GlassButton } from './UI/GlassComponents';
 import PopupLayout from './PopupLayout';
 
 export default function AddIconForm() {
+  const { t } = useTranslation();
   const { tabInfo, isLoading, needsPermission, reload } = useCurrentTab();
   const { addIcon, isAdding } = useAddIcon();
 
@@ -51,12 +53,12 @@ export default function AddIconForm() {
     }
 
     if (!tabInfo?.url) {
-      alert('无法获取当前页面地址');
+      alert(t('popup.errors.cannotGetUrl'));
       return;
     }
 
     if (!validateUrl(tabInfo.url)) {
-      alert('当前页面地址无效');
+      alert(t('popup.errors.invalidUrl'));
       return;
     }
 
@@ -83,7 +85,7 @@ export default function AddIconForm() {
       window.close();
     } catch (error) {
       console.error('Failed to add icon:', error);
-      alert('添加失败，请重试');
+      alert(t('popup.errors.addFailed'));
     }
   };
 
@@ -101,7 +103,7 @@ export default function AddIconForm() {
     <PopupLayout>
       {/* Header */}
       <div className="w-full flex items-center justify-between mb-3">
-        <h1 className="text-base font-semibold tracking-tight text-zinc-900">添加快捷方式</h1>
+        <h1 className="text-base font-semibold tracking-tight text-zinc-900">{t('popup.addShortcut')}</h1>
         <div className="text-[10px] text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded-full border border-zinc-100">
           OpenInfinity
         </div>
@@ -113,7 +115,7 @@ export default function AddIconForm() {
         {needsPermission && !tabInfo?.url && (
           <div className="rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2">
             <div className="text-xs text-zinc-600">
-              需要授权读取当前标签页信息，才能自动获取网址并添加到主页。
+              {t('popup.permissionRequired')}
             </div>
             <button
               type="button"
@@ -131,7 +133,7 @@ export default function AddIconForm() {
                 }
               }}
             >
-              {isGranting ? '授权中...' : '授权并读取当前页面'}
+              {isGranting ? t('popup.granting') : t('popup.grantAndRead')}
             </button>
           </div>
         )}
@@ -146,13 +148,13 @@ export default function AddIconForm() {
               setIsDirty(true);
             }}
             className="w-full bg-transparent border-b border-zinc-100 px-0 py-1.5 text-sm focus:outline-none focus:border-brand-orange-500 transition-colors placeholder-zinc-300 font-medium text-zinc-900"
-            placeholder="网站名称"
+            placeholder={t('popup.websiteName')}
           />
         </div>
 
         {/* Icon Type Selection */}
         <div className="flex-1 min-h-0 pt-1">
-          <label className="block text-xs font-semibold mb-2 text-zinc-400">选择图标</label>
+          <label className="block text-xs font-semibold mb-2 text-zinc-400">{t('popup.selectIcon')}</label>
           <IconTypeSelectorContainer
             type={iconType}
             onTypeChange={setIconType}
@@ -186,7 +188,7 @@ export default function AddIconForm() {
           isLoading={isAdding}
           className="w-full"
         >
-          {isAdding ? '添加中...' : '添加到主页'}
+          {isAdding ? t('popup.adding') : t('popup.addToHome')}
         </GlassButton>
       </div>
 

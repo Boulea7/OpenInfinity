@@ -1,20 +1,59 @@
 /**
- * Weather cache management service
- * Handles caching of weather data to minimize API calls
- * Cache expires after 1 hour
+ * Weather Cache Service
+ *
+ * Manages caching of weather data to minimize API calls and provide
+ * offline-first weather display. Cache entries expire after 1 hour.
+ *
+ * Features:
+ * - Automatic cache expiration (1 hour TTL)
+ * - Location-based cache keys with coordinate rounding
+ * - Temperature unit awareness (separate caches for Celsius/Fahrenheit)
+ * - Graceful error handling with fallbacks
+ *
+ * Cache Key Format:
+ * - Format: "{lat}_{lon}_{unit}" (e.g., "39.90_116.40_celsius")
+ * - Coordinates rounded to 2 decimal places (~1km precision)
+ * - Unit suffix prevents cache mismatches when switching units
+ *
+ * Usage Pattern:
+ * 1. Call getWeatherWithCache() for automatic cache management
+ * 2. Returns cached data if valid, otherwise fetches fresh data
+ * 3. Periodically call clearExpiredCaches() for cleanup
+ *
+ * @module services/weatherCache
+ * @see {@link ./weather} Weather API service
+ * @see {@link ./database} WeatherCache type definition
  */
 
 import { db, type WeatherCache } from './database';
 import type { LocationData } from '../types';
 import { fetchWeather } from './weather';
 
+// ============================================================================
+// Configuration
+// ============================================================================
+
 /**
- * Cache expiration time: 1 hour in milliseconds
+ * Cache expiration time: 1 hour in milliseconds.
+ *
+ * Weather data is considered stale after this duration and will be
+ * automatically refreshed on next request.
  */
 const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
 
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
 /**
- * Convert error to readable string (handles DOMException, objects, etc.)
+ * Converts an unknown error to a readable string.
+ *
+ * Handles various error types including Error instances, DOMExceptions,
+ * plain objects, and primitives.
+ *
+ * @param error - The error to convert
+ * @returns Human-readable error message
+ * @internal
  */
 function toErrorString(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -26,8 +65,16 @@ function toErrorString(error: unknown): string {
 }
 
 /**
- * Generate cache key from location coordinates and temperature unit
- * Includes unit to prevent cache mismatches when switching between celsius/fahrenheit
+ * Generates a cache key from location coordinates and temperature unit.
+ *
+ * Coordinates are rounded to 2 decimal places (~1km precision) to group
+ * nearby locations together and reduce duplicate cache entries.
+ *
+ * @param latitude - Location latitude
+ * @param longitude - Location longitude
+ * @param unit - Temperature unit for cache separation
+ * @returns Cache key string (e.g., "39.90_116.40_celsius")
+ * @internal
  */
 function getCacheKey(latitude: number, longitude: number, unit: 'celsius' | 'fahrenheit'): string {
   // Round coordinates to 2 decimal places for cache key
@@ -38,19 +85,42 @@ function getCacheKey(latitude: number, longitude: number, unit: 'celsius' | 'fah
 }
 
 /**
- * Check if cache entry is expired
+ * Checks if a cache entry has expired.
+ *
+ * @param cache - The cache entry to check
+ * @returns True if cache has expired and should be refreshed
+ * @internal
  */
 function isCacheExpired(cache: WeatherCache): boolean {
   return Date.now() > cache.expiresAt;
 }
 
+// ============================================================================
+// Public API
+// ============================================================================
+
 /**
- * Get cached weather data for a location
- * Returns null if no valid cache exists
+ * Retrieves cached weather data for a location.
  *
- * @param location - Location to get weather for
- * @param unit - Temperature unit
- * @returns Cached weather data or null
+ * Checks IndexedDB for a valid (non-expired) cache entry matching the
+ * location and temperature unit. Automatically deletes expired entries.
+ *
+ * @param location - Location data with coordinates and name
+ * @param unit - Temperature unit ('celsius' or 'fahrenheit')
+ * @returns Promise resolving to cached weather data or null if not found/expired
+ *
+ * @example
+ * ```ts
+ * const location = { name: 'Beijing', latitude: 39.90, longitude: 116.40 };
+ * const cached = await getCachedWeather(location, 'celsius');
+ *
+ * if (cached) {
+ *   console.log(`Cached temp: ${cached.current.temperature}C`);
+ *   console.log(`Fetched at: ${new Date(cached.fetchedAt)}`);
+ * } else {
+ *   console.log('No valid cache, need to fetch fresh data');
+ * }
+ * ```
  */
 export async function getCachedWeather(
   location: LocationData,
@@ -78,11 +148,27 @@ export async function getCachedWeather(
 }
 
 /**
- * Fetch fresh weather data and save to cache
+ * Fetches fresh weather data and stores it in cache.
  *
- * @param location - Location to fetch weather for
- * @param unit - Temperature unit
- * @returns Fresh weather data
+ * Always fetches from the API regardless of existing cache. Use this
+ * when you need to force a refresh.
+ *
+ * @param location - Location data with coordinates and name
+ * @param unit - Temperature unit (default: 'celsius')
+ * @returns Promise resolving to fresh weather data with cache metadata
+ *
+ * @throws {Error} When API fetch fails (network error, timeout, invalid response)
+ *
+ * @example
+ * ```ts
+ * try {
+ *   const weather = await fetchAndCacheWeather(location, 'celsius');
+ *   console.log(`Fresh data: ${weather.current.temperature}C`);
+ *   console.log(`Expires at: ${new Date(weather.expiresAt)}`);
+ * } catch (error) {
+ *   console.error('Failed to fetch weather:', error);
+ * }
+ * ```
  */
 export async function fetchAndCacheWeather(
   location: LocationData,
@@ -117,12 +203,35 @@ export async function fetchAndCacheWeather(
 }
 
 /**
- * Get weather data with caching
- * Returns cached data if available and not expired, otherwise fetches fresh data
+ * Gets weather data with automatic cache management.
  *
- * @param location - Location to get weather for
- * @param unit - Temperature unit
- * @returns Weather data (cached or fresh)
+ * This is the primary entry point for weather data. It implements a
+ * cache-first strategy:
+ * 1. Check for valid cached data
+ * 2. If found, return immediately
+ * 3. If not found or expired, fetch fresh data and cache it
+ *
+ * @param location - Location data with coordinates and name
+ * @param unit - Temperature unit (default: 'celsius')
+ * @returns Promise resolving to weather data (cached or fresh)
+ *
+ * @throws {Error} When API fetch fails and no cache is available
+ *
+ * @example
+ * ```ts
+ * // Recommended usage - automatic cache handling
+ * const weather = await getWeatherWithCache(location, 'celsius');
+ *
+ * // Display current conditions
+ * console.log(`Temperature: ${weather.current.temperature}C`);
+ * console.log(`Condition: ${weather.current.condition}`);
+ * console.log(`Feels like: ${weather.current.feelsLike}C`);
+ *
+ * // Display forecast
+ * weather.forecast.forEach(day => {
+ *   console.log(`${day.date}: ${day.low}-${day.high}C, ${day.condition}`);
+ * });
+ * ```
  */
 export async function getWeatherWithCache(
   location: LocationData,
@@ -140,8 +249,21 @@ export async function getWeatherWithCache(
 }
 
 /**
- * Clear expired weather caches
- * Should be called periodically to clean up old data
+ * Clears all expired weather cache entries.
+ *
+ * Should be called periodically (e.g., on app startup or via interval)
+ * to prevent unbounded storage growth from stale entries.
+ *
+ * @returns Promise that resolves when cleanup is complete
+ *
+ * @example
+ * ```ts
+ * // Clear expired caches on app startup
+ * await clearExpiredCaches();
+ *
+ * // Or schedule periodic cleanup
+ * setInterval(clearExpiredCaches, 60 * 60 * 1000); // Every hour
+ * ```
  */
 export async function clearExpiredCaches(): Promise<void> {
   try {
@@ -161,8 +283,23 @@ export async function clearExpiredCaches(): Promise<void> {
 }
 
 /**
- * Clear all weather caches
- * Useful for debugging or force refresh
+ * Clears all weather cache entries.
+ *
+ * Use for debugging, user-initiated refresh, or when changing
+ * weather data sources.
+ *
+ * @returns Promise that resolves when all caches are cleared
+ * @throws {Error} When database operation fails
+ *
+ * @example
+ * ```ts
+ * // Clear all caches (e.g., from settings page)
+ * async function handleForceRefresh() {
+ *   await clearAllCaches();
+ *   const freshWeather = await fetchAndCacheWeather(location, unit);
+ *   updateUI(freshWeather);
+ * }
+ * ```
  */
 export async function clearAllCaches(): Promise<void> {
   try {
@@ -174,11 +311,34 @@ export async function clearAllCaches(): Promise<void> {
 }
 
 /**
- * Get cache statistics
+ * Retrieves cache statistics for monitoring and debugging.
+ *
+ * Returns counts of total, expired, and valid cache entries.
+ *
+ * @returns Promise resolving to cache statistics
+ * @returns total - Total number of cache entries
+ * @returns expired - Number of expired entries awaiting cleanup
+ * @returns valid - Number of currently valid entries
+ *
+ * @example
+ * ```ts
+ * const stats = await getCacheStats();
+ * console.log(`Total entries: ${stats.total}`);
+ * console.log(`Valid entries: ${stats.valid}`);
+ * console.log(`Expired entries: ${stats.expired}`);
+ *
+ * // Check if cleanup is needed
+ * if (stats.expired > 10) {
+ *   await clearExpiredCaches();
+ * }
+ * ```
  */
 export async function getCacheStats(): Promise<{
+  /** Total number of cache entries */
   total: number;
+  /** Number of expired entries awaiting cleanup */
   expired: number;
+  /** Number of currently valid entries */
   valid: number;
 }> {
   try {

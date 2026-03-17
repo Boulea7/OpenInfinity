@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { IconDraft } from '../types/iconDraft';
 
 interface Props {
@@ -6,10 +7,12 @@ interface Props {
 }
 
 export default function IconPreview({ title, icon }: Props) {
+  const { t } = useTranslation();
+
   if (!icon) {
     return (
       <div className="border rounded-lg p-4 text-center bg-gray-50">
-        <p className="text-sm text-gray-400">请选择图标类型</p>
+        <p className="text-sm text-gray-400">{t('popup.selectType')}</p>
       </div>
     );
   }
@@ -26,7 +29,7 @@ export default function IconPreview({ title, icon }: Props) {
 
   return (
     <div className="border rounded-lg p-4 text-center bg-gray-50">
-      <p className="text-sm text-gray-500 mb-2">预览</p>
+      <p className="text-sm text-gray-500 mb-2">{t('popup.preview')}</p>
       <div className="flex flex-col items-center gap-2">
         {imageSrc && (
           <img
@@ -35,7 +38,7 @@ export default function IconPreview({ title, icon }: Props) {
             className="w-16 h-16 rounded-xl object-cover"
           />
         )}
-        <p className="text-sm font-medium">{title || '未命名'}</p>
+        <p className="text-sm font-medium">{title || t('popup.unnamed')}</p>
       </div>
     </div>
   );

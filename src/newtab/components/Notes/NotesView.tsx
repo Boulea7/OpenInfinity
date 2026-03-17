@@ -103,8 +103,16 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
   }, []);
 
   // Auto-save content with debounce (faster for real-time feel)
+  // Only saves when content actually changed to prevent unnecessary updatedAt updates
   useEffect(() => {
-    if (!selectedNoteId) return;
+    if (!selectedNoteId || !selectedNote) return;
+
+    // Check if content actually changed (not just note switching)
+    const titleChanged = editTitle !== selectedNote.title;
+    const contentChanged = editContent !== selectedNote.content &&
+      editContent !== (isHtmlContent(selectedNote.content) ? htmlToMarkdown(selectedNote.content) : selectedNote.content);
+
+    if (!titleChanged && !contentChanged) return;
 
     const timer = setTimeout(() => {
       handleUpdate(selectedNoteId, {
@@ -115,7 +123,7 @@ export function NotesView({ className, searchQuery: propSearchQuery }: NotesView
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editTitle, editContent, selectedNoteId]); // Intentionally omit selectedNote and handleUpdate to prevent unnecessary re-saves
+  }, [editTitle, editContent, selectedNoteId, selectedNote]); // Include selectedNote for change detection
 
   const handleDelete = useCallback(async (id: string) => {
     if (confirm(t('notes.deleteNote') + '?')) {
