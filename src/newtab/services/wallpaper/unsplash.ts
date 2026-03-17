@@ -41,19 +41,13 @@ interface UnsplashPhoto {
   };
 }
 
-// Default Unsplash API key (demo key for OpenInfinity)
-const DEFAULT_UNSPLASH_ACCESS_KEY = 'REDACTED_UNSPLASH_KEY';
-
 export class UnsplashProvider implements WallpaperProvider {
   private accessKey: string;
   private rateLimitRemaining: number = 50;
   private rateLimitReset: number = 0;
 
   constructor(accessKey?: string) {
-    // Priority: provided key > env var > default key
-    this.accessKey = accessKey
-      || import.meta.env.VITE_UNSPLASH_ACCESS_KEY
-      || DEFAULT_UNSPLASH_ACCESS_KEY;
+    this.accessKey = accessKey || import.meta.env.VITE_UNSPLASH_ACCESS_KEY || '';
   }
 
   /**
