@@ -50,6 +50,8 @@ logs/
 docs/
 *.md
 !README.md
+!README_EN.md
+!README_JA.md
 !CONTRIBUTING.md
 !LICENSE.md
 !CHANGELOG.md

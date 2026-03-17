@@ -1,261 +1,218 @@
+<div align="center">
+
+<img src="icons/icon128.png" alt="OpenInfinity" width="96" />
+
 # OpenInfinity
 
-> **安全、透明、高性能的新标签页浏览器扩展**  
-> Infinity New Tab Pro 的开源、道德化替代品
+**安全、透明、功能完整的浏览器新标签页扩展**
+
+Infinity New Tab Pro 的开源隐私优先替代品
+
+<br/>
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-0d0d0d?style=flat-square)](LICENSE)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?style=flat-square&logo=googlechrome&logoColor=white)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](#)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-18c964?style=flat-square)](#贡献)
+[![Stars](https://img.shields.io/github/stars/Boulea7/OpenInfinity?style=flat-square&color=f0a500)](https://github.com/Boulea7/OpenInfinity/stargazers)
+
+<br/>
+
+[English](./README_EN.md) · [日本語](./README_JA.md) · [问题反馈](https://github.com/Boulea7/OpenInfinity/issues) · [功能建议](https://github.com/Boulea7/OpenInfinity/discussions)
+
+</div>
 
 ---
 
-## 🎯 项目简介
+## 为什么需要 OpenInfinity？
 
-OpenInfinity 是一个完全开源的浏览器新标签页扩展，旨在复刻 Infinity New Tab Pro 的所有核心功能，同时彻底摒弃其恶意追踪和隐私侵犯行为。
+2025 年，曾拥有 **430 万用户、评分 4.9/5** 的 Infinity New Tab Pro 被发现植入 **ShadyPanda 恶意软件**，导致：
 
-### 为什么要做 OpenInfinity？
+- 搜索被劫持至 affiliate 网络，用户利益被出卖
+- 浏览历史和 Cookie 遭到静默窃取
+- 广告拦截器和安全插件被远程禁用
 
-Infinity New Tab Pro 曾是一款优秀的产品（300,000+ 用户，4.9/5 评分），但在 2025 年被发现涉及 **"ShadyPanda" 恶意软件活动**，导致 430 万用户受影响，包括：
-- 🔴 搜索劫持到 affiliate networks
-- 🔴 远程代码执行（DGA 域名生成算法）
-- 🔴 窃取用户浏览历史和 Cookies
-- 🔴 禁用广告拦截器和安全插件
-
-**OpenInfinity 的使命**：为流失的 30-50 万用户提供一个功能完整、安全透明的替代品。
+OpenInfinity 使命明确：为流失用户提供**功能对等、代码完全开源、永不追踪**的替代品。
 
 ---
 
-## ✨ 核心特性
+## 预览
 
-### 🎨 功能完整（对标 Infinity Pro）
-
-- ✅ **图标管理系统**：类 iOS 的拖拽网格、文件夹、自定义图标
-- ✅ **壁纸引擎**：Unsplash API、Bing 每日壁纸、本地上传、视觉特效
-- ✅ **搜索功能**：多引擎切换、智能联想、分类搜索
-- ✅ **侧边栏微件**：待办事项、Markdown 笔记、天气、书签、历史记录
-
-### 🛡️ 安全优先（超越 Infinity Pro）
-
-- ✅ **零权限设计**：仅申请 `storage` 权限，拒绝 `*://*/*`、`webRequest` 等危险权限
-- ✅ **本地优先**：所有数据仅存储在用户设备（IndexedDB），绝不上传云端
-- ✅ **搜索透明化**：搜索 URL 用户可见，禁止劫持和重定向
-- ✅ **零追踪**：无 Google Analytics，无遥测，无广告
-
-### 💎 体验升级（超越原版）
-
-- ✅ **Markdown 笔记**：支持代码高亮、实时预览（原版仅纯文本）
-- ✅ **子任务支持**：树状结构待办事项（原版不支持）
-- ✅ **快捷键系统**：Ctrl+K 命令面板、Alt+1-9 快速打开
-- ✅ **性能模式**：Lite Mode 关闭动画，0 延迟加载
-
----
-
-## 🚀 技术栈
-
-| 技术领域 | 选型 | 理由 |
-|---------|------|------|
-| 前端框架 | React 18 + TypeScript 5 | 类型安全、成熟生态 |
-| 构建工具 | Vite 5 | 极速构建（比 Webpack 快 10-20 倍） |
-| 状态管理 | Zustand | 轻量级（1KB）、零样板代码 |
-| UI 框架 | Tailwind CSS | 原子化 CSS、暗黑模式支持 |
-| 拖拽系统 | dnd-kit | 无障碍支持、高性能 |
-| 存储方案 | IndexedDB + Dexie.js | 大容量、异步、本地优先 |
-| Manifest | V3 | 最新标准、更安全 |
-
----
-
-## 📂 项目文档
-
-### 核心文档（根目录）
-
-1. [PRD.md](./PRD.md) - 产品需求文档
-2. [AppFlow.md](./AppFlow.md) - 应用流程文档 ✅
-3. [tech-base.md](./tech-base.md) - 技术基础文档 ✅
-4. [ImplementationPlan.md](./ImplementationPlan.md) - 实施计划 ✅
-5. [前端架构文档.md](./前端架构文档.md) - 前端架构 ✅
-6. [本地后端结构文档.md](./本地后端结构文档.md) - 本地后端 ✅
-
-### 调研文档（/docs 目录）
-
-- [调研汇总](./docs/research-summary.md) - 完整调研概览
-- [Gemini 调研报告](./docs/gemini-research-report.md) - Gemini Deep Research 结果
-- [隐私安全调研](./docs/privacy-security-research.md) - 隐私和安全分析
-- [技术架构调研](./docs/technical-architecture-research.md) - 技术实现细节
-- [已解决问题](./docs/research-resolved.md) - Q&A 格式的调研结果
-- [未解决问题](./docs/unresolved-questions.md) - 待补充调研清单
-- [下一步行动](./docs/NEXT_STEPS.md) - 行动指南和补充调研提示词
-
----
-
-## 🎯 开发进度
-
-> **当前状态**: 🚀 可发布（92% 完成）
-> **最后更新**: 2025-12-30
-
-### Phase 1: MVP ✅ 已完成
-- ✅ 基础图标管理（拖拽排序）
-- ✅ 壁纸系统（多源支持）
-- ✅ 搜索框 + 多引擎
-- ✅ 本地存储（IndexedDB）
-
-### Phase 2: 核心功能 ✅ 已完成
-- ✅ 拖拽排序 + 文件夹（500ms 悬停合并）
-- ✅ 壁纸 API：Unsplash/Pexels/Bing/Wallhaven 等 10+ 源
-- ✅ 侧边栏微件：待办、笔记、天气、书签、历史
-- ✅ 数据导出/导入
-
-### Phase 3: 高级功能 ✅ 已完成
-- ✅ Markdown 笔记 + CodeMirror 代码高亮
-- ✅ 子任务支持 + 优先级管理
-- ✅ 快捷键系统（Ctrl+Shift+A）
-- ✅ 资源离线缓存（离线可用）
-
-### Phase 4: 发布准备 🔄 进行中
-- ✅ 代码质量达标（TypeScript 严格模式）
-- ✅ 性能优化（< 500ms 冷启动）
-- ⏳ Chrome Web Store 上架准备
-
----
-
-## 📊 市场定位
-
-### 目标用户
-
-1. **Infinity Pro 流失用户**（30-50 万）
-   - 因安全事件卸载但怀念功能的用户
-   
-2. **隐私敏感用户**
-   - 不满 Momentum 功能简陋
-   - 不信任闭源产品
-
-3. **技术爱好者**
-   - 开发者、极客
-   - 追求可定制化和透明度
-
-### 竞品对比
-
-| 产品 | 用户数 | 功能 | 隐私 | 开源 |
-|-----|--------|------|------|------|
-| Infinity Pro | ~430万 | ⭐⭐⭐⭐⭐ | ❌ 恶意 | ❌ 闭源 |
-| Momentum | ~370万 | ⭐⭐ | ⭐⭐⭐⭐ | ❌ 闭源 |
-| Tabliss | ~31万 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ✅ 开源 |
-| **OpenInfinity** | **目标** | **⭐⭐⭐⭐⭐** | **⭐⭐⭐⭐⭐** | **✅ 开源** |
-
----
-
-## 🔐 隐私承诺
-
-### OpenInfinity 绝不
-
-- ❌ 收集任何用户数据
-- ❌ 连接任何自有服务器
-- ❌ 使用 Google Analytics 或统计服务
-- ❌ 注入广告或推广链接
-- ❌ 劫持搜索结果
-- ❌ 申请危险权限（`*://*/*`、`webRequest`、`management`）
-
-### OpenInfinity 保证
-
-- ✅ 所有代码 100% 开源（GitHub 公开审计）
-- ✅ 数据完全本地化（IndexedDB）
-- ✅ GDPR 完全合规
-- ✅ 零权限设计（仅申请 `storage`）
-- ✅ 可选权限按需请求（天气、书签、历史）
-
----
-
-## 🛠️ 快速开始
-
-### 安装
-
-**从 Chrome Web Store**:
 ```
-[即将上线]
+┌─────────────────────────────────────────────────────────┐
+│  🔍  在此搜索...                          ⛅ 22°C 晴天  │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│   [GitHub] [Gmail] [YouTube] [Notion]  [+]              │
+│   [Figma]  [Vercel] [Claude]  [Reddit]                   │
+│   📁 工作   📁 学习                                       │
+│                                                          │
+├─────────────────────────────────────────────────────────┤
+│  [待办] [笔记] [天气] [书签] [历史]   📌  ⚙️             │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**手动安装**（开发版）:
+---
+
+## 核心特性
+
+### 图标与导航
+
+- **智能网格**：类 iOS 的拖拽排序，500ms 悬停自动合并为文件夹
+- **海量预设**：内置 100+ 主流网站，一键添加
+- **自定义图标**：支持 URL、Emoji、文字、本地图片
+- **弹出面板**：在任意页面通过扩展图标快速添加当前网站（`Ctrl+Shift+A`）
+
+### 壁纸引擎
+
+| 来源 | 说明 |
+|------|------|
+| Unsplash | 高质量摄影作品，支持关键词搜索 |
+| Pexels | 免费商业可用图库 |
+| Bing 每日壁纸 | 微软精选，自动更换 |
+| Wallhaven | 二次元 / 风景 / 摄影 |
+| 本地上传 | 使用自己的图片 |
+| 纯色 / 渐变 | 极简风格 |
+
+### 侧边栏微件
+
+- **待办事项**：支持子任务、优先级、截止日期
+- **Markdown 笔记**：CodeMirror 代码高亮、实时预览、PIN 固定
+- **天气**：Open-Meteo / QWeather / OpenWeatherMap 三源可选
+- **书签**：Chrome 书签可视化管理
+- **历史记录**：快速搜索和删除浏览历史
+- **扩展管理**：一键启用/禁用已安装扩展
+
+### 搜索
+
+- 支持 Google、百度、Bing、DuckDuckGo、Brave 等多引擎
+- 自定义添加任意搜索引擎
+- 搜索 URL 始终可见、拒绝劫持
+
+### 个性化设置
+
+- 明暗主题 + 系统自动跟随
+- 时钟样式（数字 / 模拟 / 简约）+ 多时区
+- 布局自定义（列数、图标大小、间距）
+- 极简模式（隐藏所有微件，只留搜索和图标）
+- 动画开关（低性能设备友好）
+- 国际化：中文、英文、日文
+
+---
+
+## 隐私承诺
+
+OpenInfinity **绝不**：
+
+- 收集任何用户数据或行为日志
+- 连接自有服务器（无后端、无账号系统）
+- 注入广告、推广或 affiliate 链接
+- 劫持搜索或导航
+- 使用 Google Analytics 或任何第三方统计
+
+OpenInfinity **保证**：
+
+- 所有代码 100% 开源，任何人可审计
+- 数据仅存储于本地 IndexedDB，不上云
+- 所有网络权限为**可选**，功能按需申请
+- 安装时仅需 `storage` + `alarms` 两项基础权限
+
+---
+
+## 快速开始
+
+### 方式一：从 Chrome Web Store 安装（即将上线）
+
+> 正在准备上架审核，敬请期待。
+
+### 方式二：手动加载（立即可用）
+
 ```bash
-# 1. 克隆项目
+# 1. 克隆仓库
 git clone https://github.com/Boulea7/OpenInfinity.git
 cd OpenInfinity
 
 # 2. 安装依赖
 npm install
 
-# 3. 构建扩展
+# 3. 构建
 npm run build
-
-# 4. 加载到浏览器
-# Chrome: chrome://extensions → 开发者模式 → 加载已解压的扩展 → 选择 dist/ 目录
 ```
 
-### 开发
+然后在 Chrome 中：
+1. 打开 `chrome://extensions`
+2. 开启右上角**开发者模式**
+3. 点击**加载已解压的扩展**
+4. 选择项目的 `dist/` 目录
+
+新标签页即刻生效。
+
+### 开发模式
 
 ```bash
-# 启动开发服务器（热重载）
-npm run dev
-
-# 运行测试
-npm test
-
-# 类型检查
-npm run type-check
-
-# 代码格式化
-npm run format
+npm run dev        # 启动开发服务器（热重载）
+npm run type-check # TypeScript 类型检查
+npm run lint       # ESLint 代码检查
+npm run build      # 生产构建
 ```
 
 ---
 
-## 📖 了解更多
+## 技术栈
 
-- 🌐 [官方网站](https://openinfinity.dev)（筹备中）
-- 📚 [完整文档](./docs/)
-- 🐛 [问题反馈](https://github.com/Boulea7/OpenInfinity/issues)
-- 💬 [讨论区](https://github.com/Boulea7/OpenInfinity/discussions)
-
----
-
-## 🤝 贡献
-
-OpenInfinity 是一个社区驱动的开源项目，欢迎任何形式的贡献：
-
-- 🐛 报告 Bug
-- 💡 提出功能建议
-- 📝 改进文档
-- 🔧 提交代码
-- 🎨 设计图标和主题
-
-查看 [贡献指南](./CONTRIBUTING.md) 了解详情。
+| 领域 | 技术 |
+|------|------|
+| 框架 | React 18 + TypeScript 5 |
+| 构建 | Vite 5 |
+| 状态 | Zustand |
+| 样式 | Tailwind CSS |
+| 存储 | IndexedDB + Dexie.js |
+| 编辑器 | CodeMirror 6 |
+| 拖拽 | dnd-kit |
+| 富文本 | TipTap |
+| 国际化 | i18next |
+| 标准 | Manifest V3 |
 
 ---
 
-## 📄 许可证
+## 竞品对比
 
-- **代码**: MIT License
-- **文档**: CC BY-SA 4.0
-
----
-
-## 🙏 致谢
-
-- 感谢 Infinity New Tab Pro 团队的产品创意（尽管后期变质）
-- 感谢 Koi Security 揭露 ShadyPanda 恶意软件活动
-- 感谢所有开源社区的贡献者
+| 产品 | 功能 | 隐私 | 开源 | 中文支持 |
+|------|------|------|------|------|
+| Infinity New Tab Pro | ⭐⭐⭐⭐⭐ | ❌ 恶意软件 | ❌ | ✅ |
+| Momentum | ⭐⭐ | ⭐⭐⭐⭐ | ❌ | ❌ |
+| Tabliss | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ✅ | 一般 |
+| **OpenInfinity** | **⭐⭐⭐⭐⭐** | **⭐⭐⭐⭐⭐** | **✅** | **✅** |
 
 ---
 
-## ⚠️ 免责声明
+## 贡献
 
-OpenInfinity 是一个独立的开源项目，与 Infinity New Tab Pro 无任何关联。本项目旨在：
+欢迎所有形式的贡献，包括但不限于：
 
-- ✅ 学习和研究目的
-- ✅ 为用户提供安全替代品
-- ✅ 提高社区对隐私和安全的认识
+- 🐛 提交 Bug 报告（[Issues](https://github.com/Boulea7/OpenInfinity/issues)）
+- 💡 提出新功能建议（[Discussions](https://github.com/Boulea7/OpenInfinity/discussions)）
+- 🌐 改进翻译（中/英/日）
+- 🔧 提交代码（Fork → Branch → PR）
 
-**不得用于**：
-- ❌ 恶意攻击或破解
-- ❌ 侵犯知识产权
-- ❌ 其他非法用途
+提交 PR 前请确保：
+- 通过 `npm run type-check` 和 `npm run lint`
+- 遵循现有代码风格（精简、无冗余注释）
+- PR 描述清晰说明变更目的
 
 ---
 
-**OpenInfinity** - 重新定义新标签页，尊重你的隐私
+## 许可证
 
-⭐ 如果觉得有用，请给我们一个 Star！
+代码采用 [MIT License](LICENSE)，文档采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)。
+
+---
+
+<div align="center">
+
+**OpenInfinity** · 重新定义新标签页，尊重你的隐私
+
+如果这个项目对你有帮助，欢迎点一个 ⭐
+
+</div>
